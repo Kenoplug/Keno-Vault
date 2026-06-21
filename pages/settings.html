@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Settings — Keno Vault</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23f97316'/><stop offset='100%25' stop-color='%23ea580c'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><text x='32' y='46' font-size='36' text-anchor='middle' font-family='serif'>⬡</text></svg>"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../js/config.js"></script>
+<link rel="stylesheet" href="../css/dashboard.css"/>
+<style>
+/* Settings-specific styles */
+.settings-layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 54px); }
+.settings-sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 20px 12px; position: sticky; top: 54px; height: calc(100vh - 54px);
+}
+.settings-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 500;
+  color: var(--text-dim); cursor: pointer; transition: all .15s;
+  border: none; background: transparent; width: 100%; text-align: left;
+  margin-bottom: 2px;
+}
+.settings-nav-item:hover { background: var(--surface2); color: var(--text); }
+.settings-nav-item.active { background: var(--accent-dim); color: var(--accent); }
+.settings-content { padding: 28px; max-width: 760px; }
+.settings-tab { display: none; }
+.settings-tab.active { display: block; }
+.settings-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+  box-shadow: 0 1px 8px var(--shadow);
+}
+.section-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2);
+}
+.section-header-title { font-size: 14px; font-weight: 600; }
+.section-header-sub   { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+.section-body { padding: 20px; }
+.setting-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border); gap: 16px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.setting-desc  { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+.setting-action { flex-shrink: 0; }
+
+/* Toggle switch */
+.toggle-switch { position: relative; width: 44px; height: 24px; cursor: pointer; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: var(--surface3);
+  border-radius: 24px; transition: .3s; border: 1px solid var(--border);
+}
+.toggle-slider::before {
+  content: ''; position: absolute;
+  height: 18px; width: 18px; left: 2px; bottom: 2px;
+  border-radius: 50%; background: var(--text-muted);
+  transition: .3s;
+}
+input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+input:checked + .toggle-slider::before { transform: translateX(20px); background: #fff; }
+
+/* PIN pad */
+.pin-input {
+  display: flex; gap: 10px; margin: 12px 0;
+}
+.pin-digit {
+  width: 48px; height: 56px; text-align: center; font-size: 24px;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700;
+  background: var(--surface2); border: 2px solid var(--border);
+  border-radius: 10px; color: var(--text);
+  outline: none; transition: border-color .2s;
+  caret-color: var(--accent);
+}
+.pin-digit:focus { border-color: var(--accent); }
+
+/* Profile avatar */
+.profile-avatar-wrap {
+  display: flex; align-items: center; gap: 20px; margin-bottom: 20px;
+}
+.profile-avatar {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--accent-dim); border: 3px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; overflow: hidden; flex-shrink: 0;
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Currency selector */
+.currency-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px; margin-top: 10px;
+}
+.currency-chip {
+  padding: 8px 12px; border-radius: 8px; text-align: center;
+  background: var(--surface2); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.currency-chip:hover  { border-color: var(--accent); color: var(--accent); }
+.currency-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+
+/* Danger zone */
+.danger-zone {
+  background: rgba(248,113,113,0.04);
+  border: 1px solid rgba(248,113,113,0.2);
+  border-radius: 14px; padding: 20px; margin-bottom: 16px;
+}
+.danger-zone-title { font-size: 14px; font-weight: 600; color: var(--red); margin-bottom: 4px; }
+.danger-zone-desc  { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin-bottom: 16px; }
+
+/* Plan card */
+.plan-card {
+  border-radius: 12px; padding: 20px;
+  border: 2px solid var(--border); margin-bottom: 12px;
+}
+.plan-card.current { border-color: var(--accent); background: var(--accent-dim); }
+.plan-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.plan-price { font-family: 'DM Serif Display', serif; font-size: 28px; letter-spacing: -0.02em; }
+.plan-features { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.plan-feature { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+
+/* Legacy settings */
+.legacy-card {
+  background: rgba(167,139,250,0.05); border: 1px solid rgba(167,139,250,0.2);
+  border-radius: 12px; padding: 18px;
+}
+.legacy-title { font-size: 14px; font-weight: 600; color: var(--purple); margin-bottom: 4px; }
+
+/* Mobile settings nav */
+#settingsMobileNav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 300;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 6px 0 calc(6px + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#settingsMobileNav::-webkit-scrollbar { display: none; }
+.smob-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+.smob-btn.active { color: var(--accent); }
+.smob-btn .smob-icon { font-size: 18px; line-height: 1; }
+
+/* Status badge */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+}
+.status-badge.active { background: rgba(52,211,153,0.1); color: var(--green); }
+.status-badge.free   { background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border); }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 10px;
+  padding: 24px; text-align: center; cursor: pointer;
+  transition: all .2s; margin-top: 10px;
+}
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-dim); }
+.upload-zone input { display: none; }
+
+@media(max-width:768px){
+  .settings-layout { grid-template-columns: 1fr !important; }
+  .settings-sidebar { display: none !important; }
+  .settings-content { padding: 16px 16px 100px !important; max-width:100% !important; }
+  .settings-tab { display: none; }
+  .settings-tab.active { display: block; }
+  #settingsMobileNav { display: flex !important; }
+  .setting-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .form-grid-2 { grid-template-columns: 1fr !important; }
+  .plan-card { padding: 16px; }
+}
+@media(max-width:480px){
+  .settings-section { border-radius: 10px; }
+  .legacy-card { padding: 14px; }
+}
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="loading-logo">⬡</div>
+  <div class="serif" style="font-size:22px;color:var(--text);">Keno Vault</div>
+  <div class="spinner"></div>
+  <div style="color:var(--text-dim);font-size:13px;">Loading settings…</div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar" id="mainTopbar" style="display:none;">
+  <div class="topbar-left">
+    <a href="../index.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);">
+      <div style="width:26px;height:26px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">⬡</div>
+      <span style="font-weight:700;font-size:14px;">Keno Vault</span>
+    </a>
+    <div style="font-size:13px;color:var(--text-dim);margin-left:8px;">/ <span id="settingsPageTitle">Settings</span></div>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark</button>
+    <a href="dashboard.html" class="topbar-btn" style="text-decoration:none;">← Dashboard</a>
+    <button class="topbar-btn" onclick="signOut()" style="color:var(--text-muted);">Sign out</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="mainLayout" style="display:none;">
+  <div class="settings-layout">
+
+    <!-- SETTINGS SIDEBAR -->
+    <div class="settings-sidebar">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);padding:0 4px;margin-bottom:8px;">Settings</div>
+      <button class="settings-nav-item active" onclick="switchSettingsTab('profile')">👤 Profile & Account</button>
+      <button class="settings-nav-item" onclick="switchSettingsTab('security')">🔒 Security Hub</button>
+      <button class="settings-nav-item" onclick="switchSettingsTab('data')">💾 Data Management</button>
+      <button class="settings-nav-item" onclick="switchSettingsTab('preferences')">⚙ Preferences</button>
+      <button class="settings-nav-item" onclick="switchSettingsTab('billing')">💳 Plan & Billing</button>
+      <button class="settings-nav-item" id="adminNavBtn" onclick="switchSettingsTab('admin')" style="display:none;">🔐 Admin Panel</button>
+      <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border);margin-top:24px;">
+        <button class="settings-nav-item" onclick="window.location.href='dashboard.html'" style="color:var(--text-muted);">← Back to Dashboard</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS CONTENT -->
+    <div class="settings-content">
+
+      <!-- ═══════ PROFILE TAB ═══════ -->
+      <div class="settings-tab active" id="tab-profile">
+        <div style="margin-bottom:24px;">
+          <h2 class="serif" style="font-size:24px;letter-spacing:-0.02em;margin-bottom:4px;">Profile & Account</h2>
+          <p style="font-size:13px;color:var(--text-dim);">Manage your identity and account preferences.</p>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">Account Identity</div><div class="section-header-sub">Your Google-linked profile</div></div>
+          </div>
+          <div class="section-body">
+            <div class="profile-avatar-wrap">
+              <div class="profile-avatar"><img id="profileAvatar" src="" style="display:none;"/><span id="profileAvatarFallback">👤</span></div>
+              <div>
+                <div style="font-size:16px;font-weight:600;" id="profileName">—</div>
+                <div style="font-size:13px;color:var(--text-dim);" id="profileEmail">—</div>
+                <div style="margin-top:8px;" id="profilePlanBadge"></div>
+              </div>
+            </div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+              Your account is linked via <strong style="color:var(--text);">Google OAuth</strong>. Profile details sync automatically.<br/>
+              To update your name or photo, edit your Google account at <a href="https://myaccount.google.com" target="_blank" style="color:var(--accent);">myaccount.google.com</a>.
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">Connected Services</div><div class="section-header-sub">Active integrations</div></div>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">☁️ Supabase Cloud Sync</div>
+                <div class="setting-desc">Your vault data syncs in real-time across all your devices.</div>
+              </div>
+              <div><span class="status-badge active">● Active</span></div>
+            </div>
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">🔐 Google OAuth</div>
+                <div class="setting-desc">Single sign-on via your Google account. No passwords stored.</div>
+              </div>
+              <div><span class="status-badge active">● Connected</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">Danger Zone</div><div class="section-header-sub" style="color:var(--red);">Irreversible actions</div></div>
+          </div>
+          <div class="section-body">
+            <div class="danger-zone">
+              <div class="danger-zone-title">🗑 Nuclear Option — Delete All Data</div>
+              <div class="danger-zone-desc">Permanently deletes all your assets, history, settings and account data from Keno Vault. This action cannot be undone. Your Google account is unaffected.</div>
+              <button class="btn btn-danger" onclick="nuclearOption()">Delete Everything Permanently</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ SECURITY TAB ═══════ -->
+      <div class="settings-tab" id="tab-security">
+        <div style="margin-bottom:24px;">
+          <h2 class="serif" style="font-size:24px;letter-spacing:-0.02em;margin-bottom:4px;">Security Hub</h2>
+          <p style="font-size:13px;color:var(--text-dim);">Protect your vault with multiple security layers.</p>
+        </div>
+
+        <!-- Privacy Shield -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🛡 Privacy Shield</div><div class="section-header-sub">Blur all financial values instantly</div></div>
+            <span id="proOnlyShield" class="pro-badge" style="display:none;">Pro</span>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Enable Privacy Shield</div>
+                <div class="setting-desc">Toggle blur on all sensitive values. Press <kbd style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;">B</kbd> anywhere for instant toggle.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="blurEnabled" onchange="savePrivacySettings()"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Auto-Lock PIN -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🔐 Session Auto-Lock</div><div class="section-header-sub">Lock vault after inactivity</div></div>
+            <span id="proOnlyPin" class="pro-badge" style="display:none;">Pro</span>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Enable Auto-Lock</div>
+                <div class="setting-desc">Lock vault with PIN after 5 minutes of browser inactivity. Also locks when tab is hidden.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autoLockEnabled" onchange="toggleAutoLockUI()"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div id="pinSetupSection" style="padding:0 20px 16px;display:none;">
+              <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Set your 4-digit PIN:</div>
+              <div class="pin-input">
+                <input type="password" maxlength="1" class="pin-digit" id="pin1" oninput="moveFocus(this,'pin2')" inputmode="numeric"/>
+                <input type="password" maxlength="1" class="pin-digit" id="pin2" oninput="moveFocus(this,'pin3')" inputmode="numeric"/>
+                <input type="password" maxlength="1" class="pin-digit" id="pin3" oninput="moveFocus(this,'pin4')" inputmode="numeric"/>
+                <input type="password" maxlength="1" class="pin-digit" id="pin4" oninput="moveFocus(this,null)" inputmode="numeric"/>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button class="btn btn-primary btn-sm" onclick="savePin()">Save PIN</button>
+                <button class="btn btn-danger btn-sm" onclick="clearPin()">Remove PIN</button>
+              </div>
+              <div id="pinMsg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legacy Mode -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🏛 Legacy Mode (Dead-Man's Switch)</div><div class="section-header-sub">Secure transfer to your heir</div></div>
+            <span class="pro-badge">Pro</span>
+          </div>
+          <div class="section-body">
+            <div class="legacy-card" style="margin-bottom:14px;">
+              <div class="legacy-title">How Legacy Mode Works</div>
+              <div style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-top:6px;">
+                If you don't log in for <strong id="legacyDaysDisplay" style="color:var(--text);">180</strong> consecutive days, Keno Vault will automatically send your encrypted vault data to your designated heir's email. The data is AES-256 encrypted — only someone with your backup password can open it.
+              </div>
+            </div>
+            <div id="legacyLock" style="text-align:center;padding:20px;">
+              <div class="pro-badge" style="margin:0 auto 12px;">⬡ Pro Feature</div>
+              <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Upgrade to Pro to configure Legacy Mode.</p>
+              <button class="btn btn-primary btn-sm" onclick="alert('Upgrade to Pro to use Legacy Mode')">Upgrade to Pro</button>
+            </div>
+            <div id="legacyContent" style="display:none;">
+              <div style="display:grid;gap:14px;">
+                <div class="field">
+                  <label>Enable Legacy Mode</label>
+                  <label class="toggle-switch" style="margin-top:4px;">
+                    <input type="checkbox" id="legacyEnabled" onchange="saveLegacySettings()"/>
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="field">
+                  <label>Heir Email Address</label>
+                  <input type="email" id="heirEmail" placeholder="heir@example.com" oninput="saveLegacySettings()"/>
+                </div>
+                <div class="field">
+                  <label>Inactivity Threshold (days)</label>
+                  <div class="select-wrap"><select id="legacyDays" onchange="saveLegacySettings()">
+                    <option value="90">90 days</option>
+                    <option value="180" selected>180 days</option>
+                    <option value="365">365 days</option>
+                  </select></div>
+                </div>
+                <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--text-dim);line-height:1.7;">
+                  ⚠ <strong style="color:var(--text);">Note:</strong> Ensure your heir knows your backup password to decrypt the transferred data. The email will include encrypted JSON — they'll need it opened with Keno Vault's import tool.
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="testLegacyEmail()" style="align-self:start;">📧 Send Test Email to Heir</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ DATA TAB ═══════ -->
+      <div class="settings-tab" id="tab-data">
+        <div style="margin-bottom:24px;">
+          <h2 class="serif" style="font-size:24px;letter-spacing:-0.02em;margin-bottom:4px;">Data Management</h2>
+          <p style="font-size:13px;color:var(--text-dim);">Import, export and manage your vault data.</p>
+        </div>
+
+        <!-- CSV Export -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">📊 CSV Export</div><div class="section-header-sub">Download your ledger as a spreadsheet</div></div>
+          </div>
+          <div class="section-body">
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Export all your asset and liability entries as a CSV file compatible with Excel and Google Sheets.</p>
+            <button class="btn btn-secondary" onclick="exportCSVFromSettings()">⬇ Download CSV</button>
+          </div>
+        </div>
+
+        <!-- CSV Import -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">📥 Bulk Import (CSV)</div><div class="section-header-sub">Import entries from a spreadsheet</div></div>
+          </div>
+          <div class="section-body">
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Upload a CSV file with columns: <span class="mono" style="font-size:11px;color:var(--accent);">name, cat, value, notes, principal, rate, years</span></p>
+            <div class="upload-zone" onclick="document.getElementById('csvFileInput').click()">
+              <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV(event)"/>
+              <div style="font-size:24px;margin-bottom:8px;">📄</div>
+              <div style="font-size:13px;font-weight:600;">Click to upload CSV</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">or drag & drop your file here</div>
+            </div>
+            <div id="importResult" style="margin-top:10px;font-size:12px;min-height:16px;"></div>
+          </div>
+        </div>
+
+        <!-- Encrypted Backup -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🔐 Encrypted Backup</div><div class="section-header-sub">AES-256 password-protected JSON</div></div>
+            <span class="pro-badge">Pro</span>
+          </div>
+          <div class="section-body">
+            <div id="encryptedBackupLock" style="text-align:center;padding:10px;">
+              <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Encrypted backups are available on the Pro plan.</p>
+              <button class="btn btn-primary btn-sm">Upgrade to Pro →</button>
+            </div>
+            <div id="encryptedBackupContent" style="display:none;">
+              <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Export your entire vault as an AES-256 encrypted JSON file. Set a strong password — you'll need it to restore.</p>
+              <div style="display:grid;gap:12px;margin-bottom:14px;">
+                <div class="field"><label>Encryption Password</label><input type="password" id="encryptPassword" placeholder="Choose a strong password…"/></div>
+                <div class="field"><label>Confirm Password</label><input type="password" id="encryptConfirm" placeholder="Repeat password…"/></div>
+              </div>
+              <button class="btn btn-primary" onclick="doEncryptedExport()">🔐 Export Encrypted Backup</button>
+              <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+                <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Restore from Backup</div>
+                <div class="upload-zone" onclick="document.getElementById('encBackupInput').click()">
+                  <input type="file" id="encBackupInput" accept=".json" onchange="loadEncryptedFile(event)"/>
+                  <div style="font-size:20px;margin-bottom:6px;">🔓</div>
+                  <div style="font-size:13px;font-weight:600;">Click to upload .enc.json</div>
+                </div>
+                <div id="decryptSection" style="display:none;margin-top:12px;">
+                  <div class="field"><label>Decryption Password</label><input type="password" id="decryptPassword" placeholder="Enter backup password…"/></div>
+                  <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="doEncryptedImport()">🔓 Decrypt & Restore</button>
+                </div>
+                <div id="restoreResult" style="margin-top:8px;font-size:12px;min-height:16px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ PREFERENCES TAB ═══════ -->
+      <div class="settings-tab" id="tab-preferences">
+        <div style="margin-bottom:24px;">
+          <h2 class="serif" style="font-size:24px;letter-spacing:-0.02em;margin-bottom:4px;">Preferences</h2>
+          <p style="font-size:13px;color:var(--text-dim);">Customize your Keno Vault experience.</p>
+        </div>
+
+        <!-- Currency -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🌍 Base Currency</div><div class="section-header-sub">Default currency for all displays</div></div>
+          </div>
+          <div class="section-body">
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Select your primary currency. All values display in this currency.</p>
+            <div class="currency-grid" id="currencyGrid">
+              <div class="currency-chip active" onclick="setCurrency('NGN')">₦ NGN</div>
+              <div class="currency-chip" onclick="setCurrency('USD')">$ USD</div>
+              <div class="currency-chip" onclick="setCurrency('GBP')">£ GBP</div>
+              <div class="currency-chip" onclick="setCurrency('EUR')">€ EUR</div>
+              <div class="currency-chip" onclick="setCurrency('CAD')">CA$ CAD</div>
+              <div class="currency-chip" onclick="setCurrency('AUD')">A$ AUD</div>
+              <div class="currency-chip" onclick="setCurrency('GHS')">₵ GHS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Appearance -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🎨 Appearance</div><div class="section-header-sub">Theme and display preferences</div></div>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Dark Mode</div>
+                <div class="setting-desc">Toggle between dark and light interface theme.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="darkModeToggle" onchange="toggleTheme()"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Depreciation -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">📉 Depreciation Engine</div><div class="section-header-sub">Auto-depreciate physical assets</div></div>
+            <span class="pro-badge">Pro</span>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Enable Automatic Depreciation</div>
+                <div class="setting-desc">Automatically apply daily depreciation to physical assets with depreciation configured. Values update on each login.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="deprecEnabled" onchange="savePreferences()"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">🔔 Milestones & Alerts</div><div class="section-header-sub">Net worth milestone notifications</div></div>
+            <span class="pro-badge">Pro</span>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Milestone Alerts</div>
+                <div class="setting-desc">Get notified when your net worth crosses ₦1M, ₦5M, ₦10M, ₦50M, ₦100M thresholds.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="milestonesEnabled" onchange="savePreferences()"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Monthly Check-in Reminder</div>
+                <div class="setting-desc">Email reminder on the 1st of each month to update your asset values.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="reminderEnabled" onchange="savePreferences()"/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ BILLING TAB ═══════ -->
+      <div class="settings-tab" id="tab-billing">
+        <div style="margin-bottom:24px;">
+          <h2 class="serif" style="font-size:24px;letter-spacing:-0.02em;margin-bottom:4px;">Plan & Billing</h2>
+          <p style="font-size:13px;color:var(--text-dim);">Manage your Keno Vault subscription.</p>
+        </div>
+
+        <!-- Current plan -->
+        <div class="settings-section" style="margin-bottom:16px;">
+          <div class="section-header">
+            <div><div class="section-header-title">Current Plan</div></div>
+            <span id="currentPlanBadge" class="status-badge free">Free</span>
+          </div>
+          <div class="section-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div class="plan-card" id="freePlanCard">
+                <div class="plan-name">Free Forever</div>
+                <div class="plan-price">$0<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div class="plan-features">
+                  <div class="plan-feature">✓ Up to 10 entries</div>
+                  <div class="plan-feature">✓ Basic KPI dashboard</div>
+                  <div class="plan-feature">✓ 30-day history</div>
+                  <div class="plan-feature">✓ Google sync</div>
+                  <div class="plan-feature" style="color:var(--text-muted);">— Pro features locked</div>
+                </div>
+              </div>
+              <div class="plan-card" id="proPlanCard">
+                <div class="plan-name" style="color:var(--accent);">Pro ⬡</div>
+                <div class="plan-price" style="color:var(--accent);">$4.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">or $39.99/year · save 33%</div>
+                <div class="plan-features">
+                  <div class="plan-feature">✓ Unlimited entries</div>
+                  <div class="plan-feature">✓ FIRE Simulator</div>
+                  <div class="plan-feature">✓ Privacy Shield</div>
+                  <div class="plan-feature">✓ All Pro features</div>
+                  <div class="plan-feature">✓ Unlimited history</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- How to subscribe -->
+        <div class="settings-section" id="upgradeSection">
+          <div class="section-header">
+            <div><div class="section-header-title">How to Subscribe</div><div class="section-header-sub">Manual activation · 24hr turnaround</div></div>
+          </div>
+          <div class="section-body">
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 1 — Send Payment</div>
+                <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">
+                  Send <strong style="color:var(--text);">$4.99 USDT (TRC20)</strong> to:<br/>
+                  <span class="mono" style="font-size:11px;color:var(--accent);word-break:break-all;display:block;margin-top:4px;background:var(--surface3);padding:8px;border-radius:6px;">YTFzUFQj1SUB3GpvaZDq3ZbFrXEB4LjxkVv</span>
+                </div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 2 — Email Receipt</div>
+                <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">
+                  Send your payment screenshot + the email address below to:<br/>
+                  <strong style="color:var(--accent);">support@kenovault.app</strong>
+                </div>
+                <div style="margin-top:10px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;">
+                  Your account email: <strong id="billingEmail" class="mono" style="color:var(--accent);">—</strong>
+                </div>
+              </div>
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 3 — Activated ⚡</div>
+                <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">Pro is activated within <strong style="color:var(--text);">24 hours</strong> after payment confirmation. You'll see "Pro Plan ⬡" in your sidebar immediately after.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Already Pro -->
+        <div class="settings-section" id="proActiveSection" style="display:none;">
+          <div class="section-header" style="background:rgba(249,115,22,0.06);">
+            <div><div class="section-header-title" style="color:var(--accent);">⬡ Pro Plan Active</div><div class="section-header-sub">All features unlocked</div></div>
+            <span class="status-badge active">● Active</span>
+          </div>
+          <div class="section-body">
+            <p style="font-size:13px;color:var(--text-dim);line-height:1.7;">Your Pro subscription is active. All features are unlocked. To cancel or change your plan, email <strong style="color:var(--accent);">support@kenovault.app</strong>.</p>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═══════ ADMIN TAB ═══════ -->
+      <div class="settings-tab" id="tab-admin">
+        <div style="margin-bottom:24px;">
+          <h2 class="serif" style="font-size:24px;letter-spacing:-0.02em;margin-bottom:4px;">🔐 Admin Panel</h2>
+          <p style="font-size:13px;color:var(--text-dim);">Manually activate or deactivate Pro for any user. Only visible to kenovault@gmail.com.</p>
+        </div>
+
+        <!-- ACTIVATE PRO -->
+        <div class="settings-section" style="margin-bottom:16px;">
+          <div class="section-header" style="background:rgba(249,115,22,0.06);">
+            <div><div class="section-header-title" style="color:var(--accent);">⬡ Activate Pro for User</div>
+            <div class="section-header-sub">Enter the user's email after confirming their payment</div></div>
+          </div>
+          <div class="section-body">
+            <div style="display:grid;gap:14px;">
+              <div class="field">
+                <label>User Email Address</label>
+                <input type="email" id="adminEmail" placeholder="subscriber@example.com"
+                  style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+              </div>
+              <div class="field">
+                <label>Plan</label>
+                <div class="select-wrap">
+                  <select id="adminPlan" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none;">
+                    <option value="pro">Pro — $4.99/month</option>
+                    <option value="free">Free (downgrade)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label>Notes (optional)</label>
+                <input type="text" id="adminNotes" placeholder="e.g. USDT paid June 2025, TxID: abc123"
+                  style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button onclick="adminActivatePro()" style="padding:10px 20px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">✓ Activate Pro</button>
+                <button onclick="adminDeactivatePro()" style="padding:10px 20px;background:transparent;color:var(--red);border:1px solid rgba(248,113,113,0.3);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">✕ Remove Pro</button>
+              </div>
+              <div id="adminResult" style="font-size:13px;min-height:18px;padding:10px;border-radius:8px;display:none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PRO USERS LIST -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div><div class="section-header-title">Active Pro Subscribers</div><div class="section-header-sub">All users with active Pro plans</div></div>
+            <button onclick="loadProUsers()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-dim);font-family:'DM Sans',sans-serif;">↻ Refresh</button>
+          </div>
+          <div class="section-body" style="padding:0;">
+            <div id="adminUserList" style="min-height:80px;">
+              <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">Loading subscribers…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK SQL -->
+        <div class="settings-section" style="margin-top:16px;">
+          <div class="section-header">
+            <div><div class="section-header-title">Quick SQL Reference</div><div class="section-header-sub">Run these in Supabase SQL Editor if needed</div></div>
+          </div>
+          <div class="section-body">
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.8;overflow-x:auto;">
+              <div style="color:var(--text-muted);margin-bottom:8px;">-- Activate Pro:</div>
+              <div style="color:var(--accent);">INSERT INTO subscriptions (email, plan, status, provider)</div>
+              <div>VALUES ('user@email.com', 'pro', 'active', 'manual')</div>
+              <div>ON CONFLICT (email) DO UPDATE</div>
+              <div>SET plan='pro', status='active', updated_at=now();</div>
+              <br/>
+              <div style="color:var(--text-muted);margin-bottom:8px;">-- Remove Pro:</div>
+              <div style="color:var(--accent);">UPDATE subscriptions</div>
+              <div>SET plan='free', status='inactive', updated_at=now()</div>
+              <div>WHERE email='user@email.com';</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-content -->
+  </div><!-- /settings-layout -->
+</div><!-- /mainLayout -->
+
+<script src="../js/security.js"></script>
+<script>
+// ══ CONFIG ══
+// Shared constants (SUPA_URL, SUPA_KEY, ADMIN_EMAIL, SITE_URL) are in ../js/config.js
+// Load that file before this script block.
+const sb = createSupabaseClient();
+
+// ══ STATE ══
+let currentUser = null, userPlan = 'free', settingsBooted = false;
+let encFileData = null;
+
+// ══ TOAST ══
+function toast(msg, type = 'info') {
+  let container = document.getElementById('toast');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast';
+    container.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:600;display:flex;flex-direction:column;gap:8px;';
+    document.body.appendChild(container);
+  }
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.innerHTML = `<span>${{success:'✓',error:'✕',info:'ℹ'}[type]||'ℹ'}</span> ${msg}`;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+const isPro   = () => userPlan === 'pro';
+const isAdmin = () => currentUser?.email === ADMIN_EMAIL;
+
+// ══ THEME ══
+function getTheme() { return localStorage.getItem('kv-theme') || 'dark'; }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('kv-theme', t);
+  const dm = document.getElementById('darkModeToggle');
+  if (dm) dm.checked = t === 'dark';
+  const tb = document.getElementById('themeToggleBtn');
+  if (tb) tb.textContent = t === 'dark' ? '🌙 Dark' : '☀️ Light';
+}
+function toggleTheme() { applyTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+applyTheme(getTheme());
+
+// ══ TABS ══
+function switchSettingsTab(name) {
+  document.querySelectorAll('.settings-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.settings-nav-item').forEach(function(n) { n.classList.remove('active'); });
+  var tab = document.getElementById('tab-' + name);
+  if (tab) tab.classList.add('active');
+  // Mark active desktop nav button
+  document.querySelectorAll('.settings-nav-item').forEach(function(n) {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').indexOf("'" + name + "'") !== -1) {
+      n.classList.add('active');
+    }
+  });
+  // Scroll to top on mobile
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (name === 'admin') loadProUsers();
+}
+
+function setActiveMobBtn(name) {
+  document.querySelectorAll('.smob-btn').forEach(function(b) { b.classList.remove('active'); });
+  var btn = document.getElementById('smob-' + name);
+  if (btn) btn.classList.add('active');
+}
+
+// ══ PROFILE / UI ══
+function setProfileUI(user) {
+  const m = user.user_metadata || {};
+  const pic = m.avatar_url || m.picture;
+  const nameEl  = document.getElementById('profileName');
+  const emailEl = document.getElementById('profileEmail');
+  const billEl  = document.getElementById('billingEmail');
+  if (nameEl)  nameEl.textContent  = m.full_name || m.name || user.email || '—';
+  if (emailEl) emailEl.textContent = user.email || '—';
+  if (billEl)  billEl.textContent  = user.email || '—';
+  if (pic) {
+    const av = document.getElementById('profileAvatar');
+    const fb = document.getElementById('profileAvatarFallback');
+    if (av) { av.src = pic; av.style.display = 'block'; }
+    if (fb) fb.style.display = 'none';
+  }
+  const planBadge = document.getElementById('profilePlanBadge');
+  if (planBadge) {
+    planBadge.innerHTML = isPro()
+      ? '<span class="pro-badge">⬡ Pro Plan</span>'
+      : '<span class="status-badge free">Free Plan</span>';
+  }
+}
+
+function updateBillingUI() {
+  const badge    = document.getElementById('currentPlanBadge');
+  const upgSec   = document.getElementById('upgradeSection');
+  const proSec   = document.getElementById('proActiveSection');
+  const freePlan = document.getElementById('freePlanCard');
+  const proPlan  = document.getElementById('proPlanCard');
+  if (isPro()) {
+    if (badge)   { badge.textContent = 'Pro ⬡'; badge.className = 'status-badge active'; }
+    if (upgSec)  upgSec.style.display  = 'none';
+    if (proSec)  proSec.style.display  = 'block';
+    if (proPlan) proPlan.classList.add('current');
+    if (freePlan)freePlan.classList.remove('current');
+  } else {
+    if (badge)   { badge.textContent = 'Free'; badge.className = 'status-badge free'; }
+    if (upgSec)  upgSec.style.display  = 'block';
+    if (proSec)  proSec.style.display  = 'none';
+    if (freePlan)freePlan.classList.add('current');
+    if (proPlan) proPlan.classList.remove('current');
+  }
+}
+
+function showAdminNav() {
+  if (isAdmin()) {
+    var btn = document.getElementById('adminNavBtn');
+    if (btn) btn.style.display = 'flex';
+    // Also show mobile admin button
+    var mobBtn = document.getElementById('smob-admin');
+    if (mobBtn) mobBtn.style.display = 'flex';
+  }
+}
+
+// ══ SETTINGS INIT ══
+function initSettingsUI() {
+  const blurEl = document.getElementById('blurEnabled');
+  if (blurEl) blurEl.checked = localStorage.getItem('kv-blur') === '1';
+  const dmEl = document.getElementById('darkModeToggle');
+  if (dmEl) dmEl.checked = getTheme() === 'dark';
+  const alEl = document.getElementById('autoLockEnabled');
+  if (alEl) {
+    alEl.checked = !!localStorage.getItem('kv-pin');
+    const pinSec = document.getElementById('pinSetupSection');
+    if (pinSec) pinSec.style.display = alEl.checked ? 'block' : 'none';
+  }
+  const cur = localStorage.getItem('kv-base-currency') || 'NGN';
+  document.querySelectorAll('.currency-chip').forEach(c => {
+    c.classList.toggle('active', c.textContent.includes(cur));
+  });
+  if (isPro()) {
+    const legLock = document.getElementById('legacyLock');
+    const legCont = document.getElementById('legacyContent');
+    const encLock = document.getElementById('encryptedBackupLock');
+    const encCont = document.getElementById('encryptedBackupContent');
+    if (legLock) legLock.style.display = 'none';
+    if (legCont) legCont.style.display = 'block';
+    if (encLock) encLock.style.display = 'none';
+    if (encCont) encCont.style.display = 'block';
+  }
+  const legacy = JSON.parse(localStorage.getItem('kv-legacy') || 'null');
+  if (legacy) {
+    const le = document.getElementById('legacyEnabled'); if (le) le.checked = legacy.enabled || false;
+    const he = document.getElementById('heirEmail');     if (he) he.value = legacy.heirEmail || '';
+    const ld = document.getElementById('legacyDays');    if (ld) ld.value = legacy.timeoutDays || 180;
+  }
+  const prefs = JSON.parse(localStorage.getItem('kv-prefs') || '{}');
+  const de = document.getElementById('deprecEnabled');    if (de) de.checked = prefs.autoDeprec || false;
+  const me = document.getElementById('milestonesEnabled');if (me) me.checked = prefs.milestones || false;
+  const re = document.getElementById('reminderEnabled');  if (re) re.checked = prefs.reminder || false;
+  if (!isPro()) {
+    const si = document.getElementById('proOnlyShield'); if (si) si.style.display = 'inline-flex';
+    const pi = document.getElementById('proOnlyPin');    if (pi) pi.style.display = 'inline-flex';
+  }
+  showAdminNav();
+}
+
+// ══ ADMIN: ACTIVATE / DEACTIVATE PRO ══
+async function adminActivatePro() {
+  const email  = (document.getElementById('adminEmail')?.value || '').trim().toLowerCase();
+  const plan   = document.getElementById('adminPlan')?.value || 'pro';
+  const notes  = (document.getElementById('adminNotes')?.value || '').trim();
+  if (!email) { showAdminResult('⚠ Please enter an email address.', 'error'); return; }
+
+  showAdminResult('Processing…', 'info');
+
+  try {
+    const isActive = plan === 'pro' ? 'active' : 'inactive';
+
+    // Upsert by email — no user_id needed for admin-created records
+    const { error } = await sb.from('subscriptions').upsert({
+      email:      email,
+      plan:       plan,
+      status:     isActive,
+      provider:   'manual',
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict:       'email',
+      ignoreDuplicates: false,
+    });
+
+    if (error) throw error;
+
+    const msg = plan === 'pro'
+      ? `✓ Pro activated for ${email}. They will see Pro features on next login.`
+      : `✓ Plan set to Free for ${email}.`;
+    showAdminResult(msg, 'success');
+    toast(msg, 'success');
+    loadProUsers();
+    document.getElementById('adminEmail').value = '';
+    if (document.getElementById('adminNotes')) document.getElementById('adminNotes').value = '';
+  } catch (e) {
+    // Fallback: try plain insert if upsert fails
+    try {
+      const isActive = plan === 'pro' ? 'active' : 'inactive';
+      // First delete any existing row for this email
+      await sb.from('subscriptions').delete().eq('email', email);
+      // Then insert fresh
+      const { error: insertErr } = await sb.from('subscriptions').insert({
+        email, plan, status: isActive, provider: 'manual',
+        updated_at: new Date().toISOString(),
+      });
+      if (insertErr) throw insertErr;
+      const msg = plan === 'pro'
+        ? `✓ Pro activated for ${email}.`
+        : `✓ Plan set to Free for ${email}.`;
+      showAdminResult(msg, 'success');
+      toast(msg, 'success');
+      loadProUsers();
+      document.getElementById('adminEmail').value = '';
+    } catch(e2) {
+      showAdminResult('Error: ' + e2.message + ' — Try running the SQL fix in Supabase.', 'error');
+      toast('DB Error: ' + e2.message, 'error');
+    }
+  }
+}
+
+async function adminDeactivatePro() {
+  const email = (document.getElementById('adminEmail')?.value || '').trim().toLowerCase();
+  if (!email) { showAdminResult('⚠ Please enter an email address.', 'error'); return; }
+  if (!confirm('Remove Pro from ' + email + '?')) return;
+  showAdminResult('Processing…', 'info');
+  try {
+    // Try update first
+    const { error } = await sb.from('subscriptions').update({
+      plan: 'free', status: 'inactive', updated_at: new Date().toISOString(),
+    }).eq('email', email);
+    if (error) throw error;
+    showAdminResult(`✓ Pro removed for ${email}.`, 'success');
+    toast(`Pro removed for ${email}`, 'info');
+    loadProUsers();
+    document.getElementById('adminEmail').value = '';
+  } catch (e) {
+    // Fallback: delete row entirely
+    try {
+      await sb.from('subscriptions').delete().eq('email', email);
+      showAdminResult(`✓ Subscription record deleted for ${email}.`, 'success');
+      loadProUsers();
+    } catch(e2) {
+      showAdminResult('Error: ' + e2.message, 'error');
+    }
+  }
+}
+
+function showAdminResult(msg, type) {
+  const el = document.getElementById('adminResult');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? 'rgba(52,211,153,0.08)' : type === 'error' ? 'rgba(248,113,113,0.08)' : 'var(--surface2)';
+  el.style.border = type === 'success' ? '1px solid rgba(52,211,153,0.3)' : type === 'error' ? '1px solid rgba(248,113,113,0.3)' : '1px solid var(--border)';
+  el.style.color = type === 'success' ? 'var(--green)' : type === 'error' ? 'var(--red)' : 'var(--text-dim)';
+  el.textContent = msg;
+}
+
+async function loadProUsers() {
+  const listEl = document.getElementById('adminUserList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;"><div class="spinner" style="margin:0 auto 8px;width:24px;height:24px;border-width:2px;"></div>Loading…</div>';
+  try {
+    const { data, error } = await sb.from('subscriptions')
+      .select('*').eq('plan', 'pro')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    if (!data || !data.length) {
+      listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">No Pro subscribers yet.</div>';
+      return;
+    }
+    listEl.innerHTML = data.map(s => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;background:var(--accent-dim);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">${s.email || s.user_id}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Since ${new Date(s.created_at).toLocaleDateString('en-NG',{day:'numeric',month:'short',year:'numeric'})} · ${s.provider || 'manual'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">PRO ⬡</span>
+          <button onclick="quickRemovePro('${s.email}')"
+            style="background:transparent;border:1px solid rgba(248,113,113,0.3);color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">
+            Remove
+          </button>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    listEl.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Error: ${e.message}</div>`;
+  }
+}
+
+async function quickRemovePro(email) {
+  if (!confirm(`Remove Pro from ${email}?`)) return;
+  try {
+    await sb.from('subscriptions').update({ plan:'free', status:'inactive', updated_at: new Date().toISOString() }).eq('email', email);
+    toast(`Pro removed for ${email}`, 'info');
+    loadProUsers();
+  } catch(e) { toast('Error: '+e.message, 'error'); }
+}
+
+// ══ PRIVACY SHIELD ══
+function savePrivacySettings() {
+  const enabled = document.getElementById('blurEnabled')?.checked;
+  if (enabled && !isPro()) {
+    const el = document.getElementById('blurEnabled'); if(el) el.checked = false;
+    toast('Privacy Shield is a Pro feature', 'info'); return;
+  }
+  localStorage.setItem('kv-blur', enabled ? '1' : '0');
+  toast(enabled ? 'Privacy Shield enabled' : 'Privacy Shield disabled', 'success');
+}
+
+// ══ PIN ══
+function moveFocus(current, nextId) {
+  if (current.value.length === 1 && nextId) document.getElementById(nextId)?.focus();
+}
+function toggleAutoLockUI() {
+  const enabled = document.getElementById('autoLockEnabled')?.checked;
+  const sec = document.getElementById('pinSetupSection');
+  if (enabled && !isPro()) {
+    const el = document.getElementById('autoLockEnabled'); if(el) el.checked = false;
+    toast('Auto-Lock is a Pro feature', 'info'); return;
+  }
+  if (sec) sec.style.display = enabled ? 'block' : 'none';
+  if (!enabled) {
+    localStorage.removeItem('kv-pin');
+    localStorage.removeItem('kv-autolock');
+    toast('Auto-Lock disabled', 'info');
+  }
+}
+async function savePin() {
+  const digits = ['pin1','pin2','pin3','pin4'].map(id => document.getElementById(id)?.value || '');
+  if (digits.some(d => !d || isNaN(d))) { document.getElementById('pinMsg').textContent = '⚠ Enter all 4 digits'; return; }
+  const ok = await Security.setPin(digits.join(''));
+  const msg = document.getElementById('pinMsg');
+  if (ok) {
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ PIN saved (PBKDF2 secured)'; }
+    ['pin1','pin2','pin3','pin4'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    toast('PIN saved', 'success');
+  } else {
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = '✕ Failed to save PIN'; }
+    toast('Failed to save PIN', 'error');
+  }
+}
+function clearPin() {
+  localStorage.removeItem('kv-pin');
+  localStorage.removeItem('kv-autolock');
+  const al = document.getElementById('autoLockEnabled'); if(al) al.checked = false;
+  const sec = document.getElementById('pinSetupSection'); if(sec) sec.style.display = 'none';
+  const msg = document.getElementById('pinMsg'); if(msg) msg.textContent = '';
+  toast('PIN removed', 'info');
+}
+
+// ══ LEGACY ══
+function saveLegacySettings() {
+  const settings = {
+    enabled:     document.getElementById('legacyEnabled')?.checked || false,
+    heirEmail:   document.getElementById('heirEmail')?.value || '',
+    timeoutDays: parseInt(document.getElementById('legacyDays')?.value || 180),
+  };
+  localStorage.setItem('kv-legacy', JSON.stringify(settings));
+  const dd = document.getElementById('legacyDaysDisplay'); if(dd) dd.textContent = settings.timeoutDays;
+  toast('Legacy settings saved', 'success');
+}
+function testLegacyEmail() { toast('Test email requires backend (coming soon)', 'info'); }
+
+// ══ CURRENCY ══
+function setCurrency(cur) {
+  localStorage.setItem('kv-base-currency', cur);
+  document.querySelectorAll('.currency-chip').forEach(c => c.classList.toggle('active', c.textContent.includes(cur)));
+  toast('Base currency set to ' + cur, 'success');
+}
+
+// ══ PREFERENCES ══
+function savePreferences() {
+  const prefs = {
+    autoDeprec: document.getElementById('deprecEnabled')?.checked || false,
+    milestones: document.getElementById('milestonesEnabled')?.checked || false,
+    reminder:   document.getElementById('reminderEnabled')?.checked || false,
+  };
+  localStorage.setItem('kv-prefs', JSON.stringify(prefs));
+  toast('Preferences saved', 'success');
+}
+
+// ══ CSV EXPORT ══
+async function exportCSVFromSettings() {
+  const { data } = await sb.from('assets').select('*').order('created_at');
+  if (!data?.length) { toast('No data to export', 'info'); return; }
+  const h = ['Name','Category','Notes','Value','Principal','Rate','Years','FV','Interest'];
+  const rows = data.map(a => [
+    `"${a.name}"`, a.cat, `"${a.notes||''}"`,
+    a.value, a.principal||'', a.rate||'', a.years||'', a.fv||'', a.interest||''
+  ].join(','));
+  const url = URL.createObjectURL(new Blob([[h.join(','),...rows].join('\n')], {type:'text/csv'}));
+  const lnk = document.createElement('a');
+  lnk.href = url; lnk.download = `keno-vault-${new Date().toISOString().slice(0,10)}.csv`;
+  lnk.click(); URL.revokeObjectURL(url);
+  toast('CSV exported', 'success');
+}
+
+// ══ CSV IMPORT ══
+async function importCSV(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const text = await file.text();
+  const lines = text.split('\n').slice(1).filter(l => l.trim());
+  let imported = 0;
+  for (const line of lines) {
+    const [name,cat,notes,value] = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
+    if (!name || !value) continue;
+    await sb.from('assets').insert({
+      user_id: currentUser.id, name, cat: cat||'cash',
+      value: parseFloat(value)||0, notes: notes||null, fv:0, interest:0,
+    });
+    imported++;
+  }
+  const res = document.getElementById('importResult');
+  if (res) { res.style.color='var(--green)'; res.textContent=`✓ Imported ${imported} entries.`; }
+  toast(`Imported ${imported} entries`, 'success');
+}
+
+// ══ ENCRYPTED BACKUP ══
+async function doEncryptedExport() {
+  if (!isPro()) { toast('Encrypted backups are a Pro feature', 'info'); return; }
+  const pw = document.getElementById('encryptPassword')?.value;
+  const cf = document.getElementById('encryptConfirm')?.value;
+  if (!pw)    { toast('Enter a password', 'error'); return; }
+  if (pw !== cf) { toast('Passwords do not match', 'error'); return; }
+  const { data: assets  } = await sb.from('assets').select('*');
+  const { data: history } = await sb.from('nw_history').select('*');
+  await Security.exportEncrypted(assets||[], history||[], pw);
+  const pwEl = document.getElementById('encryptPassword'); if(pwEl) pwEl.value='';
+  const cfEl = document.getElementById('encryptConfirm'); if(cfEl) cfEl.value='';
+}
+
+function loadEncryptedFile(event) {
+  const file = event.target.files[0]; if (!file) return;
+  file.text().then(t => {
+    encFileData = JSON.parse(t);
+    const dec = document.getElementById('decryptSection'); if(dec) dec.style.display='block';
+    toast('File loaded — enter password to decrypt', 'info');
+  }).catch(() => toast('Invalid file format', 'error'));
+}
+
+async function doEncryptedImport() {
+  if (!encFileData) { toast('No file loaded', 'error'); return; }
+  const pw = document.getElementById('decryptPassword')?.value;
+  if (!pw) { toast('Enter decryption password', 'error'); return; }
+  const blob = new Blob([JSON.stringify(encFileData)], {type:'application/json'});
+  const data = await Security.importEncrypted(blob, pw);
+  if (!data) return;
+  if (data.assets?.length) {
+    for (const a of data.assets) {
+      await sb.from('assets').insert({user_id:currentUser.id,...a,id:undefined});
+    }
+    const res = document.getElementById('restoreResult');
+    if(res){res.style.color='var(--green)';res.textContent=`✓ Restored ${data.assets.length} entries.`;}
+    toast(`Restored ${data.assets.length} entries`, 'success');
+  }
+}
+
+// ══ NUCLEAR OPTION ══
+async function nuclearOption() {
+  if (!confirm('⚠ DANGER: Permanently delete ALL your Keno Vault data?')) return;
+  const input = prompt('Type DELETE to confirm:');
+  if (input !== 'DELETE') { toast('Cancelled', 'info'); return; }
+  try {
+    await sb.from('assets').delete().eq('user_id', currentUser.id);
+    await sb.from('nw_history').delete().eq('user_id', currentUser.id);
+    await sb.from('subscriptions').delete().eq('user_id', currentUser.id);
+    localStorage.clear();
+    await sb.auth.signOut();
+    toast('All data deleted. Signing out…', 'info');
+    setTimeout(() => window.location.href = '../index.html', 1500);
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ══ SIGN OUT ══
+async function signOut() {
+  if (!confirm('Sign out?')) return;
+  await sb.auth.signOut();
+  window.location.href = '../index.html';
+}
+
+// ══ BOOT — Fixed, simple, reliable ══
+Security.injectStyles();
+
+async function bootSettings(session) {
+  if (settingsBooted) return;
+  if (!session?.user) {
+    // No session — go back to dashboard to handle login
+    window.location.href = 'dashboard.html';
+    return;
+  }
+  settingsBooted = true;
+  currentUser = session.user;
+
+  try {
+    // Load subscription — check by user_id first, then by email
+    const { data: byId } = await sb.from('subscriptions')
+      .select('plan,status').eq('user_id', currentUser.id).maybeSingle();
+    if (byId?.plan === 'pro' && byId?.status === 'active') {
+      userPlan = 'pro';
+    } else {
+      const { data: byEmail } = await sb.from('subscriptions')
+        .select('plan,status').eq('email', currentUser.email).maybeSingle();
+      userPlan = (byEmail?.plan === 'pro') ? 'pro' : 'free';
+    }
+  } catch(e) {
+    console.warn('[Settings] Subscription load error:', e.message);
+  }
+
+  setProfileUI(currentUser);
+  updateBillingUI();
+  initSettingsUI();
+  Security.init(isPro());
+
+  // Show the page
+  const loadingEl = document.getElementById('loadingScreen');
+  const topbarEl  = document.getElementById('mainTopbar');
+  const layoutEl  = document.getElementById('mainLayout');
+  if (loadingEl) loadingEl.style.display = 'none';
+  if (topbarEl)  topbarEl.style.display  = 'flex';
+  if (layoutEl)  layoutEl.style.display  = 'block';
+}
+
+// Step 1 — Direct getSession call (most reliable)
+sb.auth.getSession()
+  .then(({ data: { session }, error }) => {
+    if (error) console.warn('[Settings] getSession error:', error.message);
+    bootSettings(session);
+  })
+  .catch(err => {
+    console.warn('[Settings] getSession threw:', err.message);
+    window.location.href = 'dashboard.html';
+  });
+
+// Step 2 — Safety redirect after 12s if still stuck
+setTimeout(() => {
+  if (!settingsBooted) {
+    console.warn('[Settings] Timeout — redirecting to dashboard');
+    window.location.href = 'dashboard.html';
+  }
+}, 12000);
+
+// Step 3 — Auth state listener for sign-in events
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && !settingsBooted) {
+    bootSettings(session);
+  }
+  if (event === 'SIGNED_OUT') {
+    window.location.href = '../index.html';
+  }
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('[Settings] Token refreshed silently');
+  }
+});
+
+// Step 4 — Re-check when tab becomes visible
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && settingsBooted) {
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (!session) window.location.href = 'dashboard.html';
+    }).catch(() => {});
+  }
+});
+</script>
+
+<!-- MOBILE SETTINGS NAV -->
+<nav id="settingsMobileNav">
+  <div style="display:flex;align-items:center;justify-content:space-around;min-width:100%;padding:0 4px;">
+    <button class="smob-btn active" id="smob-profile"     onclick="switchSettingsTab('profile');setActiveMobBtn('profile')">
+      <span class="smob-icon">👤</span>Profile
+    </button>
+    <button class="smob-btn" id="smob-security"   onclick="switchSettingsTab('security');setActiveMobBtn('security')">
+      <span class="smob-icon">🔒</span>Security
+    </button>
+    <button class="smob-btn" id="smob-data"       onclick="switchSettingsTab('data');setActiveMobBtn('data')">
+      <span class="smob-icon">💾</span>Data
+    </button>
+    <button class="smob-btn" id="smob-preferences" onclick="switchSettingsTab('preferences');setActiveMobBtn('preferences')">
+      <span class="smob-icon">⚙</span>Prefs
+    </button>
+    <button class="smob-btn" id="smob-billing"   onclick="switchSettingsTab('billing');setActiveMobBtn('billing')">
+      <span class="smob-icon">💳</span>Billing
+    </button>
+    <button class="smob-btn" id="smob-admin"     onclick="switchSettingsTab('admin');setActiveMobBtn('admin')" style="display:none;">
+      <span class="smob-icon">🔐</span>Admin
+    </button>
+  </div>
+</nav>
+
+</body>
+</html>

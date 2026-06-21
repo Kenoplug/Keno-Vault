@@ -1,0 +1,1704 @@
+// ═══════════════════════════════════════════════════════════════
+// app.js — Keno Vault Core Application Logic
+// ═══════════════════════════════════════════════════════════════
+
+// ══ CONFIG ══════════════════════════════════════════════════════
+// Shared constants (SUPA_URL, SUPA_KEY, ADMIN_EMAIL, SITE_URL) are in js/config.js
+// Load that file before this one.
+const FREE_LIMIT  = 10;
+
+const sb = createSupabaseClient();
+
+// ══ STATE ════════════════════════════════════════════════════════
+let assets = [], nwHistory = [], currentUser = null, userPlan = 'free', bootDone = false;
+let editId = null, activity = [];
+let donutChart = null, barChart = null, historyChart = null;
+let fireChart = null, debtChart = null, investChart2 = null;
+
+// ══ CONSTANTS ════════════════════════════════════════════════════
+const CAT = {
+  cash:       { l: 'Liquid Cash',      i: '💵' },
+  physical:   { l: 'Physical Assets',  i: '📦' },
+  investment: { l: 'Investments',      i: '📈' },
+  liability:  { l: 'Liability',        i: '⚠️'  },
+};
+const BADGE_DARK = {
+  cash:       'background:rgba(79,142,247,0.15);color:#7eb3fa;',
+  physical:   'background:rgba(52,211,153,0.15);color:#6ee7b7;',
+  investment: 'background:rgba(244,197,83,0.15);color:#fcd34d;',
+  liability:  'background:rgba(248,113,113,0.15);color:#fca5a5;',
+};
+const BADGE_LIGHT = {
+  cash:       'background:rgba(249,115,22,0.1);color:#ea580c;',
+  physical:   'background:rgba(22,163,74,0.1);color:#16a34a;',
+  investment: 'background:rgba(217,119,6,0.1);color:#d97706;',
+  liability:  'background:rgba(220,38,38,0.1);color:#dc2626;',
+};
+
+// ══ HELPERS ══════════════════════════════════════════════════════
+const isPro      = () => userPlan === 'pro';
+const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
+const fmt        = n  => Calculators.formatCurrency(Math.abs(n));
+const fmtSigned  = n  => (n < 0 ? '-' : '') + fmt(n);
+const fmtShort   = n  => {
+  const a = Math.abs(n);
+  if (a >= 1e9) return '₦' + (a / 1e9).toFixed(1) + 'B';
+  if (a >= 1e6) return '₦' + (a / 1e6).toFixed(1) + 'M';
+  if (a >= 1e3) return '₦' + (a / 1e3).toFixed(0) + 'k';
+  return '₦' + a.toFixed(0);
+};
+const getBadge   = () => getTheme() === 'light' ? BADGE_LIGHT : BADGE_DARK;
+
+// ══ TOAST ════════════════════════════════════════════════════════
+const UI = {
+  toast(msg, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast-item ${type}`;
+    el.innerHTML = `<span>${{ success: '✓', error: '✕', info: 'ℹ' }[type]}</span> ${msg}`;
+    document.getElementById('toast').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+};
+
+// ══ SYNC STATE ═══════════════════════════════════════════════════
+function setSyncState(state, label) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  if (dot) { dot.className = 'sync-dot'; dot.classList.add(state); }
+  if (lbl) lbl.textContent = label;
+}
+
+// ══ SCREEN MANAGEMENT ════════════════════════════════════════════
+function showLoading(msg = 'Loading…') {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('appLayout').style.display = 'none';
+}
+function showAuth() {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('appLayout').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'none';
+  const layout = document.getElementById('appLayout');
+  layout.style.display = window.innerWidth < 900 ? 'flex' : 'grid';
+  layout.style.flexDirection = 'column';
+  showMobileNav();
+}
+
+// ══ MODAL ════════════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); })
+);
+
+// ══ THEME ════════════════════════════════════════════════════════
+function getTheme() { return localStorage.getItem('kv-theme') || 'dark'; }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('kv-theme', t);
+}
+function toggleTheme() {
+  applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+  var btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = getTheme() === 'dark' ? '🌙 Dark' : '☀️ Light';
+  rerenderCharts();
+}
+applyTheme(getTheme());
+
+// ══ PRIVACY BLUR ═════════════════════════════════════════════════
+let _blurred = false;
+function toggleBlur() {
+  if (!isPro()) { UI.toast('Privacy Shield is a Pro feature', 'info'); return; }
+  _blurred = !_blurred;
+  document.body.classList.toggle('privacy-blur', _blurred);
+  const btn = document.getElementById('blurToggleBtn');
+  if (btn) { btn.textContent = _blurred ? '👁 Reveal' : '🛡 Shield'; btn.classList.toggle('active', _blurred); }
+}
+document.addEventListener('keydown', e => {
+  if ((e.key === 'b' || e.key === 'B') && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+    toggleBlur();
+  }
+});
+
+// ══ NAVIGATION ═══════════════════════════════════════════════════
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mob-nav-btn').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  const mobNavEl = document.getElementById('mob-' + name);
+  if (mobNavEl) mobNavEl.classList.add('active');
+  const titleEl = document.getElementById('pageTitle');
+  if (titleEl) titleEl.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  // Scroll to top on mobile page switch
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (name === 'investments') renderInvestmentPage();
+}
+
+// Explicit lock/content ID mapping (IDs differ between pages)
+var PRO_PAGE_IDS = {
+  fire:      { lock: 'fireLock',      content: 'fireContent' },
+  debt:      { lock: 'debtLock',      content: 'debtContent' },
+  tax:       { lock: 'taxLock',       content: 'taxContent'  },
+  optimizer: { lock: 'optimizerLock', content: 'optimizerContent' },
+  score:     { lock: 'scoreLockPage', content: 'scoreContent' },
+  currency:  { lock: 'currencyLock',  content: 'currencyContent' },
+};
+
+function switchProPage(name) {
+  switchPage(name);
+  var pro = isPro();
+  var ids = PRO_PAGE_IDS[name];
+  if (ids) {
+    var lockEl    = document.getElementById(ids.lock);
+    var contentEl = document.getElementById(ids.content);
+    if (lockEl)    lockEl.style.display    = pro ? 'none'  : 'block';
+    if (contentEl) contentEl.style.display = pro ? 'block' : 'none';
+  }
+  if (!pro) { openModal('upgradeModal'); return; }
+  if (name === 'fire')      { runFire();        return; }
+  if (name === 'debt')      { runDebt();        return; }
+  if (name === 'tax')       { runTax();         return; }
+  if (name === 'optimizer') { runOptimizer();   return; }
+  if (name === 'score')     { renderScore();    return; }
+  if (name === 'currency')  { renderCurrency(); return; }
+}
+
+function togglePanel(panelId, chipId) {
+  const panel = document.getElementById(panelId);
+  const chip  = document.getElementById(chipId);
+  if (!panel || !chip) return;
+  panel.classList.toggle('open');
+  chip.classList.toggle('active');
+}
+
+// ══ AUTH ═════════════════════════════════════════════════════════
+// ── Email/Password Auth ───────────────────────────────────────
+function switchAuthTab(tab) {
+  const isSignIn = tab === 'signin';
+  const isForgot = tab === 'forgot';
+  document.getElementById('signInForm').style.display  = isSignIn ? 'block' : 'none';
+  document.getElementById('signUpForm').style.display  = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('forgotForm').style.display  = isForgot ? 'block' : 'none';
+  const tabSI = document.getElementById('tabSignIn');
+  const tabSU = document.getElementById('tabSignUp');
+  if (tabSI) {
+    tabSI.style.background = isSignIn ? 'var(--accent)' : 'transparent';
+    tabSI.style.color      = isSignIn ? '#fff' : 'var(--text-dim)';
+  }
+  if (tabSU) {
+    tabSU.style.background = tab === 'signup' ? 'var(--accent)' : 'transparent';
+    tabSU.style.color      = tab === 'signup' ? '#fff' : 'var(--text-dim)';
+  }
+  clearAuthMessages();
+}
+
+function showForgotPassword() {
+  document.getElementById('signInForm').style.display = 'none';
+  document.getElementById('signUpForm').style.display = 'none';
+  document.getElementById('forgotForm').style.display = 'block';
+  clearAuthMessages();
+}
+
+function clearAuthMessages() {
+  const e = document.getElementById('authError');   if (e) e.textContent = '';
+  const s = document.getElementById('authSuccess'); if (s) s.textContent = '';
+}
+
+function setAuthError(msg) {
+  const e = document.getElementById('authError'); if (e) e.textContent = msg;
+}
+function setAuthSuccess(msg) {
+  const s = document.getElementById('authSuccess'); if (s) s.textContent = msg;
+}
+
+async function signInEmail() {
+  const email    = (document.getElementById('siEmail')?.value    || '').trim();
+  const password = (document.getElementById('siPassword')?.value || '').trim();
+  clearAuthMessages();
+  if (!email || !password) { setAuthError('Please enter your email and password.'); return; }
+  const btn = document.getElementById('signInBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    setAuthError(error.message === 'Invalid login credentials'
+      ? 'Incorrect email or password. Please try again.'
+      : error.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
+    return;
+  }
+  // Success — onAuthStateChange will handle the rest
+  if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
+}
+
+async function signUpEmail() {
+  const name     = (document.getElementById('suName')?.value     || '').trim();
+  const email    = (document.getElementById('suEmail')?.value    || '').trim();
+  const password = (document.getElementById('suPassword')?.value || '').trim();
+  clearAuthMessages();
+  if (!name)             { setAuthError('Please enter your name.'); return; }
+  if (!email)            { setAuthError('Please enter your email.'); return; }
+  if (password.length < 8) { setAuthError('Password must be at least 8 characters.'); return; }
+  const btn = document.getElementById('signUpBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating account…'; }
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { full_name: name, display_name: name } }
+  });
+  if (error) {
+    setAuthError(error.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
+    return;
+  }
+  // Check if email confirmation is needed
+  if (data.user && !data.session) {
+    setAuthSuccess('Account created! Check your email to confirm your account, then sign in.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
+    setTimeout(() => switchAuthTab('signin'), 3000);
+  }
+  // If no confirmation needed, onAuthStateChange handles login
+  if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
+}
+
+async function sendPasswordReset() {
+  const email = (document.getElementById('forgotEmail')?.value || '').trim();
+  clearAuthMessages();
+  if (!email) { setAuthError('Please enter your email address.'); return; }
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/pages/dashboard.html'
+  });
+  if (error) { setAuthError(error.message); return; }
+  setAuthSuccess('Reset link sent! Check your inbox (and spam folder).');
+}
+
+async function signInWithGoogle() {
+  const btn = document.getElementById('googleSignInBtn');
+  clearAuthMessages();
+  if (btn) { btn.disabled = true; btn.textContent = 'Redirecting to Google…'; }
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.href,
+      queryParams: { prompt: 'select_account' },
+    }
+  });
+  if (error) {
+    setAuthError(error.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Continue with Google'; }
+  }
+}
+
+async function signOut() {
+  if (!confirm('Sign out of Keno Vault?')) return;
+  showLoading('Signing out…');
+  bootDone = false;
+  currentUser = null;
+  userPlan = 'free';
+  assets = [];
+  nwHistory = [];
+  await sb.auth.signOut();
+  renderAll();
+  showAuth();
+}
+
+function setUserUI(user) {
+  const m = user.user_metadata || {};
+  const name = m.given_name || m.full_name || user.email || 'there';
+  const greetEl = document.getElementById('greetName');
+  const sidebarEl = document.getElementById('sidebarName');
+  const subEl = document.getElementById('greetSub');
+  if (greetEl) greetEl.textContent = name;
+  if (sidebarEl) sidebarEl.textContent = m.full_name || user.email || 'User';
+  if (subEl) subEl.textContent = `Here's your financial snapshot for ${new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}.`;
+  const av = document.getElementById('sidebarAvatar');
+  const pic = m.avatar_url || m.picture;
+  if (pic && av) {
+    av.src = pic; av.style.display = 'block';
+    const fb = document.getElementById('sidebarAvatarFallback');
+    if (fb) fb.style.display = 'none';
+  }
+}
+
+// ══ SUBSCRIPTION ═════════════════════════════════════════════════
+async function loadSubscription() {
+  try {
+    // Check by email first — covers manually activated Pro accounts
+    const { data: byEmail } = await sb.from('subscriptions')
+      .select('plan, status').eq('email', currentUser.email).maybeSingle();
+
+    // Accept 'pro' regardless of status value (status may be null in some rows)
+    if (byEmail?.plan === 'pro') {
+      userPlan = 'pro';
+      console.log('[Sub] Pro confirmed by email:', currentUser.email);
+      return;
+    }
+
+    // Fallback: check by user_id
+    const { data: byId } = await sb.from('subscriptions')
+      .select('plan, status').eq('user_id', currentUser.id).maybeSingle();
+
+    if (byId?.plan === 'pro') {
+      userPlan = 'pro';
+      console.log('[Sub] Pro confirmed by user_id');
+      // Backfill email so future lookups work
+      sb.from('subscriptions').update({ email: currentUser.email })
+        .eq('user_id', currentUser.id).then(() => {});
+      return;
+    }
+
+    userPlan = 'free';
+  } catch(e) {
+    console.warn('[Subscription] Load error:', e.message);
+    userPlan = 'free';
+  }
+}
+
+function updateProUI() {
+  const pro    = isPro();
+  const planEl = document.getElementById('sidebarPlan');
+  const banner = document.getElementById('proBanner');
+  if (planEl) planEl.textContent = pro ? 'Pro Plan ⬡' : 'Free Plan';
+  if (banner) banner.style.display = pro ? 'none' : 'flex';
+
+  // Score KPI overlay
+  var scoreLockOverlay = document.getElementById('scoreLockOverlay');
+  if (scoreLockOverlay) scoreLockOverlay.style.display = pro ? 'none' : 'flex';
+
+  // Pro lock icons in sidebar
+  document.querySelectorAll('.pro-lock').forEach(function(el) {
+    el.style.display = pro ? 'none' : 'inline';
+  });
+
+  // If currently on a pro page, show/hide using correct IDs
+  Object.keys(PRO_PAGE_IDS).forEach(function(n) {
+    var activePg = document.getElementById('page-' + n);
+    if (!activePg || !activePg.classList.contains('active')) return;
+    var ids      = PRO_PAGE_IDS[n];
+    var lockEl   = document.getElementById(ids.lock);
+    var contEl   = document.getElementById(ids.content);
+    if (lockEl) lockEl.style.display   = pro ? 'none'  : 'block';
+    if (contEl) contEl.style.display   = pro ? 'block' : 'none';
+  });
+
+  // Update score KPI card color
+  if (pro) {
+    const s = Calculators.netWorthScore(assets);
+    const scoreEl = document.getElementById('kpiScore');
+    const lblEl   = document.getElementById('kpiScoreLabel');
+    if (scoreEl) { scoreEl.textContent = s.score + '/100'; scoreEl.style.color = s.color; }
+    if (lblEl)   lblEl.textContent = s.label;
+  }
+}
+
+// ══ DATA ═════════════════════════════════════════════════════════
+async function loadAssets() {
+  setSyncState('syncing', 'Loading…');
+  const { data, error } = await sb.from('assets').select('*').order('created_at', { ascending: true });
+  if (error) { setSyncState('error', 'Error'); UI.toast('Load error: ' + error.message, 'error'); return; }
+  assets = data.map(r => ({
+    id: r.id, name: r.name, cat: r.cat, value: parseFloat(r.value) || 0,
+    notes: r.notes || '', principal: r.principal ? parseFloat(r.principal) : null,
+    rate: r.rate ? parseFloat(r.rate) : null, years: r.years ? parseFloat(r.years) : null,
+    fv: parseFloat(r.fv) || 0, interest: parseFloat(r.interest) || 0,
+    depreciationType: r.depreciation_type || null, depreciationRate: r.depreciation_rate || null,
+    usefulLife: r.useful_life || null, salvageValue: r.salvage_value || null,
+    originalCost: r.original_cost || null, depreciationStart: r.depreciation_start || null,
+  }));
+  setSyncState('synced', 'Synced');
+}
+
+async function loadHistory() {
+  const limit = isPro() ? 500 : 30;
+  const { data } = await sb.from('nw_history').select('*')
+    .order('created_at', { ascending: true }).limit(limit);
+  if (data) nwHistory = data.map(r => ({ id: r.id, nw: parseFloat(r.nw) || 0, ts: r.label }));
+}
+
+async function dbInsert(a) {
+  const { data, error } = await sb.from('assets').insert({
+    user_id: currentUser.id, name: a.name, cat: a.cat, value: a.value,
+    notes: a.notes || null, principal: a.principal || null, rate: a.rate || null,
+    years: a.years || null, fv: a.fv || 0, interest: a.interest || 0,
+    depreciation_type: a.depreciationType || null, depreciation_rate: a.depreciationRate || null,
+    useful_life: a.usefulLife || null, salvage_value: a.salvageValue || null,
+    original_cost: a.originalCost || null, depreciation_start: a.depreciationStart || null,
+  }).select().single();
+  if (error) throw error;
+  return data.id;
+}
+
+async function dbUpdate(a) {
+  const { error } = await sb.from('assets').update({
+    name: a.name, cat: a.cat, value: a.value, notes: a.notes || null,
+    principal: a.principal || null, rate: a.rate || null, years: a.years || null,
+    fv: a.fv || 0, interest: a.interest || 0,
+    depreciation_type: a.depreciationType || null,
+    depreciation_rate: a.depreciationRate || null,
+    useful_life: a.usefulLife || null,
+    salvage_value: a.salvageValue || null,
+    original_cost: a.originalCost || null,
+    depreciation_start: a.depreciationStart || null,
+  }).eq('id', a.id).eq('user_id', currentUser.id);
+  if (error) throw error;
+}
+
+async function dbDelete(id) {
+  const { error } = await sb.from('assets').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) throw error;
+}
+
+async function snapHistory() {
+  let ta = 0, tl = 0;
+  assets.forEach(a => { if (a.cat === 'liability') tl += a.value; else ta += a.value; });
+  const nw = ta - tl;
+  const label = new Date().toLocaleDateString('en-NG', { month: 'short', day: 'numeric' });
+  const { data } = await sb.from('nw_history')
+    .insert({ user_id: currentUser.id, nw, label }).select().single();
+  if (data) {
+    nwHistory.push({ id: data.id, nw, ts: label });
+    if (!isPro() && nwHistory.length > 30) nwHistory = nwHistory.slice(-30);
+  }
+}
+
+// ══ FORM HELPERS ═════════════════════════════════════════════════
+function handleCatChange() {
+  const cat = document.getElementById('fCategory').value;
+  const investWrap  = document.getElementById('investToggleWrap');
+  const deprecWrap  = document.getElementById('deprecToggleWrap');
+  if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
+  if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
+}
+
+function calcPreview() {
+  const p = parseFloat(document.getElementById('fPrincipal').value);
+  const r = parseFloat(document.getElementById('fRate').value) / 100;
+  const t = parseFloat(document.getElementById('fYears').value);
+  const prev = document.getElementById('fPreview');
+  if (!prev) return;
+  if (!p || !r || !t || p <= 0) { prev.style.display = 'none'; return; }
+  const fv = p * Math.pow(1 + r, t);
+  prev.style.display = 'flex';
+  document.getElementById('prevFV').textContent   = fmt(fv);
+  document.getElementById('prevInt').textContent  = fmt(fv - p);
+  document.getElementById('prevMult').textContent = (fv / p).toFixed(2) + 'x';
+}
+
+// ══ ADD ASSET ════════════════════════════════════════════════════
+async function addAsset() {
+  if (!currentUser) { UI.toast('Sign in first', 'error'); return; }
+  if (!isPro() && assets.length >= FREE_LIMIT) { openModal('upgradeModal'); return; }
+
+  const name  = document.getElementById('fName').value.trim();
+  const cat   = document.getElementById('fCategory').value;
+  const value = parseFloat(document.getElementById('fValue').value);
+  const notes = document.getElementById('fNotes').value.trim();
+  const errEl = document.getElementById('formError');
+  if (errEl) errEl.textContent = '';
+
+  if (!name)                { if (errEl) errEl.textContent = '⚠ Please enter a name.'; return; }
+  if (isNaN(value)||value<0){ if (errEl) errEl.textContent = '⚠ Enter a valid value.'; return; }
+
+  let principal = null, rate = null, years = null, fv = 0, interest = 0;
+  if (cat === 'investment') {
+    principal = parseFloat(document.getElementById('fPrincipal').value) || null;
+    rate      = parseFloat(document.getElementById('fRate').value)      || null;
+    years     = parseFloat(document.getElementById('fYears').value)     || null;
+    if (principal && rate && years) {
+      const p = Calculators.compoundInterest(principal, rate, years);
+      fv = p.fv; interest = p.interest;
+    }
+  }
+
+  let depreciationType = null, depreciationRate = null, usefulLife = null;
+  let salvageValue = null, originalCost = null, depreciationStart = null;
+  if (cat === 'physical' && isPro()) {
+    depreciationType = document.getElementById('fDeprecType').value || null;
+    if (depreciationType) {
+      usefulLife       = parseFloat(document.getElementById('fUsefulLife').value) || 5;
+      salvageValue     = parseFloat(document.getElementById('fSalvage').value)    || 0;
+      depreciationRate = parseFloat(document.getElementById('fDeprecRate').value) || 20;
+      originalCost     = value;
+      depreciationStart = new Date().toISOString();
+    }
+  }
+
+  const btn = document.getElementById('addBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  setSyncState('syncing', 'Saving…');
+
+  try {
+    const asset = { name, cat, value, notes, principal, rate, years, fv, interest,
+      depreciationType, depreciationRate, usefulLife, salvageValue, originalCost, depreciationStart };
+    const newId = await dbInsert(asset);
+    asset.id = newId;
+    assets.push(asset);
+    addActivity(`Added "${name}"`, cat);
+    await snapHistory();
+    renderAll();
+    setSyncState('synced', 'Saved ✓');
+    UI.toast(`"${name}" added`, 'success');
+    ['fName','fValue','fNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  } catch(e) {
+    setSyncState('error', 'Error');
+    UI.toast('Error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '+ Add to Vault'; }
+  }
+}
+
+// ══ DELETE ═══════════════════════════════════════════════════════
+async function deleteAsset(id) {
+  const a = assets.find(x => x.id === id);
+  if (!a) return;
+  setSyncState('syncing', 'Deleting…');
+  try {
+    await dbDelete(id);
+    assets = assets.filter(x => x.id !== id);
+    addActivity(`Removed "${a.name}"`, a.cat, 'red');
+    await snapHistory();
+    renderAll();
+    setSyncState('synced', 'Synced');
+    UI.toast(`"${a.name}" removed`, 'error');
+  } catch(e) {
+    setSyncState('error', 'Error');
+    UI.toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ══ EDIT ═════════════════════════════════════════════════════════
+function openEditModal(id) {
+  const a = assets.find(x => x.id === id);
+  if (!a) return;
+  editId = id;
+  document.getElementById('eName').value     = a.name;
+  document.getElementById('eCat').value      = a.cat;
+  document.getElementById('eValue').value    = a.value;
+  document.getElementById('eNotes').value    = a.notes || '';
+  document.getElementById('ePrincipal').value = a.principal || '';
+  document.getElementById('eRate').value     = a.rate  || '';
+  document.getElementById('eYears').value    = a.years || '';
+  // Depreciation fields
+  var depType = document.getElementById('eDeprecType');
+  var depLife = document.getElementById('eUsefulLife');
+  var depSalv = document.getElementById('eSalvage');
+  var depRate = document.getElementById('eDeprecRate');
+  if (depType) depType.value = a.depreciationType || '';
+  if (depLife) depLife.value = a.usefulLife || '';
+  if (depSalv) depSalv.value = a.salvageValue || '';
+  if (depRate) depRate.value = a.depreciationRate || '';
+  // Collapse depreciation panel unless it has a type set
+  var depPanel = document.getElementById('editDeprecPanel');
+  var depChip  = document.getElementById('editDeprecToggle');
+  if (depPanel && depChip) {
+    if (a.depreciationType) {
+      depPanel.classList.add('open');
+      depChip.classList.add('active');
+    } else {
+      depPanel.classList.remove('open');
+      depChip.classList.remove('active');
+    }
+  }
+  handleEditCat();
+  calcEditProj();
+  openModal('editModal');
+}
+
+function handleEditCat() {
+  const cat = document.getElementById('eCat').value;
+  const investWrap = document.getElementById('eInvestWrap');
+  const deprecWrap = document.getElementById('eDeprecWrap');
+  if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
+  if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
+}
+
+function calcEditProj() {
+  const p = parseFloat(document.getElementById('ePrincipal').value);
+  const r = parseFloat(document.getElementById('eRate').value) / 100;
+  const t = parseFloat(document.getElementById('eYears').value);
+  const prev = document.getElementById('eProj');
+  if (!prev) return;
+  if (!p || !r || !t) { prev.style.display = 'none'; return; }
+  const fv = p * Math.pow(1 + r, t);
+  prev.style.display = 'block';
+  prev.innerHTML = `FV: <span style="color:var(--gold);">${fmt(fv)}</span> &nbsp;·&nbsp; Interest: <span style="color:var(--green);">${fmt(fv - p)}</span>`;
+}
+
+async function saveEdit() {
+  const a = assets.find(x => x.id === editId);
+  if (!a) return;
+  const name  = document.getElementById('eName').value.trim();
+  const cat   = document.getElementById('eCat').value;
+  const value = parseFloat(document.getElementById('eValue').value);
+  if (!name || isNaN(value) || value < 0) { UI.toast('Fill required fields', 'error'); return; }
+  const notes     = document.getElementById('eNotes').value.trim();
+  const principal = parseFloat(document.getElementById('ePrincipal').value) || null;
+  const rate      = parseFloat(document.getElementById('eRate').value)      || null;
+  const years     = parseFloat(document.getElementById('eYears').value)     || null;
+  let fv = 0, interest = 0;
+  if (cat === 'investment' && principal && rate && years) {
+    const p = Calculators.compoundInterest(principal, rate, years);
+    fv = p.fv; interest = p.interest;
+  }
+
+  // Read depreciation fields
+  var depreciationType = null, depreciationRate = null, usefulLife = null;
+  var salvageValue = null, originalCost = null, depreciationStart = null;
+  if (cat === 'physical' && isPro()) {
+    depreciationType = document.getElementById('eDeprecType')?.value || null;
+    if (depreciationType) {
+      usefulLife       = parseFloat(document.getElementById('eUsefulLife')?.value) || 5;
+      salvageValue     = parseFloat(document.getElementById('eSalvage')?.value)    || 0;
+      depreciationRate = parseFloat(document.getElementById('eDeprecRate')?.value) || 20;
+      originalCost     = a.originalCost || value; // preserve original cost if already set
+      if (!a.depreciationStart) depreciationStart = new Date().toISOString();
+      else depreciationStart = a.depreciationStart;
+    }
+  }
+
+  const btn = document.getElementById('saveEditBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  setSyncState('syncing', 'Saving…');
+  try {
+    Object.assign(a, {
+      name, cat, value, notes, principal, rate, years, fv, interest,
+      depreciationType, depreciationRate, usefulLife, salvageValue,
+      originalCost, depreciationStart
+    });
+    await dbUpdate(a);
+    addActivity(`Updated "${name}"`, cat, 'blue');
+    await snapHistory();
+    renderAll();
+    closeModal('editModal');
+    setSyncState('synced', 'Saved ✓');
+    UI.toast(`"${name}" updated`, 'success');
+  } catch(e) {
+    setSyncState('error', 'Error');
+    UI.toast('Error: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+  }
+}
+
+// ══ CLEAR ALL ════════════════════════════════════════════════════
+async function confirmClear() {
+  if (!assets.length) { UI.toast('Vault is empty', 'info'); return; }
+  if (!confirm(`Clear all ${assets.length} entries? This cannot be undone.`)) return;
+  setSyncState('syncing', 'Clearing…');
+  try {
+    await sb.from('assets').delete().eq('user_id', currentUser.id);
+    await sb.from('nw_history').delete().eq('user_id', currentUser.id);
+    assets = []; nwHistory = [];
+    renderAll();
+    setSyncState('synced', 'Synced');
+    UI.toast('Vault cleared', 'info');
+  } catch(e) {
+    setSyncState('error', 'Error');
+    UI.toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ══ CSV EXPORT ═══════════════════════════════════════════════════
+function exportCSV() {
+  if (!assets.length) { UI.toast('No data to export', 'info'); return; }
+  const h = ['Name','Category','Notes','Value (NGN)','Principal','Rate (%)','Years','FV (NGN)','Interest (NGN)'];
+  const rows = assets.map(a => [
+    `"${a.name}"`, CAT[a.cat].l, `"${a.notes||''}"`,
+    a.value, a.principal||'', a.rate||'', a.years||'',
+    a.fv ? a.fv.toFixed(2) : '', a.interest ? a.interest.toFixed(2) : '',
+  ].join(','));
+  const url = URL.createObjectURL(new Blob([[h.join(','), ...rows].join('\n')], { type: 'text/csv' }));
+  const lnk = document.createElement('a');
+  lnk.href = url; lnk.download = `keno-vault-${new Date().toISOString().slice(0,10)}.csv`;
+  lnk.click(); URL.revokeObjectURL(url);
+  UI.toast('CSV exported', 'success');
+}
+
+// ══ ACTIVITY FEED ════════════════════════════════════════════════
+function addActivity(msg, cat, color = 'green') {
+  activity.unshift({
+    msg, cat, color,
+    time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
+  });
+  if (activity.length > 20) activity = activity.slice(0, 20);
+}
+
+function renderActivity() {
+  const feed = document.getElementById('activityFeed');
+  if (!feed) return;
+  if (!activity.length) {
+    feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;">📋</div>No activity yet</div>';
+    return;
+  }
+  feed.innerHTML = activity.map(a => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;background:var(--${a.color||'green'});"></div>
+      <div>
+        <div style="font-size:12px;font-weight:500;">${a.msg}</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${a.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══ KPIs ═════════════════════════════════════════════════════════
+function renderKPIs() {
+  let ta = 0, tl = 0, tp = 0, ti = 0, tint = 0;
+  assets.forEach(a => {
+    if (a.cat === 'liability') tl += a.value;
+    else {
+      ta += a.value;
+      if (a.cat === 'cash' || a.cat === 'physical') tp += a.value;
+      if (a.cat === 'investment') { ti += a.value; tint += a.interest || 0; }
+    }
+  });
+  const nw = ta - tl;
+  const nwEl = document.getElementById('kpiNetWorth');
+  if (nwEl) { nwEl.textContent = fmtSigned(nw); nwEl.style.color = nw < 0 ? 'var(--red)' : 'var(--accent)'; }
+  const subEl = document.getElementById('kpiNetSub');
+  if (subEl) { subEl.textContent = `Assets ${fmt(ta)} — Liabilities ${fmt(tl)}`; subEl.className = 'kpi-change ' + (nw >= 0 ? 'up' : 'down'); }
+  const physEl = document.getElementById('kpiPhysical'); if (physEl) physEl.textContent = fmt(tp);
+  const invEl  = document.getElementById('kpiInvest');   if (invEl)  invEl.textContent  = fmt(ti);
+  const intEl  = document.getElementById('kpiInterest'); if (intEl)  intEl.textContent  = fmt(tint);
+
+  if (isPro()) {
+    const s = Calculators.netWorthScore(assets);
+    const scoreEl = document.getElementById('kpiScore'); if (scoreEl) { scoreEl.textContent = s.score + '/100'; scoreEl.style.color = s.color; }
+    const lblEl   = document.getElementById('kpiScoreLabel'); if (lblEl) lblEl.textContent = s.label;
+    const lockEl  = document.getElementById('scoreLockOverlay'); if (lockEl) lockEl.style.display = 'none';
+  }
+
+  const lw = document.getElementById('limitWarning');
+  if (lw) lw.style.display = (!isPro() && assets.length >= FREE_LIMIT) ? 'block' : 'none';
+  const ec = document.getElementById('entryCount');
+  if (ec) ec.textContent = `(${assets.length} entr${assets.length === 1 ? 'y' : 'ies'})`;
+}
+
+// ══ TABLE ════════════════════════════════════════════════════════
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  const tfoot = document.getElementById('tableFoot');
+  if (!tbody) return;
+  if (!assets.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-icon">🪙</div>No entries yet. Add your first asset above.</div></td></tr>';
+    if (tfoot) tfoot.style.display = 'none';
+    return;
+  }
+  const BADGE = getBadge();
+  const order = { cash: 0, physical: 1, investment: 2, liability: 3 };
+  const sorted = [...assets].sort((a, b) => order[a.cat] - order[b.cat]);
+  tbody.innerHTML = sorted.map(a => {
+    const isLiab = a.cat === 'liability';
+    const depStr = a.depreciationType ? `<span style="font-size:10px;color:var(--text-muted);">[${a.depreciationType}]</span>` : '';
+    const proj   = a.fv > 0 ? `<span class="mono sensitive" style="color:var(--gold);">${fmt(a.fv)}</span>` : '<span style="color:var(--muted);">—</span>';
+    const intc   = a.interest > 0 ? `<span class="gain-pill">+${fmt(a.interest)}</span>` : '<span style="color:var(--muted);">—</span>';
+    const ratec  = a.rate && a.years ? `<span class="mono" style="color:var(--text-dim);font-size:11px;">${a.rate}%/${a.years}yr</span>` : '<span style="color:var(--muted);">—</span>';
+    return `<tr class="animate-in">
+      <td style="font-weight:500;">${a.name} ${depStr}</td>
+      <td><span class="badge" style="${BADGE[a.cat]}">${CAT[a.cat].i} ${CAT[a.cat].l}</span></td>
+      <td style="color:var(--text-dim);font-size:12px;">${a.notes || '—'}</td>
+      <td><span class="mono sensitive" style="color:${isLiab ? 'var(--red)' : 'var(--text)'};">${isLiab ? '-' : ''}${fmt(a.value)}</span></td>
+      <td>${proj}</td><td>${intc}</td><td>${ratec}</td>
+      <td><div style="display:flex;gap:4px;justify-content:center;">
+        <button class="icon-btn edit" onclick="openEditModal('${a.id}')">✎</button>
+        <button class="icon-btn del"  onclick="deleteAsset('${a.id}')">✕</button>
+      </div></td></tr>`;
+  }).join('');
+
+  let tc = 0, tfv = 0, ti = 0;
+  assets.forEach(a => { tc += a.cat !== 'liability' ? a.value : -a.value; tfv += a.fv || 0; ti += a.interest || 0; });
+  if (tfoot) {
+    tfoot.style.display = '';
+    const fv = document.getElementById('footVal'); if (fv) fv.textContent = fmtSigned(tc);
+    const ff = document.getElementById('footFV');  if (ff) ff.textContent = tfv > 0 ? fmt(tfv) : '—';
+    const fi = document.getElementById('footInt'); if (fi) fi.textContent = ti > 0 ? '+' + fmt(ti) : '—';
+  }
+}
+
+// ══ CHARTS ═══════════════════════════════════════════════════════
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+function getCC() {
+  const l = getTheme() === 'light';
+  return {
+    grid: l ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.04)',
+    text: l ? '#404040' : '#888',
+    tt: {
+      backgroundColor: l ? '#ffffff' : '#1a1a1a',
+      borderColor:     l ? '#d4d4d2' : '#2a2a2a',
+      borderWidth: 1,
+      titleColor:  l ? '#0a0a0a' : '#f0f0f0',
+      bodyColor:   l ? '#0a0a0a' : '#f0f0f0',
+      padding: 10,
+      cornerRadius: 8,
+      titleFont: { weight: '600' },
+      bodyFont:  { weight: '500' },
+    },
+  };
+}
+
+function renderDonut() {
+  const ctx = document.getElementById('donutChart');
+  const emp = document.getElementById('donutEmpty');
+  if (!ctx) return;
+  const t = { cash: 0, physical: 0, investment: 0, liability: 0 };
+  assets.forEach(a => t[a.cat] += a.value);
+  const vals = [t.cash, t.physical, t.investment, t.liability];
+  const total = vals.reduce((s, v) => s + v, 0);
+  if (!total) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (donutChart) { donutChart.destroy(); donutChart = null; } return; }
+  ctx.style.display = ''; if (emp) emp.style.display = 'none';
+  const isL = getTheme() === 'light';
+  const bgs = isL ? ['rgba(249,115,22,0.8)', 'rgba(22,163,74,0.8)', 'rgba(217,119,6,0.8)', 'rgba(220,38,38,0.8)'] : ['rgba(79,142,247,0.85)', 'rgba(52,211,153,0.85)', 'rgba(244,197,83,0.85)', 'rgba(248,113,113,0.85)'];
+  const bds = isL ? ['#f97316', '#16a34a', '#d97706', '#dc2626'] : ['#4f8ef7', '#34d399', '#f4c553', '#f87171'];
+  const cc = getCC(); Chart.defaults.color = cc.text;
+  const data = { labels: ['Cash', 'Physical', 'Investments', 'Liabilities'], datasets: [{ data: vals, backgroundColor: bgs, borderColor: bds, borderWidth: 2, hoverOffset: 6 }] };
+  if (donutChart) { donutChart.data = data; donutChart.update(); return; }
+  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '68%', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${fmt(c.parsed)} (${((c.parsed / total) * 100).toFixed(1)}%)` } } } } });
+}
+
+function renderHistory() {
+  const ctx = document.getElementById('historyChart');
+  const emp = document.getElementById('historyEmpty');
+  if (!ctx) return;
+  if (nwHistory.length < 2) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (historyChart) { historyChart.destroy(); historyChart = null; } return; }
+  ctx.style.display = ''; if (emp) emp.style.display = 'none';
+  const cc = getCC();
+  const data = { labels: nwHistory.map(h => h.ts), datasets: [{ label: 'Net Worth', data: nwHistory.map(h => h.nw), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.06)', borderWidth: 2, pointBackgroundColor: '#f97316', pointRadius: 3, pointHoverRadius: 5, fill: true, tension: 0.4 }] };
+  if (historyChart) { historyChart.data = data; historyChart.update(); return; }
+  historyChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${fmtSigned(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v), font: { size: 10 } } } } } });
+}
+
+function renderBar() {
+  const ctx = document.getElementById('barChart');
+  const emp = document.getElementById('barEmpty');
+  if (!ctx) return;
+  const inv = assets.filter(a => a.cat === 'investment' && a.fv > 0);
+  if (!inv.length) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (barChart) { barChart.destroy(); barChart = null; } return; }
+  ctx.style.display = ''; if (emp) emp.style.display = 'none';
+  const cc = getCC();
+  const data = { labels: inv.map(a => a.name.length > 14 ? a.name.slice(0, 13) + '…' : a.name), datasets: [{ label: 'Current Value', data: inv.map(a => a.value), backgroundColor: 'rgba(249,115,22,0.7)', borderColor: '#f97316', borderWidth: 2, borderRadius: 6 }, { label: 'Projected FV', data: inv.map(a => a.fv), backgroundColor: 'rgba(244,197,83,0.7)', borderColor: '#f4c553', borderWidth: 2, borderRadius: 6 }] };
+  if (barChart) { barChart.data = data; barChart.update(); return; }
+  barChart = new Chart(ctx, { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v), font: { size: 10 } } } } } });
+}
+
+function rerenderCharts() {
+  [donutChart, barChart, historyChart, fireChart, debtChart, investChart2].forEach(c => { if (c) { c.destroy(); } });
+  donutChart = barChart = historyChart = fireChart = debtChart = investChart2 = null;
+  renderAll();
+}
+
+// ══ INVESTMENTS PAGE ══════════════════════════════════════════════
+function renderInvestmentPage() {
+  const inv = assets.filter(a => a.cat === 'investment');
+  const ctx = document.getElementById('investChart2');
+  const emp = document.getElementById('investEmpty');
+  if (!ctx) return;
+  if (!inv.length) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (investChart2) { investChart2.destroy(); investChart2 = null; } return; }
+  ctx.style.display = ''; if (emp) emp.style.display = 'none';
+  const cc = getCC();
+  const data = { labels: inv.map(a => a.name.length > 14 ? a.name.slice(0, 13) + '…' : a.name), datasets: [{ label: 'Current', data: inv.map(a => a.value), backgroundColor: 'rgba(249,115,22,0.65)', borderColor: '#f97316', borderWidth: 2, borderRadius: 8 }, { label: 'FV', data: inv.map(a => a.fv || 0), backgroundColor: 'rgba(244,197,83,0.65)', borderColor: '#f4c553', borderWidth: 2, borderRadius: 8 }, { label: 'Interest', data: inv.map(a => a.interest || 0), backgroundColor: 'rgba(52,211,153,0.65)', borderColor: '#34d399', borderWidth: 2, borderRadius: 8 }] };
+  if (investChart2) { investChart2.data = data; investChart2.update(); }
+  else investChart2 = new Chart(ctx, { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v) } } } } });
+  const tbody = document.getElementById('investTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = inv.length ? inv.map(a => `
+    <tr>
+      <td style="font-weight:500;">${a.name}</td>
+      <td class="mono sensitive">${a.principal ? fmt(a.principal) : '—'}</td>
+      <td class="mono">${a.rate ? a.rate + '%' : '—'}</td>
+      <td class="mono">${a.years ? a.years + 'yr' : '—'}</td>
+      <td class="mono sensitive">${fmt(a.value)}</td>
+      <td class="mono sensitive" style="color:var(--gold);">${a.fv > 0 ? fmt(a.fv) : '—'}</td>
+      <td>${a.interest > 0 ? `<span class="gain-pill">+${fmt(a.interest)}</span>` : '—'}</td>
+      <td class="mono">${a.principal && a.fv ? (a.fv / a.principal).toFixed(2) + 'x' : '—'}</td>
+    </tr>`).join('') : '<tr><td colspan="8"><div class="empty">No investments logged</div></td></tr>';
+}
+
+// ══ PRO ENGINES ═══════════════════════════════════════════════════
+function runFire() {
+  if (!isPro()) return;
+  const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
+  const res = Calculators.fireSimulation({
+    currentAge:       parseInt(document.getElementById('fireAge').value),
+    retirementAge:    parseInt(document.getElementById('fireRetire').value),
+    currentNetWorth:  nw,
+    monthlySavings:   parseInt(document.getElementById('fireSavings').value),
+    annualReturnRate: parseInt(document.getElementById('fireReturn').value),
+    inflationRate:    parseInt(document.getElementById('fireInflation').value),
+    annualExpenses:   parseInt(document.getElementById('fireExpenses').value),
+  });
+  const fiEl = document.getElementById('fireFINum'); if (fiEl) fiEl.textContent = fmtShort(res.fiNumber);
+  const pwEl = document.getElementById('fireProjNW'); if (pwEl) pwEl.textContent = fmtShort(res.projectedNW);
+  const stEl = document.getElementById('fireStatus');
+  if (stEl) {
+    stEl.textContent = res.isFIReady ? '🎉 FIRE Ready! Surplus: ' + fmtShort(res.surplus) : 'Shortfall: ' + fmtShort(res.shortfall);
+    stEl.style.color = res.isFIReady ? 'var(--green)' : 'var(--red)';
+  }
+  const ctx = document.getElementById('fireChart'); if (!ctx) return;
+  const cc = getCC();
+  const data = { labels: res.trajectory.map(t => '' + t.age), datasets: [{ label: 'Projected NW', data: res.trajectory.map(t => t.netWorth), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.06)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }, { label: 'FI Number', data: res.trajectory.map(t => t.fiNumber), borderColor: '#34d399', borderDash: [6, 3], tension: 0, borderWidth: 1.5, pointRadius: 0, fill: false }] };
+  if (fireChart) { fireChart.data = data; fireChart.update(); return; }
+  fireChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmtShort(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v), font: { size: 10 } } } } } });
+}
+
+function runDebt() {
+  if (!isPro()) return;
+  const debts = assets.filter(a => a.cat === 'liability').map(a => ({ name: a.name, balance: a.value, minPayment: Math.max(a.value * 0.02, 5000), interestRate: a.rate || 18 }));
+  if (!debts.length) { ['avalancheTime', 'snowballTime'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'No debts logged'; }); return; }
+  const aval = Calculators.debtPaydown(debts, 50000, 'avalanche');
+  const snow = Calculators.debtPaydown(debts, 50000, 'snowball');
+  const aEl = document.getElementById('avalancheTime'); if (aEl) aEl.textContent = aval.years + ' yr';
+  const sEl = document.getElementById('snowballTime');  if (sEl) sEl.textContent = snow.years + ' yr';
+  const ctx = document.getElementById('debtChart'); if (!ctx) return;
+  const cc = getCC();
+  const maxM = Math.max(aval.timeline.length, snow.timeline.length);
+  const data = { labels: Array.from({ length: maxM }, (_, i) => i + 1), datasets: [{ label: 'Avalanche', data: aval.timeline.map(t => t.totalDebt), borderColor: '#34d399', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false }, { label: 'Snowball', data: snow.timeline.map(t => t.totalDebt), borderColor: '#f4c553', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false }] };
+  if (debtChart) { debtChart.data = data; debtChart.update(); return; }
+  debtChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmtShort(c.parsed.y)}` } } }, scales: { x: { title: { display: true, text: 'Month', font: { size: 10 } }, grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v) } } } } });
+}
+
+function runTax() {
+  if (!isPro()) return;
+  const cgt = parseFloat(document.getElementById('taxCGT')?.value || 10);
+  const wht = parseFloat(document.getElementById('taxWithholding')?.value || 10);
+  const res = Calculators.taxDragSimulation(assets, { cgt, withholding: wht });
+  const ptEl = document.getElementById('taxPreTax');  if (ptEl) ptEl.textContent = fmt(res.totalPreTax);
+  const txEl = document.getElementById('taxAmount');  if (txEl) txEl.textContent = fmt(res.totalTax);
+  const poEl = document.getElementById('taxPostTax'); if (poEl) poEl.textContent = fmt(res.totalPostTax);
+  const rtEl = document.getElementById('taxRate');    if (rtEl) rtEl.textContent = `Effective rate: ${res.effectiveTaxRate}%`;
+  const tbody = document.getElementById('taxTableBody');
+  if (tbody) tbody.innerHTML = res.breakdown.map(b => `
+    <tr><td style="font-weight:500;">${b.name}</td>
+    <td class="mono sensitive">${fmt(b.preValue)}</td>
+    <td class="mono" style="color:var(--red);">-${fmt(b.taxAmount)}</td>
+    <td class="mono sensitive" style="color:var(--green);">${fmt(b.postValue)}</td>
+    <td class="mono">${b.effectiveRate}%</td></tr>`).join('');
+}
+
+function runOptimizer() {
+  if (!isPro()) return;
+  var res = Calculators.allocationOptimizer(assets);
+  var el  = document.getElementById('optimizerRecs');
+  if (!el) return;
+
+  // Compute detailed stats
+  var total = 0;
+  var bycat = { cash:0, physical:0, investment:0, liability:0 };
+  assets.forEach(function(a) { bycat[a.cat] = (bycat[a.cat]||0) + a.value; });
+  var totalAssets = bycat.cash + bycat.physical + bycat.investment;
+  total = totalAssets;
+
+  var cashPct   = total > 0 ? ((bycat.cash       / total)*100).toFixed(1) : '0';
+  var physPct   = total > 0 ? ((bycat.physical   / total)*100).toFixed(1) : '0';
+  var invPct    = total > 0 ? ((bycat.investment / total)*100).toFixed(1) : '0';
+  var debtRatio = total > 0 ? ((bycat.liability  / total)*100).toFixed(1) : '0';
+
+  var totalInvested = assets.filter(function(a){ return a.cat==='investment'; })
+                            .reduce(function(s,a){ return s + (a.principal||0); }, 0);
+  var totalFV       = assets.filter(function(a){ return a.cat==='investment'; })
+                            .reduce(function(s,a){ return s + (a.fv||0); }, 0);
+  var projGain      = totalFV - totalInvested;
+
+  var riskScore  = res.riskScore;
+  var riskColor  = riskScore === 'High' ? '#f87171' : riskScore === 'Medium' ? '#f4c553' : '#34d399';
+  var riskIcon   = riskScore === 'High' ? '🔴' : riskScore === 'Medium' ? '🟡' : '🟢';
+
+  // Build allocation donut using SVG
+  var segments = [
+    { label:'Cash',         pct: parseFloat(cashPct), color:'#60a5fa' },
+    { label:'Physical',     pct: parseFloat(physPct), color:'#34d399' },
+    { label:'Investments',  pct: parseFloat(invPct),  color:'#f97316' },
+  ].filter(function(s){ return s.pct > 0; });
+
+  var donutSVG = buildMiniDonut(segments, 60);
+
+  // Build rich HTML
+  var html = '';
+
+  // ── Top overview row ────────────────────────────────────────
+  html +=
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">' +
+      buildStatCard('Total Assets', fmt(total), '#f0f0f0', '') +
+      buildStatCard('Risk Level', riskIcon + ' ' + riskScore, riskColor, 'Based on concentration & debt') +
+      buildStatCard('Cash %', cashPct + '%', parseFloat(cashPct) > 35 ? '#f4c553' : parseFloat(cashPct) < 5 ? '#f87171' : '#34d399', 'Ideal: 10–30%') +
+      buildStatCard('Investment %', invPct + '%', parseFloat(invPct) < 15 ? '#f87171' : parseFloat(invPct) >= 30 ? '#34d399' : '#f4c553', 'Ideal: >30%') +
+      buildStatCard('Debt Ratio', debtRatio + '%', parseFloat(debtRatio) > 40 ? '#f87171' : parseFloat(debtRatio) > 20 ? '#f4c553' : '#34d399', 'Ideal: <30%') +
+      (projGain > 0 ? buildStatCard('Projected Gain', '+' + fmt(projGain), '#34d399', 'At investment maturity') : '') +
+    '</div>';
+
+  // ── Allocation chart + breakdown ────────────────────────────
+  html +=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:16px;">📊 Portfolio Allocation</div>' +
+      '<div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;">' +
+        '<div>' + donutSVG + '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:10px;">' +
+          buildAllocBar('💵 Liquid Cash',    cashPct, '#60a5fa', bycat.cash,       '10–30%') +
+          buildAllocBar('📦 Physical Assets',physPct, '#34d399', bycat.physical,   '<60%') +
+          buildAllocBar('📈 Investments',    invPct,  '#f97316', bycat.investment, '>30%') +
+          (bycat.liability > 0 ? buildAllocBar('⚠️ Liabilities', debtRatio, '#f87171', bycat.liability, '<30%') : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  // ── Concentration risk analysis ──────────────────────────────
+  var topAsset = assets
+    .filter(function(a){ return a.cat !== 'liability'; })
+    .sort(function(a,b){ return b.value - a.value; })[0];
+  var topPct = topAsset && total > 0 ? ((topAsset.value / total)*100).toFixed(1) : 0;
+
+  html +=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:14px;">🎯 Concentration Risk Analysis</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px;">' +
+        buildRiskItem(
+          'Largest Single Asset',
+          topAsset ? '"' + topAsset.name + '" (' + topPct + '% of portfolio)' : 'N/A',
+          parseFloat(topPct) > 50 ? 'High — Over 50% in one asset is dangerous. Diversify.' :
+          parseFloat(topPct) > 30 ? 'Medium — Consider spreading across more assets.' :
+          'Low — Good single-asset diversification.',
+          parseFloat(topPct) > 50 ? '#f87171' : parseFloat(topPct) > 30 ? '#f4c553' : '#34d399'
+        ) +
+        buildRiskItem(
+          'Asset Category Spread',
+          assets.length > 0 ? new Set(assets.filter(function(a){return a.cat!=='liability';}).map(function(a){return a.cat;})).size + ' of 3 categories used' : '0 categories',
+          new Set(assets.map(function(a){return a.cat;})).size >= 3 ? "Good — You're spread across multiple categories." :
+          "Poor — You're concentrated in fewer than 3 categories.",
+          new Set(assets.map(function(a){return a.cat;})).size >= 3 ? '#34d399' : '#f87171'
+        ) +
+        buildRiskItem(
+          'Currency Exposure',
+          'Single currency (NGN)',
+          'Consider adding USD or GBP-denominated assets to hedge naira devaluation risk. Unlock Multi-Currency for full FX analysis.',
+          '#f4c553'
+        ) +
+        buildRiskItem(
+          'Liquidity Risk',
+          cashPct + '% readily accessible',
+          parseFloat(cashPct) < 10 ? 'High — Less than 10% liquid. A financial emergency could force asset sales at a loss.' :
+          parseFloat(cashPct) > 40 ? 'Opportunity Cost — Too much cash sitting idle, losing value to inflation.' :
+          'Acceptable — Your liquid buffer is within the healthy range.',
+          parseFloat(cashPct) < 10 ? '#f87171' : parseFloat(cashPct) > 40 ? '#f4c553' : '#34d399'
+        ) +
+      '</div>' +
+    '</div>';
+
+  // ── Recommendations ──────────────────────────────────────────
+  html +=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:14px;">💡 Personalized Recommendations</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;">';
+
+  var recColor = { success:'#34d399', warning:'#f4c553', danger:'#f87171', info:'#60a5fa' };
+  var recIcon  = { success:'✓', warning:'⚠', danger:'!', info:'i' };
+  for (var ri = 0; ri < res.recommendations.length; ri++) {
+    var rec = res.recommendations[ri];
+    var rc  = recColor[rec.type] || '#888';
+    html +=
+      '<div style="display:flex;align-items:flex-start;gap:12px;padding:14px;' +
+        'background:var(--surface);border:1px solid ' + rc + '25;border-radius:10px;">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:' + rc + '18;' +
+          'color:' + rc + ';display:flex;align-items:center;justify-content:center;' +
+          'font-size:12px;font-weight:700;flex-shrink:0;">' + (recIcon[rec.type]||'i') + '</div>' +
+        '<div style="font-size:13px;color:var(--text);line-height:1.7;">' + rec.msg + '</div>' +
+      '</div>';
+  }
+
+  html += '</div></div>';
+
+  // ── Ideal target allocation guide ────────────────────────────
+  html +=
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:14px;">📋 Ideal Target Allocation (by wealth stage)</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">' +
+        buildTargetCard('Early Stage', 'Net Worth < ₦5M', ['40% Cash (build buffer)', '30% Investments (start early)', '30% Physical (essentials)']) +
+        buildTargetCard('Growing Stage', 'Net Worth ₦5M–₦50M', ['20% Cash (emergency fund)', '50% Investments (compound!)', '30% Physical (controlled)']) +
+        buildTargetCard('Wealth Stage', 'Net Worth > ₦50M', ['10% Cash (operational)', '60% Investments (growth)', '30% Physical (real estate)']) +
+      '</div>' +
+    '</div>';
+
+  el.innerHTML = html;
+}
+
+function buildStatCard(label, value, color, sub) {
+  return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">' +
+    '<div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">' + label + '</div>' +
+    '<div style="font-size:18px;font-weight:700;color:' + color + ';margin-bottom:3px;">' + value + '</div>' +
+    (sub ? '<div style="font-size:11px;color:var(--text-muted);">' + sub + '</div>' : '') +
+  '</div>';
+}
+
+function buildAllocBar(label, pct, color, amount, ideal) {
+  var barW = Math.min(parseFloat(pct), 100);
+  return '<div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">' +
+      '<span style="font-weight:500;">' + label + '</span>' +
+      '<span style="color:var(--text-dim);">' +
+        '<span style="font-weight:700;color:' + color + ';">' + pct + '%</span>' +
+        ' · ' + fmt(amount) +
+        ' <span style="font-size:10px;color:var(--text-muted);">(ideal ' + ideal + ')</span>' +
+      '</span>' +
+    '</div>' +
+    '<div style="height:8px;background:var(--surface);border-radius:4px;overflow:hidden;">' +
+      '<div style="height:100%;width:' + barW + '%;background:' + color + ';border-radius:4px;transition:width 1s ease;"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function buildRiskItem(label, value, desc, color) {
+  return '<div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);">' +
+    '<div>' +
+      '<div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:2px;">' + label + '</div>' +
+      '<div style="font-size:13px;font-weight:600;color:' + color + ';">' + value + '</div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--text-dim);line-height:1.6;">' + desc + '</div>' +
+  '</div>';
+}
+
+function buildTargetCard(stage, range, items) {
+  var rows = items.map(function(item){
+    return '<div style="font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+      '<span style="color:var(--accent);font-size:10px;">▸</span>' + item +
+    '</div>';
+  }).join('');
+  return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;">' +
+    '<div style="font-size:13px;font-weight:600;margin-bottom:2px;">' + stage + '</div>' +
+    '<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">' + range + '</div>' +
+    rows +
+  '</div>';
+}
+
+function buildMiniDonut(segments, size) {
+  var r = size/2 - 8;
+  var cx = size/2; var cy = size/2;
+  var circ = 2 * Math.PI * r;
+  var offset = 0;
+  var paths = '';
+  var total = segments.reduce(function(s,seg){ return s + seg.pct; }, 0) || 1;
+  for (var i=0; i<segments.length; i++) {
+    var seg = segments[i];
+    var dash = (seg.pct / total) * circ;
+    var gap  = circ - dash;
+    paths += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" ' +
+      'stroke="' + seg.color + '" stroke-width="14" ' +
+      'stroke-dasharray="' + dash.toFixed(1) + ' ' + gap.toFixed(1) + '" ' +
+      'stroke-dashoffset="' + (-offset).toFixed(1) + '" />';
+    offset += dash;
+  }
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" ' +
+    'style="transform:rotate(-90deg);flex-shrink:0;">' + paths + '</svg>';
+}
+
+
+
+
+
+
+
+
+
+function renderScore() {
+  if (!isPro()) return;
+  var s   = Calculators.netWorthScore(assets);
+  var opt = Calculators.allocationOptimizer(assets);
+
+  // Animate ring (circumference = 2 * pi * 68 = ~427)
+  var ring = document.getElementById('scoreRing');
+  if (ring) {
+    setTimeout(function() {
+      ring.style.strokeDashoffset = String(427 - (427 * s.score / 100));
+      ring.style.stroke = s.color;
+    }, 150);
+  }
+
+  var numEl = document.getElementById('scoreNum');
+  if (numEl) { numEl.textContent = String(s.score); numEl.style.color = s.color; }
+  var lblEl = document.getElementById('scoreLabel');
+  if (lblEl) { lblEl.textContent = s.label; lblEl.style.color = s.color; }
+
+  // Grade badge
+  var gradeEl = document.getElementById('scoreGrade');
+  if (gradeEl) {
+    var grades = [
+      { min:80, label:'A — Excellent',  bg:'rgba(52,211,153,0.15)',  color:'#34d399' },
+      { min:60, label:'B — Good',       bg:'rgba(96,165,250,0.15)',  color:'#60a5fa' },
+      { min:40, label:'C — Fair',       bg:'rgba(244,197,83,0.15)',  color:'#f4c553' },
+      { min:0,  label:'D — Needs Work', bg:'rgba(248,113,113,0.15)', color:'#f87171' }
+    ];
+    var g = grades.find(function(x){ return s.score >= x.min; }) || grades[3];
+    gradeEl.style.background = g.bg;
+    gradeEl.style.color      = g.color;
+    gradeEl.textContent      = g.label;
+  }
+
+  // Metric bar values
+  var dEl = document.getElementById('scoreDebt');
+  if (dEl) { dEl.textContent = s.debtRatio + '%'; }
+  var lEl = document.getElementById('scoreLiquid');
+  if (lEl) { lEl.textContent = s.liquidRatio + '%'; }
+  var iEl = document.getElementById('scoreInvest');
+  if (iEl) { iEl.textContent = s.investRatio + '%'; }
+
+  renderScoreBar('debtBar',   parseFloat(s.debtRatio),   100, '#f87171', s.debtRatio + '% debt-to-asset');
+  renderScoreBar('liquidBar', parseFloat(s.liquidRatio), 100, '#60a5fa', s.liquidRatio + '% liquid cash');
+  renderScoreBar('investBar', parseFloat(s.investRatio), 100, '#34d399', s.investRatio + '% invested');
+
+  renderScoreBreakdown(s);
+  renderScoreHistory();
+  renderScoreRecommendations(s, opt);
+}
+
+function renderScoreBar(id, value, max, color, label) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var pct = Math.min((value / max) * 100, 100).toFixed(1);
+  el.innerHTML =
+    '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:5px;">' +
+      '<span>' + label + '</span>' +
+      '<span style="color:' + color + ';font-weight:600;">' + value + '%</span>' +
+    '</div>' +
+    '<div style="height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;">' +
+      '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px;transition:width 1s ease;"></div>' +
+    '</div>';
+}
+
+function renderScoreBreakdown(s) {
+  var el = document.getElementById('scoreBreakdown');
+  if (!el) return;
+  var cats = new Set(assets.map(function(a){ return a.cat; })).size;
+  var totalAssets = assets.filter(function(a){ return a.cat !== 'liability'; }).reduce(function(sum,a){ return sum+a.value; }, 0);
+  var totalLiab   = assets.filter(function(a){ return a.cat === 'liability'; }).reduce(function(sum,a){ return sum+a.value; }, 0);
+  var netPositive = totalAssets > totalLiab;
+
+  var factors = [
+    {
+      label: 'Debt-to-Asset Ratio',
+      value: s.debtRatio + '%',
+      target: '< 30%',
+      pts: parseFloat(s.debtRatio) < 10 ? 30 : parseFloat(s.debtRatio) < 30 ? 22 : parseFloat(s.debtRatio) < 50 ? 14 : 6,
+      maxPts: 30,
+      status: parseFloat(s.debtRatio) < 30 ? 'good' : parseFloat(s.debtRatio) < 50 ? 'warn' : 'bad',
+      desc: 'Measures how much of your total assets are financed by debt. Keep this below 30% for a healthy score.'
+    },
+    {
+      label: 'Liquid Cash Buffer',
+      value: s.liquidRatio + '%',
+      target: '10 – 30%',
+      pts: (parseFloat(s.liquidRatio) >= 10 && parseFloat(s.liquidRatio) <= 30) ? 20 : parseFloat(s.liquidRatio) >= 5 ? 14 : 8,
+      maxPts: 20,
+      status: (parseFloat(s.liquidRatio) >= 10 && parseFloat(s.liquidRatio) <= 30) ? 'good' : parseFloat(s.liquidRatio) >= 5 ? 'warn' : 'bad',
+      desc: 'Emergency fund coverage. Aim for 10–30% of your portfolio in accessible liquid cash (3–6 months expenses).'
+    },
+    {
+      label: 'Investment Allocation',
+      value: s.investRatio + '%',
+      target: '> 30%',
+      pts: parseFloat(s.investRatio) >= 50 ? 25 : parseFloat(s.investRatio) >= 30 ? 18 : parseFloat(s.investRatio) >= 15 ? 10 : 5,
+      maxPts: 25,
+      status: parseFloat(s.investRatio) >= 30 ? 'good' : parseFloat(s.investRatio) >= 15 ? 'warn' : 'bad',
+      desc: 'Percentage of your wealth actively growing through investments. Higher allocation drives long-term wealth.'
+    },
+    {
+      label: 'Portfolio Diversification',
+      value: cats + ' categor' + (cats === 1 ? 'y' : 'ies'),
+      target: '3 – 4 categories',
+      pts: Math.min(cats * 4, 15),
+      maxPts: 15,
+      status: cats >= 3 ? 'good' : cats >= 2 ? 'warn' : 'bad',
+      desc: 'How spread your wealth is across Cash, Physical, Investments, and Liabilities. More categories = lower risk.'
+    },
+    {
+      label: 'Net Worth Position',
+      value: netPositive ? 'Positive (' + fmt(totalAssets - totalLiab) + ')' : 'Negative',
+      target: 'Positive',
+      pts: netPositive ? 10 : 0,
+      maxPts: 10,
+      status: netPositive ? 'good' : 'bad',
+      desc: 'Assets must exceed liabilities. A positive net worth is the most fundamental measure of financial health.'
+    }
+  ];
+
+  var statusColor = { good: '#34d399', warn: '#f4c553', bad: '#f87171' };
+  var statusIcon  = { good: '✓', warn: '⚠', bad: '✕' };
+
+  var html = '';
+  for (var f of factors) {
+    var barPct = Math.round((f.pts / f.maxPts) * 100);
+    html +=
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:8px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="width:24px;height:24px;border-radius:50%;background:' + statusColor[f.status] + '22;' +
+              'color:' + statusColor[f.status] + ';display:inline-flex;align-items:center;justify-content:center;' +
+              'font-size:11px;font-weight:700;flex-shrink:0;">' + statusIcon[f.status] + '</span>' +
+            '<span style="font-size:13px;font-weight:600;">' + f.label + '</span>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0;">' +
+            '<span style="font-size:13px;font-weight:700;color:' + statusColor[f.status] + ';">' + f.value + '</span>' +
+            '<span style="font-size:11px;color:var(--text-muted);margin-left:8px;">Target: ' + f.target + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:8px;padding-left:34px;">' +
+          '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:4px;">' +
+            '<span>Score contribution</span>' +
+            '<span style="font-weight:600;color:' + statusColor[f.status] + ';">' + f.pts + ' / ' + f.maxPts + ' pts</span>' +
+          '</div>' +
+          '<div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;">' +
+            '<div style="height:100%;width:' + barPct + '%;background:' + statusColor[f.status] + ';border-radius:2px;transition:width 1s ease;"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--text-dim);line-height:1.6;padding-left:34px;">' + f.desc + '</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderScoreHistory() {
+  var el = document.getElementById('scoreHistoryArea');
+  if (!el || nwHistory.length < 2) {
+    if (el) el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:12px;">Add more entries over time to see your trend.</div>';
+    return;
+  }
+  var vals = nwHistory.slice(-12).map(function(h){ return h.nw; });
+  var max  = Math.max.apply(null, vals);
+  var min  = Math.min.apply(null, vals);
+  var range = max - min || 1;
+  var W = 400; var H = 50;
+  var points = vals.map(function(v, i) {
+    var x = (i / (vals.length - 1)) * W;
+    var y = H - ((v - min) / range) * (H - 4);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  var trend    = vals[vals.length-1] > vals[0];
+  var trendCol = trend ? '#34d399' : '#f87171';
+  var trendPct = vals[0] !== 0 ? (((vals[vals.length-1] - vals[0]) / Math.abs(vals[0])) * 100).toFixed(1) : '0';
+  var firstTs  = nwHistory[Math.max(0, nwHistory.length-12)].ts;
+  var lastTs   = nwHistory[nwHistory.length-1].ts;
+
+  el.innerHTML =
+    '<svg width="100%" height="50" viewBox="0 0 400 50" preserveAspectRatio="none" style="display:block;">' +
+      '<polyline points="' + points + '" fill="none" stroke="' + trendCol + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);margin-top:6px;flex-wrap:wrap;gap:4px;">' +
+      '<span>' + firstTs + '</span>' +
+      '<span style="font-weight:600;color:' + trendCol + ';">' + (trend ? '↑' : '↓') + ' ' + (trend ? '+' : '') + trendPct + '% since first snapshot</span>' +
+      '<span>' + lastTs + '</span>' +
+    '</div>';
+}
+
+function renderScoreRecommendations(s, opt) {
+  var el = document.getElementById('scoreRecommendations');
+  if (!el) return;
+
+  var recs      = [];
+  var debt      = parseFloat(s.debtRatio);
+  var liquid    = parseFloat(s.liquidRatio);
+  var invest    = parseFloat(s.investRatio);
+  var cats      = new Set(assets.map(function(a){ return a.cat; })).size;
+  var hasInvest   = assets.some(function(a){ return a.cat === 'investment'; });
+  var hasCompound = assets.some(function(a){ return a.cat === 'investment' && a.fv > 0; });
+  var hasLiab     = assets.some(function(a){ return a.cat === 'liability'; });
+
+  if (debt > 50)
+    recs.push({ priority:'high', icon:'🔥', title:'Reduce debt urgently',
+      desc:'Debt ratio is ' + debt + '% — above 50% is a danger zone. Prioritise debt paydown before new asset purchases. Use the Debt Optimizer to compare Snowball vs Avalanche strategies.' });
+  else if (debt > 30)
+    recs.push({ priority:'med', icon:'⚡', title:'Work on debt reduction',
+      desc:'At ' + debt + '% debt ratio, you\'re above the 30% threshold. A focused repayment plan could improve your score by up to 16 points.' });
+
+  if (liquid < 5)
+    recs.push({ priority:'high', icon:'💧', title:'Build emergency fund immediately',
+      desc:'Only ' + liquid + '% is liquid — that\'s dangerously low. Aim for at least 10% in accessible cash before expanding any other category. A financial shock could destabilise your portfolio.' });
+  else if (liquid < 10)
+    recs.push({ priority:'med', icon:'💧', title:'Increase liquid reserves',
+      desc:'At ' + liquid + '% liquidity, you\'re below the recommended 10–30% range. Top up your liquid cash to cover 3–6 months of expenses as a safety buffer.' });
+  else if (liquid > 40)
+    recs.push({ priority:'med', icon:'📊', title:'Put excess cash to work',
+      desc:'Over 40% in cash (' + liquid + '%) is losing real value to inflation daily. Consider deploying 10–20% into investments to improve long-term returns.' });
+
+  if (!hasInvest)
+    recs.push({ priority:'high', icon:'📈', title:'Start investing — your wealth is not growing',
+      desc:'You have zero investment exposure. Even modest allocations to index funds, fixed income, or crypto can compound significantly over time. Start with as little as ₦50,000.' });
+  else if (invest < 15)
+    recs.push({ priority:'high', icon:'📈', title:'Critically low investment allocation',
+      desc:'Only ' + invest + '% in investments is well below the 30%+ target. Increasing this is the single biggest lever to raise your Net Worth Score.' });
+  else if (invest < 30)
+    recs.push({ priority:'med', icon:'📈', title:'Grow your investment allocation',
+      desc:'At ' + invest + '%, you\'re making progress but falling short of the 30–50% target for serious long-term wealth building.' });
+
+  if (!hasCompound)
+    recs.push({ priority:'med', icon:'⚙', title:'Add compound interest projections',
+      desc:'Log principal, interest rate, and duration on your investments to unlock the Projected Future Value column and see how your money grows over time.' });
+
+  if (cats < 3)
+    recs.push({ priority:'med', icon:'🎯', title:'Diversify across more asset categories',
+      desc:'You only track ' + cats + ' asset type' + (cats === 1 ? '' : 's') + '. A balanced portfolio should span Cash, Physical Assets, and Investments to reduce concentration risk and earn up to 15 bonus points.' });
+
+  if (hasLiab && invest > 0)
+    recs.push({ priority:'med', icon:'⚖️', title:'Balance debt paydown with investment',
+      desc:'You have both liabilities and investments. Compare your debt interest rate vs your investment returns — if debt costs more than investments earn, prioritise paying it off first.' });
+
+  if (s.score >= 70)
+    recs.push({ priority:'good', icon:'🏆', title:'Strong financial position — keep it up',
+      desc:'Your score of ' + s.score + '/100 is excellent. Maintain discipline, review monthly, and consider the FIRE Simulator to model early retirement scenarios.' });
+
+  if (recs.length === 0)
+    recs.push({ priority:'good', icon:'✅', title:'Portfolio looks healthy',
+      desc:'No critical issues detected. Continue updating your values monthly and explore the FIRE Simulator and Tax Drag Simulator for deeper analysis.' });
+
+  var priorityColor = { high:'#f87171', med:'#f4c553', good:'#34d399' };
+  var priorityLabel = { high:'High Priority', med:'Recommended', good:'Optimal' };
+
+  var html = '';
+  for (var idx = 0; idx < recs.length; idx++) {
+    var r = recs[idx];
+    html +=
+      '<div style="display:flex;align-items:flex-start;gap:14px;padding:14px 16px;' +
+        'background:var(--surface2);border:1px solid var(--border);border-radius:10px;">' +
+        '<div style="width:40px;height:40px;border-radius:10px;flex-shrink:0;' +
+          'background:' + priorityColor[r.priority] + '18;' +
+          'display:flex;align-items:center;justify-content:center;font-size:20px;">' + r.icon + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;">' +
+            '<span style="font-size:13px;font-weight:600;">' + r.title + '</span>' +
+            '<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;' +
+              'background:' + priorityColor[r.priority] + '18;' +
+              'color:' + priorityColor[r.priority] + ';">' + priorityLabel[r.priority] + '</span>' +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">' + r.desc + '</div>' +
+        '</div>' +
+        '<div style="font-size:14px;font-weight:700;color:var(--text-muted);flex-shrink:0;' +
+          'width:22px;height:22px;border-radius:50%;background:var(--surface3);' +
+          'display:flex;align-items:center;justify-content:center;">' + (idx+1) + '</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+
+function renderCurrency() {
+  if (!isPro()) return;
+  const total = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0)
+              - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
+  const currencies = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
+  const kpiEl = document.getElementById('currencyKPIs');
+  if (kpiEl) kpiEl.innerHTML = currencies.map(c => {
+    const converted = Calculators.convertCurrency(total, 'NGN', c);
+    return `<div class="kpi-card"><div class="kpi-label">${c}</div><div class="kpi-value sensitive">${Calculators.formatCurrency(converted, c)}</div><div class="kpi-change">Net Worth</div></div>`;
+  }).join('');
+  const rateEl = document.getElementById('fxRateDisplay');
+  if (rateEl) rateEl.innerHTML = Object.entries(Calculators.rates).map(([k, v]) =>
+    `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;">
+      <div style="font-size:10px;color:var(--text-dim);">1 USD =</div>
+      <div class="mono" style="font-size:14px;font-weight:600;">${k} ${typeof v === 'number' ? v.toFixed(2) : v}</div>
+    </div>`).join('');
+}
+
+// ══ RENDER ALL ════════════════════════════════════════════════════
+function renderAll() {
+  renderKPIs();
+  renderTable();
+  renderDonut();
+  renderBar();
+  renderHistory();
+  renderActivity();
+  updateProUI();
+}
+
+
+// ══ MOBILE NAV ════════════════════════════════════════════════
+let _pageHistory = ['dashboard'];
+
+function goBackMobile() {
+  if (_pageHistory.length > 1) {
+    _pageHistory.pop(); // remove current
+    const prev = _pageHistory[_pageHistory.length - 1];
+    _pageHistory.pop(); // switchPage will re-push it
+    switchPage(prev);
+  } else {
+    switchPage('dashboard');
+  }
+}
+
+function openMobileMenu()  { document.getElementById('mobileMenu').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+function closeMobileMenu() { document.getElementById('mobileMenu').style.display = 'none'; document.body.style.overflow = ''; }
+
+// Patch switchPage to track history and show/hide back button
+const _origSwitchPage = switchPage;
+window.switchPage = function(name) {
+  _pageHistory.push(name);
+  if (_pageHistory.length > 10) _pageHistory.shift();
+  _origSwitchPage(name);
+  // Show back button on mobile when not on dashboard
+  const backBtn = document.getElementById('mobileBackBtn');
+  if (backBtn) {
+    backBtn.style.display = (window.innerWidth < 900 && name !== 'dashboard') ? 'flex' : 'none';
+  }
+};
+
+// Show mobile nav after app loads
+function showMobileNav() {
+  if (window.innerWidth < 900) {
+    const nav = document.getElementById('mobileBottomNav');
+    if (nav) nav.style.display = 'block';
+  }
+}
+
+// ══ BOOT ══════════════════════════════════════════════════════════
+handleCatChange();
+Security.injectStyles();
+Calculators.init();
+
+// Inject auth UI styles
+(function() {
+  const s = document.createElement('style');
+  s.textContent = `
+    .auth-input {
+      width:100%;background:var(--surface2);border:1px solid var(--border);
+      border-radius:8px;color:var(--text);padding:10px 13px;
+      font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+      transition:border-color .2s;box-sizing:border-box;
+    }
+    .auth-input:focus { border-color:var(--accent); }
+    .auth-input::placeholder { color:var(--muted); }
+    .auth-btn-primary {
+      width:100%;padding:12px;background:linear-gradient(135deg,#f97316,#ea580c);
+      color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;
+      font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s;display:block;
+    }
+    .auth-btn-primary:hover { opacity:.9; }
+    .auth-btn-primary:disabled { opacity:.6;cursor:not-allowed; }
+    .auth-btn-secondary {
+      width:100%;padding:10px;background:transparent;border:1px solid var(--border);
+      border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;
+      color:var(--text-dim);cursor:pointer;display:block;
+    }
+    .auth-btn-google {
+      width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+      padding:11px;background:var(--surface2);border:1px solid var(--border);
+      border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;
+      font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;
+    }
+    .auth-btn-google:hover { border-color:var(--accent); }
+    .auth-btn-google:disabled { opacity:.6;cursor:not-allowed; }
+    .auth-divider {
+      display:flex;align-items:center;gap:12px;margin:16px 0;
+    }
+    .auth-divider::before,.auth-divider::after {
+      content:'';flex:1;height:1px;background:var(--border);
+    }
+    .auth-divider span { font-size:12px;color:var(--muted); }
+  `;
+  document.head.appendChild(s);
+})();
+
+// ── Session boot — simple and reliable ──────────────────────
+// Show loading immediately
+showLoading('Loading…');
+
+async function doBootWithSession(session, source) {
+  if (bootDone) return;
+  console.log('[Boot]', source, session?.user?.email || 'no session');
+
+  if (!session?.user) {
+    showAuth();
+    return;
+  }
+
+  bootDone = true;
+  currentUser = session.user;
+  setUserUI(currentUser);
+  showLoading('Loading your vault…');
+
+  try {
+    await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
+    console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
+    Security.init(isPro());
+    renderAll();
+    showApp();
+    if (source === 'SIGNED_IN') {
+      const name = currentUser.user_metadata?.full_name ||
+                   currentUser.user_metadata?.given_name ||
+                   currentUser.email?.split('@')[0] || 'there';
+      UI.toast('Welcome back, ' + name + '! \uD83D\uDC4B', 'success');
+    }
+  } catch (err) {
+    console.error('[Boot] Error:', err);
+    bootDone = false;
+    showAuth();
+    setAuthError('Failed to load vault. Please sign in again.');
+  }
+}
+
+// Step 1 — Try getSession() directly (most reliable, works on all browsers)
+sb.auth.getSession().then(({ data: { session }, error }) => {
+  if (error) console.warn('[Boot] getSession error:', error.message);
+  if (!bootDone) doBootWithSession(session, 'getSession');
+}).catch(err => {
+  console.warn('[Boot] getSession threw:', err.message);
+  if (!bootDone) showAuth();
+});
+
+// Step 2 — Safety net: if still spinning after 10s, give up and show login
+setTimeout(() => {
+  if (!bootDone) {
+    console.warn('[Boot] 10s timeout reached — showing auth');
+    showAuth();
+  }
+}, 10000);
+
+// Step 3 — Auth state listener for sign-in / sign-out events
+sb.auth.onAuthStateChange((event, session) => {
+  console.log('[Auth event]', event);
+  if (event === 'SIGNED_IN' && !bootDone) {
+    doBootWithSession(session, 'SIGNED_IN');
+  }
+  if (event === 'SIGNED_IN' && bootDone) {
+    // Already booted — just refresh user info
+    currentUser = session.user;
+    setUserUI(currentUser);
+  }
+  if (event === 'TOKEN_REFRESHED') {
+    setSyncState('synced', 'Session active');
+  }
+  if (event === 'SIGNED_OUT') {
+    bootDone = false;
+    currentUser = null;
+    assets = []; nwHistory = [];
+    renderAll();
+    showAuth();
+  }
+  if (event === 'PASSWORD_RECOVERY') {
+    // User clicked reset link — show them a password update UI
+    UI.toast('Enter your new password in Settings after signing in.', 'info');
+  }
+});
+
+// Step 4 — Re-check when tab becomes visible (fixes "20 min idle" bug)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && bootDone && currentUser) {
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        bootDone = false;
+        currentUser = null;
+        showAuth();
+        UI.toast('Session expired. Please sign in again.', 'info');
+      } else {
+        setSyncState('synced', 'Active');
+      }
+    }).catch(() => {});
+  }
+});
+
+// Step 5 — Keep-alive every 8 minutes
+setInterval(() => {
+  if (bootDone && currentUser) {
+    sb.auth.getSession().catch(() => {});
+  }
+}, 8 * 60 * 1000);

@@ -1,0 +1,359 @@
+// ═══════════════════════════════════════════════════════════════
+// calculators.js — Keno Vault Calculation Engine
+// Handles: FIRE, Tax-Drag, Depreciation, Debt Paydown, NW Score
+// ═══════════════════════════════════════════════════════════════
+
+const Calculators = (() => {
+
+  // ── Compound Interest ──────────────────────────────────────────
+  function compoundInterest(principal, ratePercent, years) {
+    if (!principal || !ratePercent || !years) return { fv: 0, interest: 0 };
+    const fv = principal * Math.pow(1 + ratePercent / 100, years);
+    return { fv, interest: fv - principal, multiplier: fv / principal };
+  }
+
+  // ── Net Worth Score (0–100) ────────────────────────────────────
+  function netWorthScore(assets) {
+    let score = 0;
+    let totalAssets = 0, totalLiabilities = 0, liquid = 0, investments = 0;
+    assets.forEach(a => {
+      if (a.cat === 'liability') totalLiabilities += a.value;
+      else {
+        totalAssets += a.value;
+        if (a.cat === 'cash') liquid += a.value;
+        if (a.cat === 'investment') investments += a.value;
+      }
+    });
+    const netWorth = totalAssets - totalLiabilities;
+    const debtRatio = totalAssets > 0 ? totalLiabilities / totalAssets : 1;
+    const liquidRatio = totalAssets > 0 ? liquid / totalAssets : 0;
+    const investRatio = totalAssets > 0 ? investments / totalAssets : 0;
+
+    // Debt-to-asset ratio (0–30 pts)
+    if (debtRatio < 0.1) score += 30;
+    else if (debtRatio < 0.3) score += 22;
+    else if (debtRatio < 0.5) score += 14;
+    else if (debtRatio < 0.7) score += 6;
+
+    // Liquid buffer (0–20 pts)
+    if (liquidRatio >= 0.15 && liquidRatio <= 0.3) score += 20;
+    else if (liquidRatio >= 0.1) score += 14;
+    else if (liquidRatio >= 0.05) score += 8;
+
+    // Investment ratio (0–25 pts)
+    if (investRatio >= 0.5) score += 25;
+    else if (investRatio >= 0.3) score += 18;
+    else if (investRatio >= 0.15) score += 10;
+    else if (investRatio > 0) score += 5;
+
+    // Diversification (0–15 pts)
+    const categories = new Set(assets.map(a => a.cat)).size;
+    score += Math.min(categories * 4, 15);
+
+    // Positive net worth (0–10 pts)
+    if (netWorth > 0) score += 10;
+
+    return {
+      score: Math.min(Math.round(score), 100),
+      debtRatio: (debtRatio * 100).toFixed(1),
+      liquidRatio: (liquidRatio * 100).toFixed(1),
+      investRatio: (investRatio * 100).toFixed(1),
+      label: score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Fair' : 'Needs Work',
+      color: score >= 80 ? '#34d399' : score >= 60 ? '#f4c553' : score >= 40 ? '#f97316' : '#f87171',
+    };
+  }
+
+  // ── Depreciation Engine ────────────────────────────────────────
+  function straightLineDepreciation(cost, salvageValue, usefulLifeYears) {
+    const annualDep = (cost - salvageValue) / usefulLifeYears;
+    const schedule  = [];
+    let bookValue   = cost;
+    for (let yr = 1; yr <= usefulLifeYears; yr++) {
+      bookValue -= annualDep;
+      schedule.push({
+        year: yr, depreciation: annualDep,
+        bookValue: Math.max(bookValue, salvageValue),
+        accumulated: annualDep * yr,
+      });
+    }
+    return { annualDep, schedule, monthlyDep: annualDep / 12 };
+  }
+
+  function reducingBalanceDepreciation(cost, ratePercent, years) {
+    const schedule = [];
+    let bookValue  = cost;
+    for (let yr = 1; yr <= years; yr++) {
+      const dep = bookValue * (ratePercent / 100);
+      bookValue -= dep;
+      schedule.push({ year: yr, depreciation: dep, bookValue, rate: ratePercent });
+    }
+    return { schedule, finalValue: bookValue, totalDepreciation: cost - bookValue };
+  }
+
+  function currentBookValue(asset) {
+    if (!asset.depreciationType || !asset.depreciationStart) return asset.value;
+    const monthsElapsed = Math.max(0,
+      (Date.now() - new Date(asset.depreciationStart).getTime()) / (1000 * 60 * 60 * 24 * 30.44)
+    );
+    if (asset.depreciationType === 'straight-line') {
+      const { monthlyDep } = straightLineDepreciation(
+        asset.originalCost || asset.value, asset.salvageValue || 0, asset.usefulLife || 5
+      );
+      return Math.max(asset.salvageValue || 0, (asset.originalCost || asset.value) - (monthlyDep * monthsElapsed));
+    }
+    if (asset.depreciationType === 'reducing-balance') {
+      const monthlyRate = (asset.depreciationRate || 20) / 100 / 12;
+      return (asset.originalCost || asset.value) * Math.pow(1 - monthlyRate, monthsElapsed);
+    }
+    return asset.value;
+  }
+
+  // ── FIRE / Retirement Simulator ────────────────────────────────
+  function fireSimulation({
+    currentAge        = 30,
+    retirementAge     = 55,
+    currentNetWorth   = 0,
+    monthlySavings    = 100000,
+    annualReturnRate  = 10,
+    inflationRate     = 18,
+    annualExpenses    = 2400000,
+  }) {
+    const years = retirementAge - currentAge;
+    const realReturn = ((1 + annualReturnRate / 100) / (1 + inflationRate / 100) - 1) * 100;
+    const monthlyReturn = realReturn / 100 / 12;
+    const months = years * 12;
+
+    // FV of current net worth
+    const fvCurrentNW = currentNetWorth * Math.pow(1 + realReturn / 100, years);
+
+    // FV of monthly contributions (annuity)
+    const fvContributions = monthlyReturn > 0
+      ? monthlySavings * ((Math.pow(1 + monthlyReturn, months) - 1) / monthlyReturn)
+      : monthlySavings * months;
+
+    const projectedNW = fvCurrentNW + fvContributions;
+
+    // FI Number (25x rule — uses today's expenses, in today's naira)
+    const fiNumber = annualExpenses * 25;
+    const isFIReady = projectedNW >= fiNumber;
+
+    // Year-by-year trajectory
+    const trajectory = [];
+    let nw = currentNetWorth;
+    for (let y = 0; y <= years; y++) {
+      trajectory.push({
+        age: currentAge + y,
+        year: new Date().getFullYear() + y,
+        netWorth: Math.round(nw),
+        fiNumber: Math.round(fiNumber),
+      });
+      nw = nw * (1 + realReturn / 100) + monthlySavings * 12;
+    }
+
+    return {
+      projectedNW: Math.round(projectedNW),
+      fiNumber: Math.round(fiNumber),
+      isFIReady,
+      shortfall: Math.max(0, fiNumber - projectedNW),
+      surplus: Math.max(0, projectedNW - fiNumber),
+      realReturnRate: realReturn.toFixed(2),
+      trajectory,
+      yearsToRetirement: years,
+    };
+  }
+
+  // ── Debt Paydown Optimizer ─────────────────────────────────────
+  function debtPaydown(debts, extraMonthlyPayment = 0, method = 'avalanche') {
+    // debts: [{ name, balance, minPayment, interestRate }]
+    let debtList = debts.map(d => ({ ...d, balance: d.balance }));
+    const totalMinPayment = debtList.reduce((s, d) => s + d.minPayment, 0);
+    const totalPayment    = totalMinPayment + extraMonthlyPayment;
+
+    // Sort by method
+    if (method === 'avalanche') {
+      debtList.sort((a, b) => b.interestRate - a.interestRate); // highest rate first
+    } else {
+      debtList.sort((a, b) => a.balance - b.balance); // lowest balance first
+    }
+
+    const timeline = [];
+    let month = 0;
+    let totalInterestPaid = 0;
+
+    while (debtList.some(d => d.balance > 0) && month < 600) {
+      month++;
+      let remaining = totalPayment;
+
+      // Pay minimums first
+      debtList.forEach(d => {
+        if (d.balance <= 0) return;
+        const interest = d.balance * (d.interestRate / 100 / 12);
+        totalInterestPaid += interest;
+        d.balance += interest;
+        const payment = Math.min(d.minPayment, d.balance);
+        d.balance -= payment;
+        remaining  -= payment;
+      });
+
+      // Dump extra payment on priority debt
+      for (let d of debtList) {
+        if (d.balance <= 0 || remaining <= 0) continue;
+        const payment = Math.min(remaining, d.balance);
+        d.balance -= payment;
+        remaining  -= payment;
+      }
+
+      const totalRemaining = debtList.reduce((s, d) => s + Math.max(0, d.balance), 0);
+      timeline.push({ month, totalDebt: Math.round(totalRemaining), totalInterestPaid: Math.round(totalInterestPaid) });
+
+      if (totalRemaining <= 0.01) break;
+    }
+
+    return {
+      months: month,
+      years: (month / 12).toFixed(1),
+      totalInterestPaid: Math.round(totalInterestPaid),
+      timeline,
+      method,
+    };
+  }
+
+  // ── Tax-Drag Simulator ─────────────────────────────────────────
+  function taxDragSimulation(assets, taxRates = {}) {
+    const {
+      cgt         = 10,    // Capital Gains Tax %
+      withholding = 10,    // Withholding tax on dividends/interest %
+      currency    = 'NGN',
+    } = taxRates;
+
+    let totalPreTax = 0, totalTax = 0, totalPostTax = 0;
+    const breakdown = [];
+
+    assets.forEach(a => {
+      if (a.cat === 'liability') return;
+      const gain = a.fv > 0 ? Math.max(0, a.fv - (a.principal || a.value)) : 0;
+      const investTax   = a.cat === 'investment' ? gain * (cgt / 100) : 0;
+      const interestTax = (a.interest || 0) * (withholding / 100);
+      const totalAssetTax = investTax + interestTax;
+      const postTax = a.value - totalAssetTax;
+
+      totalPreTax  += a.value;
+      totalTax     += totalAssetTax;
+      totalPostTax += postTax;
+
+      breakdown.push({
+        name: a.name, cat: a.cat, preValue: a.value,
+        taxAmount: totalAssetTax, postValue: postTax,
+        effectiveRate: a.value > 0 ? ((totalAssetTax / a.value) * 100).toFixed(1) : 0,
+      });
+    });
+
+    return {
+      totalPreTax: Math.round(totalPreTax),
+      totalTax: Math.round(totalTax),
+      totalPostTax: Math.round(totalPostTax),
+      effectiveTaxRate: totalPreTax > 0 ? ((totalTax / totalPreTax) * 100).toFixed(2) : 0,
+      breakdown,
+      currency,
+    };
+  }
+
+  // ── Asset Allocation Optimizer ─────────────────────────────────
+  function allocationOptimizer(assets) {
+    const totals = { cash: 0, physical: 0, investment: 0, liability: 0 };
+    let totalPositive = 0;
+    assets.forEach(a => {
+      totals[a.cat] = (totals[a.cat] || 0) + a.value;
+      if (a.cat !== 'liability') totalPositive += a.value;
+    });
+
+    const cashPct   = totalPositive > 0 ? (totals.cash / totalPositive) * 100 : 0;
+    const physPct   = totalPositive > 0 ? (totals.physical / totalPositive) * 100 : 0;
+    const invPct    = totalPositive > 0 ? (totals.investment / totalPositive) * 100 : 0;
+    const debtRatio = totalPositive > 0 ? (totals.liability / totalPositive) * 100 : 0;
+
+    const recommendations = [];
+
+    if (cashPct > 30) recommendations.push({ type: 'warning', msg: `Cash allocation is ${cashPct.toFixed(0)}% — consider deploying excess into investments to beat inflation.` });
+    if (cashPct < 5)  recommendations.push({ type: 'danger',  msg: 'Emergency fund is too low. Aim for at least 3–6 months expenses in liquid cash.' });
+    if (invPct < 20)  recommendations.push({ type: 'info',    msg: `Only ${invPct.toFixed(0)}% in investments. Consider increasing to 40–60% for long-term wealth growth.` });
+    if (debtRatio > 40) recommendations.push({ type: 'danger', msg: `Debt-to-asset ratio is high at ${debtRatio.toFixed(0)}%. Focus on debt reduction before expanding assets.` });
+    if (physPct > 60) recommendations.push({ type: 'warning', msg: `${physPct.toFixed(0)}% in physical assets — illiquid. Ensure you have liquid reserves.` });
+    if (recommendations.length === 0) recommendations.push({ type: 'success', msg: 'Your portfolio allocation looks healthy! Keep maintaining a balanced approach.' });
+
+    return {
+      percentages: { cashPct, physPct, invPct, debtRatio },
+      recommendations,
+      riskScore: debtRatio > 50 ? 'High' : debtRatio > 25 ? 'Medium' : 'Low',
+    };
+  }
+
+  // ── FX Rates (mock + live fetch) ──────────────────────────────
+  const MOCK_RATES = { USD:1, NGN:1580, GBP:0.79, EUR:0.92, CAD:1.36, AUD:1.53, GHS:15.2 };
+  let _rates = { ...MOCK_RATES };
+  let _baseCurrency = 'NGN';
+
+  async function fetchFXRates() {
+    try {
+      // Free tier: exchangerate-api or frankfurter.app
+      const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=NGN,GBP,EUR,CAD,AUD');
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      _rates = { USD: 1, ...data.rates };
+      localStorage.setItem('kv-fx-rates', JSON.stringify({ rates: _rates, fetchedAt: Date.now() }));
+      return _rates;
+    } catch(e) {
+      console.warn('[FX] Using cached/mock rates:', e.message);
+      const cached = localStorage.getItem('kv-fx-rates');
+      if (cached) _rates = JSON.parse(cached).rates;
+      return _rates;
+    }
+  }
+
+  function convertCurrency(amount, from = 'NGN', to = 'NGN') {
+    if (from === to) return amount;
+    const fromRate = _rates[from] || 1;
+    const toRate   = _rates[to]   || 1;
+    return (amount / fromRate) * toRate;
+  }
+
+  function setBaseCurrency(currency) {
+    _baseCurrency = currency;
+    localStorage.setItem('kv-base-currency', currency);
+  }
+
+  function getBaseCurrency() {
+    return localStorage.getItem('kv-base-currency') || 'NGN';
+  }
+
+  function formatCurrency(amount, currency = null) {
+    const cur = currency || getBaseCurrency();
+    const symbols = { NGN:'₦', USD:'$', GBP:'£', EUR:'€', CAD:'CA$', AUD:'AU$', GHS:'₵' };
+    return (symbols[cur] || cur + ' ') + Math.abs(amount).toLocaleString('en', {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  }
+
+  // Init
+  async function init() {
+    _baseCurrency = getBaseCurrency();
+    // Check if we have fresh rates (< 24hrs)
+    const cached = localStorage.getItem('kv-fx-rates');
+    if (cached) {
+      const { rates, fetchedAt } = JSON.parse(cached);
+      if (Date.now() - fetchedAt < 24 * 60 * 60 * 1000) {
+        _rates = rates; return;
+      }
+    }
+    await fetchFXRates();
+  }
+
+  return {
+    compoundInterest, netWorthScore, straightLineDepreciation,
+    reducingBalanceDepreciation, currentBookValue, fireSimulation,
+    debtPaydown, taxDragSimulation, allocationOptimizer,
+    fetchFXRates, convertCurrency, setBaseCurrency, getBaseCurrency,
+    formatCurrency, init,
+    get rates() { return _rates; },
+  };
+})();

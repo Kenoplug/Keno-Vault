@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Keno Vault — Own Your Wealth</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23f97316'/><stop offset='100%25' stop-color='%23ea580c'/></linearGradient></defs><rect width='64' height='64' rx='14' fill='url(%23g)'/><text x='32' y='46' font-size='36' text-anchor='middle' font-family='serif'>⬡</text></svg>"/>
+<meta name="description" content="Keno Vault — The premium personal net worth tracker. Track every asset, simulate your future, and secure your financial legacy."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+:root{
+  --orange:#f97316;--orange-dark:#ea580c;--orange-dim:rgba(249,115,22,0.12);
+  --bg:#0a0a0a;--surface:#111111;--surface2:#1a1a1a;--border:#222222;
+  --text:#f0f0f0;--text-dim:#888888;--text-muted:#444444;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow-x:hidden;}
+.serif{font-family:'DM Serif Display',serif;}
+.mono{font-family:'JetBrains Mono',monospace;}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 48px;height:64px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(10,10,10,0.8);backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,0.04);}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#f97316,#ea580c);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:14px;font-weight:500;
+  transition:color .2s;}
+.nav-links a:hover{color:var(--text);}
+.nav-cta{display:flex;align-items:center;gap:12px;}
+.btn-outline{padding:8px 20px;border:1px solid var(--border);border-radius:8px;
+  color:var(--text-dim);font-size:14px;font-weight:500;text-decoration:none;
+  transition:all .2s;background:transparent;}
+.btn-outline:hover{border-color:var(--orange);color:var(--orange);}
+.btn-orange{padding:9px 20px;background:var(--orange);border:none;border-radius:8px;
+  color:#fff;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;
+  display:flex;align-items:center;gap:8px;transition:all .2s;}
+.btn-orange:hover{background:var(--orange-dark);transform:translateY(-1px);}
+.btn-orange-lg{padding:14px 32px;font-size:15px;border-radius:10px;}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:120px 24px 80px;position:relative;overflow:hidden;}
+.hero-glow{position:absolute;width:800px;height:800px;border-radius:50%;
+  background:radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.hero-grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none;}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;
+  background:var(--orange-dim);border:1px solid rgba(249,115,22,0.3);
+  border-radius:20px;font-size:12px;font-weight:600;color:var(--orange);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:32px;}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(42px,6vw,80px);
+  line-height:1.08;letter-spacing:-0.03em;margin-bottom:24px;max-width:800px;}
+.hero h1 span{color:var(--orange);}
+.hero p{font-size:clamp(16px,2vw,20px);color:var(--text-dim);max-width:560px;
+  line-height:1.7;margin:0 auto 40px;}
+.hero-btns{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:80px;}
+.btn-ghost-lg{padding:14px 28px;border:1px solid var(--border);border-radius:10px;
+  color:var(--text-dim);font-size:15px;font-weight:500;text-decoration:none;
+  transition:all .2s;}
+.btn-ghost-lg:hover{border-color:rgba(255,255,255,0.2);color:var(--text);}
+
+/* DASHBOARD PREVIEW */
+.dashboard-preview{width:100%;max-width:960px;margin:0 auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.6),0 0 0 1px rgba(249,115,22,0.1);}
+.preview-bar{height:40px;background:var(--surface2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:8px;}
+.preview-dot{width:10px;height:10px;border-radius:50%;}
+.preview-content{display:grid;grid-template-columns:200px 1fr;min-height:360px;}
+.preview-sidebar{background:var(--surface2);border-right:1px solid var(--border);padding:20px 0;}
+.preview-sidebar-logo{padding:0 16px 20px;display:flex;align-items:center;gap:8px;
+  font-weight:700;font-size:14px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.preview-nav-item{padding:8px 16px;font-size:12px;color:var(--text-dim);
+  display:flex;align-items:center;gap:10px;cursor:pointer;transition:all .15s;}
+.preview-nav-item.active{background:var(--orange-dim);color:var(--orange);border-right:2px solid var(--orange);}
+.preview-nav-item:hover:not(.active){background:rgba(255,255,255,0.03);color:var(--text);}
+.preview-nav-section{padding:12px 16px 4px;font-size:10px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);}
+.preview-main{padding:24px;}
+.preview-greeting{margin-bottom:20px;}
+.preview-greeting h3{font-size:20px;font-weight:700;margin-bottom:2px;}
+.preview-greeting p{font-size:12px;color:var(--text-dim);}
+.preview-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.preview-kpi{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.preview-kpi-label{font-size:10px;color:var(--text-dim);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.preview-kpi-val{font-size:20px;font-weight:700;font-family:'DM Serif Display',serif;}
+.preview-kpi-sub{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.preview-chart-area{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;height:120px;
+  display:flex;align-items:flex-end;gap:4px;}
+.preview-bar-item{flex:1;border-radius:3px 3px 0 0;transition:height .3s;}
+
+/* STATS BAND */
+.stats-band{padding:80px 48px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.stats-grid{max-width:960px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:48px;text-align:center;}
+.stat-num{font-family:'DM Serif Display',serif;font-size:48px;color:var(--orange);letter-spacing:-0.03em;}
+.stat-label{font-size:14px;color:var(--text-dim);margin-top:4px;}
+
+/* FEATURES */
+.features{padding:100px 48px;max-width:1100px;margin:0 auto;}
+.section-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+  background:var(--orange-dim);border:1px solid rgba(249,115,22,0.2);
+  border-radius:20px;font-size:11px;font-weight:600;color:var(--orange);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(32px,4vw,52px);
+  letter-spacing:-0.02em;line-height:1.1;margin-bottom:16px;}
+.section-sub{font-size:16px;color:var(--text-dim);line-height:1.7;max-width:500px;margin-bottom:60px;}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.feature-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;
+  transition:all .25s;position:relative;overflow:hidden;}
+.feature-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;
+  background:radial-gradient(ellipse at top left,rgba(249,115,22,0.05),transparent 60%);}
+.feature-card:hover{border-color:rgba(249,115,22,0.3);transform:translateY(-2px);}
+.feature-card:hover::before{opacity:1;}
+.feature-icon{width:44px;height:44px;background:var(--orange-dim);border:1px solid rgba(249,115,22,0.2);
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:16px;}
+.feature-title{font-size:16px;font-weight:600;margin-bottom:8px;}
+.feature-desc{font-size:13px;color:var(--text-dim);line-height:1.7;}
+.feature-pro{display:inline-flex;align-items:center;gap:4px;margin-top:12px;
+  padding:3px 8px;background:linear-gradient(135deg,rgba(249,115,22,0.15),rgba(234,88,12,0.1));
+  border:1px solid rgba(249,115,22,0.3);border-radius:6px;
+  font-size:10px;font-weight:700;color:var(--orange);letter-spacing:.06em;}
+
+/* PRICING */
+.pricing{padding:100px 48px;background:var(--surface);border-top:1px solid var(--border);}
+.pricing-inner{max-width:960px;margin:0 auto;}
+.pricing-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:60px;}
+.pricing-card{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:40px;}
+.pricing-card.featured{background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(234,88,12,0.04));
+  border-color:rgba(249,115,22,0.4);position:relative;}
+.pricing-card.featured::before{content:'Most Popular';position:absolute;top:-1px;left:50%;
+  transform:translateX(-50%);background:var(--orange);color:#fff;font-size:11px;font-weight:700;
+  padding:4px 16px;border-radius:0 0 10px 10px;letter-spacing:.06em;}
+.pricing-plan{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:12px;}
+.pricing-price{font-family:'DM Serif Display',serif;font-size:52px;letter-spacing:-0.03em;margin-bottom:4px;}
+.pricing-price span{font-size:18px;font-family:'DM Sans',sans-serif;color:var(--text-dim);}
+.pricing-desc{font-size:14px;color:var(--text-dim);margin-bottom:32px;line-height:1.6;}
+.pricing-features{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:36px;}
+.pricing-features li{display:flex;align-items:center;gap:10px;font-size:14px;}
+.pricing-features li .check{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;flex-shrink:0;}
+.check-green{background:rgba(52,211,153,0.15);color:#34d399;}
+.check-muted{background:var(--surface2);color:var(--text-muted);}
+.pricing-btn{width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:600;
+  cursor:pointer;transition:all .2s;border:none;}
+.pricing-btn-free{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);}
+.pricing-btn-free:hover{border-color:rgba(255,255,255,0.2);color:var(--text);}
+.pricing-btn-pro{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;}
+.pricing-btn-pro:hover{opacity:.9;transform:translateY(-1px);}
+
+/* SECURITY SECTION */
+.security{padding:100px 48px;max-width:1100px;margin:0 auto;}
+.security-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;margin-top:60px;}
+.security-visual{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:32px;}
+.security-item{display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border);}
+.security-item:last-child{border-bottom:none;}
+.security-icon{width:40px;height:40px;background:var(--orange-dim);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.security-item h4{font-size:14px;font-weight:600;margin-bottom:4px;}
+.security-item p{font-size:13px;color:var(--text-dim);line-height:1.6;}
+
+/* TRUSTED */
+.trusted{padding:80px 48px;border-top:1px solid var(--border);text-align:center;}
+.trusted p{font-size:14px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:40px;}
+.trusted-logos{display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;}
+.trusted-logo{font-size:14px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;}
+
+/* CTA */
+.cta-section{padding:120px 48px;text-align:center;position:relative;overflow:hidden;}
+.cta-glow{position:absolute;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(249,115,22,0.08) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+
+/* FOOTER */
+footer{padding:48px;border-top:1px solid var(--border);}
+.footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px;}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{font-size:13px;color:var(--text-muted);text-decoration:none;transition:color .2s;}
+.footer-links a:hover{color:var(--text-dim);}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .6s ease both;}
+.fade-up-delay-1{animation-delay:.1s;}
+.fade-up-delay-2{animation-delay:.2s;}
+.fade-up-delay-3{animation-delay:.3s;}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.float{animation:float 4s ease-in-out infinite;}
+
+@media(max-width:768px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .hero{padding:100px 20px 60px;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:24px;}
+  .features-grid{grid-template-columns:1fr;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .security-grid{grid-template-columns:1fr;}
+  .features,.pricing,.security,.stats-band{padding:60px 20px;}
+  .preview-content{grid-template-columns:1fr;}
+  .preview-sidebar{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="nav-logo-icon">⬡</div>
+    <span style="font-weight:700;font-size:16px;">Keno Vault</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#security">Security</a>
+    <a href="pages/dashboard.html">Dashboard</a>
+  </div>
+  <div class="nav-cta">
+    <a href="pages/dashboard.html" class="btn-outline">Log in</a>
+    <a href="pages/dashboard.html" class="btn-orange">Get Started <span>→</span></a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div style="position:relative;z-index:1;">
+    <div class="hero-tag fade-up">⬡ Now with Pro Intelligence</div>
+    <h1 class="fade-up fade-up-delay-1">
+      Track, grow, and<br/><span>secure your wealth.</span>
+    </h1>
+    <p class="fade-up fade-up-delay-2">
+      The only personal finance tracker built for serious wealth builders. From your GTBank savings to your CSCS portfolio — everything in one encrypted vault.
+    </p>
+    <div class="hero-btns fade-up fade-up-delay-3">
+      <a href="pages/dashboard.html" class="btn-orange btn-orange-lg">Open My Vault →</a>
+      <a href="#features" class="btn-ghost-lg">See Features</a>
+    </div>
+
+    <!-- DASHBOARD PREVIEW -->
+    <div class="dashboard-preview float">
+      <div class="preview-bar">
+        <div class="preview-dot" style="background:#ff5f57;"></div>
+        <div class="preview-dot" style="background:#febc2e;"></div>
+        <div class="preview-dot" style="background:#28c840;"></div>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">keno-vault.vercel.app/dashboard</span>
+      </div>
+      <div class="preview-content">
+        <div class="preview-sidebar">
+          <div class="preview-sidebar-logo">
+            <div style="width:22px;height:22px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;">⬡</div>
+            Keno Vault
+          </div>
+          <div class="preview-nav-section">Main</div>
+          <div class="preview-nav-item active">📊 Dashboard</div>
+          <div class="preview-nav-item">📦 Assets</div>
+          <div class="preview-nav-item">📈 Investments</div>
+          <div class="preview-nav-item">🔥 FIRE Simulator</div>
+          <div class="preview-nav-section">Analytics</div>
+          <div class="preview-nav-item">⚡ Net Worth Score</div>
+          <div class="preview-nav-item">🌍 Multi-Currency</div>
+          <div class="preview-nav-item">🧾 Tax Simulator</div>
+          <div class="preview-nav-section">Account</div>
+          <div class="preview-nav-item">⚙ Settings</div>
+        </div>
+        <div class="preview-main">
+          <div class="preview-greeting">
+            <h3>Welcome back, <span style="color:var(--orange);">Keno</span> 👋</h3>
+            <p>Your net worth grew <span style="color:#34d399;">+₦240,000</span> this month</p>
+          </div>
+          <div class="preview-kpis">
+            <div class="preview-kpi">
+              <div class="preview-kpi-label">Net Worth</div>
+              <div class="preview-kpi-val" style="color:var(--orange);">₦4.2M</div>
+              <div class="preview-kpi-sub">↑ 12.4% vs last month</div>
+            </div>
+            <div class="preview-kpi">
+              <div class="preview-kpi-label">Investments</div>
+              <div class="preview-kpi-val" style="color:#34d399;">₦1.8M</div>
+              <div class="preview-kpi-sub">7 active positions</div>
+            </div>
+            <div class="preview-kpi">
+              <div class="preview-kpi-label">FI Score</div>
+              <div class="preview-kpi-val" style="color:#f4c553;">74/100</div>
+              <div class="preview-kpi-sub">On track for FIRE</div>
+            </div>
+          </div>
+          <div class="preview-chart-area">
+            <div class="preview-bar-item" style="height:40%;background:rgba(249,115,22,0.3);"></div>
+            <div class="preview-bar-item" style="height:55%;background:rgba(249,115,22,0.35);"></div>
+            <div class="preview-bar-item" style="height:45%;background:rgba(249,115,22,0.3);"></div>
+            <div class="preview-bar-item" style="height:70%;background:rgba(249,115,22,0.4);"></div>
+            <div class="preview-bar-item" style="height:60%;background:rgba(249,115,22,0.35);"></div>
+            <div class="preview-bar-item" style="height:80%;background:rgba(249,115,22,0.45);"></div>
+            <div class="preview-bar-item" style="height:65%;background:rgba(249,115,22,0.4);"></div>
+            <div class="preview-bar-item" style="height:90%;background:var(--orange);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAND -->
+<div class="stats-band">
+  <div class="stats-grid">
+    <div><div class="stat-num">₦2.4B+</div><div class="stat-label">Assets tracked globally</div></div>
+    <div><div class="stat-num">12k+</div><div class="stat-label">Active vault users</div></div>
+    <div><div class="stat-num">99.9%</div><div class="stat-label">Uptime & availability</div></div>
+    <div><div class="stat-num">256-bit</div><div class="stat-label">AES encryption</div></div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="section-tag">⬡ Features</div>
+  <h2 class="section-title">Everything your wealth<br/>deserves.</h2>
+  <p class="section-sub">Built for the serious wealth builder. Free tier gets you started. Pro takes you to the next level.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Real-Time Dashboard</div>
+      <div class="feature-desc">Live KPI cards, net worth history chart, asset allocation donut, and investment projection bars — all updating instantly.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌍</div>
+      <div class="feature-title">Multi-Currency Engine</div>
+      <div class="feature-desc">Track assets in NGN, USD, GBP, EUR with live FX rate syncing. Your real net worth in any currency, updated daily.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔥</div>
+      <div class="feature-title">FIRE Simulator</div>
+      <div class="feature-desc">Drag retirement age, savings rate, and inflation sliders to see your financial independence trajectory in real time.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📉</div>
+      <div class="feature-title">Depreciation Engine</div>
+      <div class="feature-desc">Auto-applies straight-line or reducing balance depreciation to your tech, vehicles, and property. Daily recalculation in the background.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🛡</div>
+      <div class="feature-title">Privacy Shield</div>
+      <div class="feature-desc">One keypress (B) blurs every financial value on screen. Perfect for working in public or sharing your screen without exposing numbers.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Session Auto-Lock</div>
+      <div class="feature-desc">Your vault locks with a custom PIN after 5 minutes of inactivity. Military-grade protection for your most sensitive data.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚖️</div>
+      <div class="feature-title">Debt Paydown Optimizer</div>
+      <div class="feature-desc">Snowball vs Avalanche. Visual net worth curve showing how eliminating debt faster changes your financial trajectory.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🧾</div>
+      <div class="feature-title">Tax-Drag Simulator</div>
+      <div class="feature-desc">See your true net-of-tax wealth. Simulates CGT and withholding taxes on liquidation so you know your real take-home figure.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏛</div>
+      <div class="feature-title">Legacy Mode</div>
+      <div class="feature-desc">If you're inactive for 180 days, your encrypted vault is securely transferred to your designated heir's email automatically.</div>
+      <div class="feature-pro">⬡ Pro</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY -->
+<section class="security" id="security">
+  <div class="section-tag">🔒 Security</div>
+  <h2 class="section-title">Built like a bank vault.</h2>
+  <div class="security-grid">
+    <div>
+      <p class="section-sub" style="margin-bottom:32px;">Your financial data deserves the highest protection. Every layer of Keno Vault is designed with security-first principles.</p>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-dim);">
+          <span style="color:#34d399;">✓</span> AES-256 encrypted local backups
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-dim);">
+          <span style="color:#34d399;">✓</span> Row-level security on Supabase
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-dim);">
+          <span style="color:#34d399;">✓</span> Client-side PIN auto-lock
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-dim);">
+          <span style="color:#34d399;">✓</span> Privacy Shield blur toggle
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-dim);">
+          <span style="color:#34d399;">✓</span> Google OAuth — no passwords stored
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;color:var(--text-dim);">
+          <span style="color:#34d399;">✓</span> Legacy dead-man's switch protection
+        </div>
+      </div>
+    </div>
+    <div class="security-visual">
+      <div class="security-item">
+        <div class="security-icon">🛡</div>
+        <div>
+          <h4>Privacy Shield</h4>
+          <p>Press 'B' to instantly blur all financial values on screen. Works globally across the entire app.</p>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🔐</div>
+        <div>
+          <h4>Encrypted Backups</h4>
+          <p>Export your entire vault as a password-protected AES-encrypted JSON file for cold storage.</p>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">⏱</div>
+        <div>
+          <h4>Auto-Lock PIN</h4>
+          <p>Set a 4-digit PIN. Your vault locks automatically after 5 minutes of browser inactivity.</p>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🏛</div>
+        <div>
+          <h4>Legacy Mode</h4>
+          <p>Designate an heir. Your encrypted records are transferred automatically after 180 days of inactivity.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="pricing-inner">
+    <div style="text-align:center;">
+      <div class="section-tag" style="margin:0 auto 20px;">⬡ Pricing</div>
+      <h2 class="section-title">Simple, honest pricing.</h2>
+      <p style="font-size:16px;color:var(--text-dim);max-width:480px;margin:0 auto;">Start free. Upgrade when you're ready to go serious about your wealth.</p>
+    </div>
+    <div class="pricing-grid">
+      <!-- FREE -->
+      <div class="pricing-card">
+        <div class="pricing-plan">Free Forever</div>
+        <div class="pricing-price">$0<span>/month</span></div>
+        <p class="pricing-desc">Everything you need to get started tracking your net worth today.</p>
+        <ul class="pricing-features">
+          <li><span class="check check-green">✓</span> Up to 10 asset entries</li>
+          <li><span class="check check-green">✓</span> Basic KPI dashboard</li>
+          <li><span class="check check-green">✓</span> 30-day net worth history</li>
+          <li><span class="check check-green">✓</span> Google sign-in & cloud sync</li>
+          <li><span class="check check-green">✓</span> CSV export</li>
+          <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">FIRE Simulator</span></li>
+          <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">Privacy Shield</span></li>
+          <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">Multi-currency engine</span></li>
+        </ul>
+        <button class="pricing-btn pricing-btn-free" onclick="window.location.href='pages/dashboard.html'">Start Free →</button>
+      </div>
+      <!-- PRO -->
+      <div class="pricing-card featured">
+        <div class="pricing-plan" style="color:var(--orange);">Pro</div>
+        <div class="pricing-price" style="color:var(--orange);">$4.99<span>/month</span></div>
+        <p class="pricing-desc">The full Keno Vault experience. For serious wealth builders.</p>
+        <ul class="pricing-features">
+          <li><span class="check check-green">✓</span> Unlimited asset entries</li>
+          <li><span class="check check-green">✓</span> FIRE Retirement Simulator</li>
+          <li><span class="check check-green">✓</span> Depreciation Engine</li>
+          <li><span class="check check-green">✓</span> Real-time FX rate sync</li>
+          <li><span class="check check-green">✓</span> Privacy Shield (press B)</li>
+          <li><span class="check check-green">✓</span> Session Auto-Lock PIN</li>
+          <li><span class="check check-green">✓</span> Tax-Drag Simulator</li>
+          <li><span class="check check-green">✓</span> Debt Paydown Optimizer</li>
+          <li><span class="check check-green">✓</span> AES Encrypted Backups</li>
+          <li><span class="check check-green">✓</span> Legacy Dead-Man's Switch</li>
+          <li><span class="check check-green">✓</span> Net Worth Score (0–100)</li>
+          <li><span class="check check-green">✓</span> Asset Location Optimizer</li>
+        </ul>
+        <button class="pricing-btn pricing-btn-pro" onclick="window.location.href='pages/dashboard.html'">Upgrade to Pro →</button>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:24px;font-size:13px;color:var(--text-muted);">
+      Pay via USDT (TRC20) · Manual activation within 24hrs · Cancel anytime
+    </p>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <div style="position:relative;z-index:1;">
+    <div class="section-tag" style="margin:0 auto 24px;">⬡ Get Started</div>
+    <h2 class="section-title" style="margin-bottom:20px;">Your wealth story<br/>starts today.</h2>
+    <p style="font-size:16px;color:var(--text-dim);max-width:480px;margin:0 auto 40px;line-height:1.7;">
+      Join thousands of wealth builders using Keno Vault to track, grow, and protect their financial future.
+    </p>
+    <a href="pages/dashboard.html" class="btn-orange btn-orange-lg" style="display:inline-flex;">Open My Vault — It's Free →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="nav-logo-icon" style="width:28px;height:28px;font-size:14px;">⬡</div>
+      <span style="font-weight:700;font-size:15px;">Keno Vault</span>
+      <span style="color:var(--text-muted);font-size:13px;margin-left:8px;">© 2025</span>
+    </div>
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#security">Security</a>
+      <a href="pages/dashboard.html">Dashboard</a>
+      <a href="pages/settings.html">Settings</a>
+    </div>
+  </div>
+  <div style="max-width:1100px;margin:20px auto 0;padding:20px 48px 0;border-top:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="font-size:12px;color:var(--text-muted);">Keno Vault is not a licensed financial advisor. All figures are for personal tracking only.</div>
+    <div style="display:flex;gap:20px;">
+      <a href="#" onclick="openLegal('terms');return false;" class="legal-footer-link">Terms of Service</a>
+      <a href="#" onclick="openLegal('privacy');return false;" class="legal-footer-link">Privacy Policy</a>
+      <a href="#" onclick="openLegal('refund');return false;" class="legal-footer-link">Refund Policy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Animate preview bars
+const bars = document.querySelectorAll('.preview-bar-item');
+setInterval(() => {
+  bars.forEach(b => {
+    const h = Math.random() * 60 + 30;
+    b.style.height = h + '%';
+    b.style.opacity = 0.5 + (h / 100) * 0.5;
+  });
+}, 2000);
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.feature-card,.pricing-card,.security-item').forEach(el => {
+  el.style.opacity = '0'; el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity .5s ease, transform .5s ease';
+  observer.observe(el);
+});
+</script>
+
+<style>
+.legal-footer-link{font-size:12px;color:var(--text-muted);text-decoration:none;transition:color .2s;}
+.legal-footer-link:hover{color:#f97316;}
+.legal-tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+  border:1px solid #333;background:transparent;color:#666;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.legal-tab:hover{border-color:#f97316;color:#f97316;}
+.legal-tab.active{background:rgba(249,115,22,0.12);border-color:#f97316;color:#f97316;}
+#legalModal h2{font-family:'DM Serif Display',serif;font-size:22px;color:#f0f0f0;margin:0 0 4px;letter-spacing:-0.01em;}
+#legalModal h3{font-size:13px;font-weight:700;color:#f0f0f0;margin:22px 0 8px;text-transform:uppercase;letter-spacing:.06em;}
+#legalModal p{margin-bottom:12px;color:#888;line-height:1.8;font-size:14px;}
+#legalModal ul{margin:0 0 12px 20px;color:#888;font-size:14px;}
+#legalModal ul li{margin-bottom:5px;}
+#legalModal a{color:#f97316;text-decoration:none;}
+#legalModal .tag{display:inline-block;padding:3px 8px;background:rgba(249,115,22,0.1);
+  border:1px solid rgba(249,115,22,0.25);border-radius:4px;font-size:11px;color:#f97316;margin-bottom:12px;}
+#legalModal .divider{height:1px;background:#1e1e1e;margin:18px 0;}
+</style>
+
+<!-- LEGAL MODAL -->
+<div id="legalModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(12px);z-index:900;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#111111;border:1px solid #222;border-radius:20px;width:min(740px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,0.7);">
+    <div style="padding:20px 24px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="openLegal('terms')"   id="tab-terms"   class="legal-tab active">Terms of Service</button>
+        <button onclick="openLegal('privacy')" id="tab-privacy" class="legal-tab">Privacy Policy</button>
+        <button onclick="openLegal('refund')"  id="tab-refund"  class="legal-tab">Refund Policy</button>
+      </div>
+      <button onclick="closeLegal()" style="background:transparent;border:1px solid #333;color:#666;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div id="legalBody" style="padding:28px 28px 20px;overflow-y:auto;flex:1;"></div>
+    <div style="padding:14px 28px;border-top:1px solid #1e1e1e;text-align:center;flex-shrink:0;">
+      <span style="font-size:12px;color:#444;">Last updated: June 2025 &nbsp;·&nbsp; Questions? </span>
+      <a href="mailto:kenovault@gmail.com" style="font-size:12px;color:#f97316;text-decoration:none;">kenovault@gmail.com</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const LEGAL_CONTENT = {
+  terms: `
+    <h2>Terms of Service</h2>
+    <div class="tag">Effective: June 1, 2025</div>
+    <p>Welcome to <strong style="color:#f0f0f0;">Keno Vault</strong>. By accessing or using our service at <a href="https://keno-vault.vercel.app">keno-vault.vercel.app</a>, you agree to be bound by these Terms of Service. Please read them carefully.</p>
+    <div class="divider"></div>
+
+    <h3>1. Acceptance of Terms</h3>
+    <p>By creating an account or using Keno Vault, you confirm that you are at least 18 years old, have the legal capacity to enter into this agreement, and agree to these terms in full. If you do not agree, please do not use our service.</p>
+
+    <h3>2. Description of Service</h3>
+    <p>Keno Vault is a personal net worth and asset tracking tool. It allows you to manually log, categorize, and monitor your financial assets and liabilities. Keno Vault provides financial simulations (FIRE, tax, debt) for informational and planning purposes only.</p>
+    <p><strong style="color:#f0f0f0;">Keno Vault is not a licensed financial advisor, broker, or investment service.</strong> Nothing on this platform constitutes financial, investment, legal, or tax advice. All data you enter is self-reported and manually managed.</p>
+
+    <h3>3. User Accounts</h3>
+    <ul>
+      <li>You are responsible for maintaining the security of your account and PIN.</li>
+      <li>You must provide accurate information during sign-up.</li>
+      <li>You may not share your account with others or use another person's account.</li>
+      <li>You are solely responsible for all activity that occurs under your account.</li>
+    </ul>
+
+    <h3>4. Free and Pro Plans</h3>
+    <p>Keno Vault offers a Free tier and a Pro subscription. The Free tier includes limited entries and features. The Pro tier unlocks additional features as described on our pricing page. Features may change over time with reasonable notice.</p>
+
+    <h3>5. Acceptable Use</h3>
+    <p>You agree not to:</p>
+    <ul>
+      <li>Use Keno Vault for any unlawful purpose or in violation of any applicable laws.</li>
+      <li>Attempt to gain unauthorized access to other users' data or our systems.</li>
+      <li>Reverse engineer, decompile, or attempt to extract the source code of our platform.</li>
+      <li>Use our service to store or transmit malicious code.</li>
+      <li>Resell or commercially exploit the service without written permission.</li>
+    </ul>
+
+    <h3>6. Data Ownership</h3>
+    <p>You own all financial data you enter into Keno Vault. We do not claim ownership of your data. By using our service, you grant us a limited license to store and process your data solely to provide the service.</p>
+
+    <h3>7. Service Availability</h3>
+    <p>We aim for high availability but do not guarantee uninterrupted access. We may suspend or modify the service for maintenance, updates, or unforeseen circumstances without liability.</p>
+
+    <h3>8. Limitation of Liability</h3>
+    <p>To the maximum extent permitted by law, Keno Vault and its creators shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including financial losses based on data tracked or simulations provided.</p>
+
+    <h3>9. Termination</h3>
+    <p>We reserve the right to suspend or terminate your account at any time for violations of these terms. You may delete your account at any time via the Settings → Data Management → Nuclear Option.</p>
+
+    <h3>10. Changes to Terms</h3>
+    <p>We may update these terms from time to time. Continued use of Keno Vault after changes constitutes your acceptance of the updated terms. We will notify users of significant changes via email at <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a>.</p>
+
+    <h3>11. Governing Law</h3>
+    <p>These terms are governed by the laws of the Federal Republic of Nigeria. Any disputes shall be resolved in Nigerian courts, without prejudice to your statutory rights.</p>
+
+    <h3>12. Contact</h3>
+    <p>For questions about these terms, contact us at <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a>.</p>
+  `,
+
+  privacy: `
+    <h2>Privacy Policy</h2>
+    <div class="tag">Effective: June 1, 2025</div>
+    <p>Your privacy is fundamental to everything we build at <strong style="color:#f0f0f0;">Keno Vault</strong>. This policy explains what data we collect, how we use it, and your rights regarding that data.</p>
+    <div class="divider"></div>
+
+    <h3>1. Information We Collect</h3>
+    <p><strong style="color:#f0f0f0;">Account Information:</strong> When you sign in with Google, we receive your name, email address, and profile picture from Google's OAuth service. We do not receive or store your Google password.</p>
+    <p><strong style="color:#f0f0f0;">Financial Data:</strong> All asset entries, valuations, categories, and notes you manually enter into your vault. This data is stored in our Supabase (PostgreSQL) database, protected by Row-Level Security so only your account can access your data.</p>
+    <p><strong style="color:#f0f0f0;">Usage Data:</strong> We may collect anonymous analytics such as page views and feature usage to improve the product. We do not track individual financial entries for analytics.</p>
+    <p><strong style="color:#f0f0f0;">Local Storage:</strong> Preferences such as your chosen theme, base currency, and security settings are stored locally in your browser and never transmitted to our servers.</p>
+
+    <h3>2. How We Use Your Data</h3>
+    <ul>
+      <li>To provide, operate, and maintain the Keno Vault service.</li>
+      <li>To sync your vault data across your devices.</li>
+      <li>To send account-related communications (Pro activation, support responses).</li>
+      <li>To improve the product based on aggregated, anonymous usage patterns.</li>
+      <li>To activate and manage your Pro subscription.</li>
+    </ul>
+
+    <h3>3. Data Storage & Security</h3>
+    <p>Your data is stored on <strong style="color:#f0f0f0;">Supabase</strong> infrastructure hosted in the EU (West Europe region). All data is encrypted at rest and in transit using TLS 1.3. Row-Level Security (RLS) policies ensure that no user can access another user's data, even with a valid session token.</p>
+    <p>Encrypted backups you export are protected with AES-256-GCM encryption using the Web Crypto API — we never see your backup password.</p>
+
+    <h3>4. Data Sharing</h3>
+    <p>We do not sell, rent, or trade your personal data to third parties. We share data only with:</p>
+    <ul>
+      <li><strong style="color:#f0f0f0;">Supabase</strong> — our database and authentication provider.</li>
+      <li><strong style="color:#f0f0f0;">Google OAuth</strong> — for authentication only. We do not share your financial data with Google.</li>
+      <li><strong style="color:#f0f0f0;">Vercel</strong> — our hosting provider. They serve the application files only and have no access to your financial data.</li>
+    </ul>
+
+    <h3>5. Legacy Mode & Heir Data</h3>
+    <p>If you enable Legacy Mode, and the inactivity threshold is reached, we will send an encrypted copy of your vault data to the heir email address you designated. Only the heir with your backup password can decrypt this data. We do not retain a copy of the transferred data.</p>
+
+    <h3>6. Your Rights</h3>
+    <p>You have the right to:</p>
+    <ul>
+      <li><strong style="color:#f0f0f0;">Access</strong> — Export all your data via Settings → Data Management → Export CSV or Encrypted Backup.</li>
+      <li><strong style="color:#f0f0f0;">Delete</strong> — Permanently delete all your data via Settings → Profile → Nuclear Option.</li>
+      <li><strong style="color:#f0f0f0;">Correct</strong> — Edit any entry directly in your vault at any time.</li>
+      <li><strong style="color:#f0f0f0;">Portability</strong> — Download your data in CSV or encrypted JSON format.</li>
+      <li><strong style="color:#f0f0f0;">Object</strong> — Contact us to object to any specific data processing.</li>
+    </ul>
+
+    <h3>7. Cookies</h3>
+    <p>Keno Vault uses only essential functional cookies required for authentication and session management via Supabase. We do not use advertising cookies, tracking pixels, or third-party analytics cookies.</p>
+
+    <h3>8. Children's Privacy</h3>
+    <p>Keno Vault is not intended for users under the age of 18. We do not knowingly collect data from minors. If you believe a minor has created an account, contact us immediately.</p>
+
+    <h3>9. Changes to This Policy</h3>
+    <p>We may update this Privacy Policy periodically. We will notify you of significant changes by email. Continued use of Keno Vault after changes constitutes acceptance.</p>
+
+    <h3>10. Contact</h3>
+    <p>For privacy-related concerns, data access requests, or deletion requests, contact us at <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a>. We aim to respond within 5 business days.</p>
+  `,
+
+  refund: `
+    <h2>Refund Policy</h2>
+    <div class="tag">Effective: June 1, 2025</div>
+    <p>At <strong style="color:#f0f0f0;">Keno Vault</strong>, we want you to be completely satisfied with your Pro subscription. This policy explains our approach to refunds and cancellations.</p>
+    <div class="divider"></div>
+
+    <h3>1. Pro Subscription Payments</h3>
+    <p>Keno Vault Pro is currently activated manually after payment is received via <strong style="color:#f0f0f0;">USDT (TRC20)</strong>. Due to the nature of cryptocurrency transactions, payments are irreversible on the blockchain.</p>
+    <p>However, we believe in fairness. If you are not satisfied, please contact us — we will work with you to find a resolution.</p>
+
+    <h3>2. 7-Day Satisfaction Guarantee</h3>
+    <p>If you subscribed to Keno Vault Pro and are not satisfied within <strong style="color:#f0f0f0;">7 days</strong> of activation, you may request a full refund by contacting us at <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a> with:</p>
+    <ul>
+      <li>Your account email address.</li>
+      <li>Your USDT transaction hash or payment reference.</li>
+      <li>A brief reason for the refund request.</li>
+    </ul>
+    <p>Approved refunds will be returned to the <strong style="color:#f0f0f0;">same USDT wallet address</strong> used for payment, within <strong style="color:#f0f0f0;">5 business days</strong> of approval.</p>
+
+    <h3>3. Conditions for Refund Eligibility</h3>
+    <p>Refunds may be granted if:</p>
+    <ul>
+      <li>The request is made within 7 days of Pro activation.</li>
+      <li>The account has not been found in violation of our Terms of Service.</li>
+      <li>The Pro features were not working as described and we were unable to resolve the issue.</li>
+    </ul>
+    <p>Refunds will <strong style="color:#f0f0f0;">not</strong> be granted if:</p>
+    <ul>
+      <li>More than 7 days have passed since Pro was activated.</li>
+      <li>The account has been terminated due to Terms of Service violations.</li>
+      <li>The request is for a change of mind after extensive use of Pro features.</li>
+      <li>The payment was made to an incorrect wallet address not provided by Keno Vault.</li>
+    </ul>
+
+    <h3>4. Cancellation</h3>
+    <p>Keno Vault Pro is currently a manually managed subscription. To cancel your Pro plan, simply do not renew at the end of your subscription period. Your Pro access will remain active until the end of the paid period.</p>
+    <p>To request early cancellation and a prorated refund, contact us at <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a>. Prorated refunds are evaluated on a case-by-case basis.</p>
+
+    <h3>5. Service Disruptions</h3>
+    <p>If Keno Vault Pro experiences a major outage lasting more than <strong style="color:#f0f0f0;">72 consecutive hours</strong> due to issues on our end, Pro subscribers are entitled to a prorated credit or refund for the affected period. Please report prolonged outages to <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a>.</p>
+
+    <h3>6. Free Plan</h3>
+    <p>The Free plan is provided at no cost and is not subject to refund requests. There is no obligation or charge associated with the Free tier.</p>
+
+    <h3>7. Dispute Resolution</h3>
+    <p>If you believe a charge was made in error or you have a dispute regarding a payment, please contact us at <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a> before initiating any chargeback or dispute with your payment provider. We are committed to resolving issues fairly and promptly.</p>
+
+    <h3>8. Contact for Refunds</h3>
+    <p>All refund requests must be submitted via email to <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a> with the subject line <strong style="color:#f0f0f0;">"Refund Request — [Your Email]"</strong>. We aim to respond within 2 business days.</p>
+  `
+};
+
+function openLegal(type) {
+  const modal = document.getElementById('legalModal');
+  const body  = document.getElementById('legalBody');
+  // Update tabs
+  ['terms','privacy','refund'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === type);
+  });
+  // Inject content
+  body.innerHTML = LEGAL_CONTENT[type] || '';
+  body.scrollTop = 0;
+  // Show modal
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLegal() {
+  document.getElementById('legalModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Close on backdrop click
+document.getElementById('legalModal').addEventListener('click', function(e) {
+  if (e.target === this) closeLegal();
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLegal();
+});
+</script>
+
+</body>
+</html>
