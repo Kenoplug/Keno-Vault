@@ -217,7 +217,7 @@ const limit = isPro() ? 500 : 30; // Change 30 to desired limit
 
 ## 📧 Support
 
-For Pro activation or issues: **support@kenovault.app**
+For Pro activation or issues: **kenovault@gmail.com**
 
 ---
 
