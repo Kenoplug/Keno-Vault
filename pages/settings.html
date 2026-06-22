@@ -766,6 +766,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
   </div><!-- /settings-layout -->
 </div><!-- /mainLayout -->
 
+<script src="../js/calculators.js"></script>
 <script src="../js/security.js"></script>
 <script>
 // ══ CONFIG ══
@@ -1156,7 +1157,7 @@ function buildCurrencyGrid() {
   grid.innerHTML = list.map(function(c) {
     var sym = (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(c) : c;
     var active = c === cur ? ' active' : '';
-    return '<div class=\"currency-chip' + active + '\" onclick=\"setCurrency(\\''+c+'\\')\">' + sym + ' ' + c + '</div>';
+    return '<div class="currency-chip' + active + '" onclick="setCurrency(\'' + c + '\')">' + sym + ' ' + c + '</div>';
   }).join('');
 }
 
