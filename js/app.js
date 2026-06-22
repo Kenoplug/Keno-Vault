@@ -1299,10 +1299,11 @@ function runOptimizer() {
   html +=
     '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:14px;">📋 Ideal Target Allocation (by wealth stage)</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">' +
-        buildTargetCard('Early Stage', 'Net Worth < ₦5M', ['40% Cash (build buffer)', '30% Investments (start early)', '30% Physical (essentials)']) +
-        buildTargetCard('Growing Stage', 'Net Worth ₦5M–₦50M', ['20% Cash (emergency fund)', '50% Investments (compound!)', '30% Physical (controlled)']) +
-        buildTargetCard('Wealth Stage', 'Net Worth > ₦50M', ['10% Cash (operational)', '60% Investments (growth)', '30% Physical (real estate)']) +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">' +
+        buildTargetCard('Early Stage', 'Net Worth < $50K', ['50% Cash (emergency buffer) 💰', '30% Investments (start early) 📈', '20% Physical (essentials) 🏡']) +
+        buildTargetCard('Building Stage', 'Net Worth $50K–$300K', ['30% Cash (build flexibility) 💰', '50% Investments (compound momentum) 📈', '20% Physical (entry assets) 🏡']) +
+        buildTargetCard('Growth Stage', 'Net Worth $300K–$1M', ['20% Cash (opportunistic) 💰', '55% Investments (accelerated growth) 📈', '25% Physical (real estate focus) 🏡']) +
+        buildTargetCard('Wealth Stage', 'Net Worth > $1M', ['10% Cash (operational) 💰', '60% Investments (preservation + growth) 📈', '30% Physical (premium assets) 🏡']) +
       '</div>' +
     '</div>';
 
