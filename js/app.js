@@ -961,10 +961,14 @@ function runFire() {
 
 function runDebt() {
   if (!isPro()) return;
-  // Refresh slider display with current currency symbol
+  // Refresh slider display & labels with current currency symbol
   var sl = document.getElementById('debtExtraSlider');
   var sv = document.getElementById('debtExtraVal');
+  var mn = document.getElementById('debtMinLabel');
+  var mx = document.getElementById('debtMaxLabel');
   if (sl && sv) sv.textContent = fmtAmt(parseInt(sl.value) || 500);
+  if (mn) mn.textContent = curSym() + '0';
+  if (mx) mx.textContent = curSym() + '100,000';
   var debts = assets.filter(function(a) { return a.cat === 'liability'; }).map(function(a) {
     return {
       name: a.name, balance: a.value,
