@@ -867,9 +867,9 @@ function setProfileUI(user) {
   }
   const planBadge = document.getElementById('profilePlanBadge');
   if (planBadge) {
-    planBadge.innerHTML = isPro()
-      ? '<span class="pro-badge">⬡ Pro Plan</span>'
-      : '<span class="status-badge free">Free Plan</span>';
+    if (isPro()) planBadge.innerHTML = '<span class="pro-badge">⬡ Pro Plan</span>';
+    else if (isGrowth()) planBadge.innerHTML = '<span class="pro-badge">⬡ Growth Plan</span>';
+    else planBadge.innerHTML = '<span class="status-badge free">Free Plan</span>';
   }
 }
 
