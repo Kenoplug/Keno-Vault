@@ -1211,11 +1211,17 @@ function runOptimizer() {
   var riskColor  = riskScore === 'High' ? '#f87171' : riskScore === 'Medium' ? '#f4c553' : '#34d399';
   var riskIcon   = riskScore === 'High' ? '🔴' : riskScore === 'Medium' ? '🟡' : '🟢';
 
-  // Build allocation donut using SVG
+  // Build allocation donut using SVG (includes liabilities for full picture)
+  var totalWithLiab = total + (bycat.liability || 0);
+  var donutCash  = totalWithLiab > 0 ? (bycat.cash       / totalWithLiab * 100) : 0;
+  var donutPhys  = totalWithLiab > 0 ? (bycat.physical   / totalWithLiab * 100) : 0;
+  var donutInv   = totalWithLiab > 0 ? (bycat.investment / totalWithLiab * 100) : 0;
+  var donutLiab  = totalWithLiab > 0 ? (bycat.liability  / totalWithLiab * 100) : 0;
   var segments = [
-    { label:'Cash',         pct: parseFloat(cashPct), color:'#60a5fa' },
-    { label:'Physical',     pct: parseFloat(physPct), color:'#34d399' },
-    { label:'Investments',  pct: parseFloat(invPct),  color:'#f97316' },
+    { label:'Cash',         pct: donutCash, color:'#60a5fa' },
+    { label:'Physical',     pct: donutPhys, color:'#34d399' },
+    { label:'Investments',  pct: donutInv,  color:'#f97316' },
+    { label:'Liabilities',  pct: donutLiab, color:'#f87171' },
   ].filter(function(s){ return s.pct > 0; });
 
   var donutSVG = buildMiniDonut(segments, 60);
