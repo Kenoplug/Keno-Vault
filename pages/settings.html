@@ -1161,11 +1161,72 @@ function buildCurrencyGrid() {
   }).join('');
 }
 
-function setCurrency(cur) {
+async function setCurrency(cur) {
+  var oldCur = Calculators.getBaseCurrency();
+  if (oldCur === cur) return;
+
+  // Confirm conversion
+  var doConvert = confirm('Change base currency from ' + oldCur + ' to ' + cur + '?\n\nClick OK to convert all your existing asset values using live exchange rates.\nClick Cancel to just change the display symbol (values stay as numbers).');
+
+  if (doConvert) {
+    try {
+      // Fetch fresh rates first
+      await Calculators.fetchFXRates();
+      // Fetch all assets
+      var { data: assets } = await sb.from('assets').select('*');
+      if (assets && assets.length) {
+        for (var i = 0; i < assets.length; i++) {
+          var a = assets[i];
+          var updates = {};
+          // Convert value
+          var newVal = Calculators.convertCurrency(parseFloat(a.value) || 0, oldCur, cur);
+          updates.value = Math.round(newVal * 100) / 100;
+          // Convert principal if exists
+          if (a.principal) {
+            var newPrin = Calculators.convertCurrency(parseFloat(a.principal) || 0, oldCur, cur);
+            updates.principal = Math.round(newPrin * 100) / 100;
+          }
+          // Convert FV if exists
+          if (a.fv && parseFloat(a.fv) > 0) {
+            var newFv = Calculators.convertCurrency(parseFloat(a.fv) || 0, oldCur, cur);
+            updates.fv = Math.round(newFv * 100) / 100;
+          }
+          // Convert interest if exists
+          if (a.interest && parseFloat(a.interest) > 0) {
+            var newInt = Calculators.convertCurrency(parseFloat(a.interest) || 0, oldCur, cur);
+            updates.interest = Math.round(newInt * 100) / 100;
+          }
+          // Convert depreciation values
+          if (a.original_cost) {
+            var newOc = Calculators.convertCurrency(parseFloat(a.original_cost) || 0, oldCur, cur);
+            updates.original_cost = Math.round(newOc * 100) / 100;
+          }
+          if (a.salvage_value && parseFloat(a.salvage_value) > 0) {
+            var newSv = Calculators.convertCurrency(parseFloat(a.salvage_value) || 0, oldCur, cur);
+            updates.salvage_value = Math.round(newSv * 100) / 100;
+          }
+          await sb.from('assets').update(updates).eq('id', a.id);
+        }
+        // Convert nw_history entries
+        var { data: history } = await sb.from('nw_history').select('*');
+        if (history && history.length) {
+          for (var j = 0; j < history.length; j++) {
+            var h = history[j];
+            var newNw = Calculators.convertCurrency(parseFloat(h.nw) || 0, oldCur, cur);
+            await sb.from('nw_history').update({ nw: Math.round(newNw * 100) / 100 }).eq('id', h.id);
+          }
+        }
+        toast('Converted ' + assets.length + ' entries from ' + oldCur + ' to ' + cur, 'success');
+      }
+    } catch(e) {
+      toast('Conversion error: ' + e.message, 'error');
+      console.error('[Currency] Conversion failed:', e);
+    }
+  }
+
   localStorage.setItem('kv-base-currency', cur);
   Calculators.setBaseCurrency(cur);
   buildCurrencyGrid();
-  toast('Base currency set to ' + cur, 'success');
 }
 
 // ══ PREFERENCES ══
