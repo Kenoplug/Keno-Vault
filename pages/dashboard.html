@@ -537,23 +537,122 @@
 
       <!-- ═══════ DEBT OPTIMIZER PAGE ═══════ -->
       <div class="page" id="page-debt">
-        <div class="greeting"><div><h2 class="serif greeting-title">Debt Paydown <span class="accent">Optimizer</span></h2><p class="text-dim" style="font-size:13px;">Snowball vs Avalanche — eliminate debt faster.</p></div></div>
+        <div class="greeting">
+          <div>
+            <h2 class="serif greeting-title">Debt Paydown <span class="accent">Optimizer</span></h2>
+            <p class="text-dim" style="font-size:13px;">Avalanche vs Snowball — compare strategies side-by-side and find the fastest path out of debt.</p>
+          </div>
+          <div class="greeting-actions">
+            <button class="btn btn-secondary btn-sm" onclick="runDebt()">↻ Refresh Analysis</button>
+          </div>
+        </div>
         <div id="debtLock" class="pro-gate-card">
           <div class="pro-gate-icon">⚖️</div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Debt Paydown Optimizer</div>
-          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Compare Snowball and Avalanche methods. Visualize how your net worth trajectory changes based on your debt elimination strategy.</p>
+          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Compare Snowball and Avalanche methods. See exactly how each strategy works against your debts — which saves more interest, which clears individual debts faster, and which fits your psychology.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
           <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
         </div>
         <div id="debtContent" style="display:none;">
-          <div class="kpi-grid" style="margin-bottom:16px;">
-            <div class="kpi-card"><div class="kpi-label">Avalanche (Fastest)</div><div class="kpi-value" id="avalancheTime" style="color:var(--green);">—</div><div class="kpi-change">Time to debt-free · saves most interest</div></div>
-            <div class="kpi-card"><div class="kpi-label">Snowball (Motivating)</div><div class="kpi-value" id="snowballTime" style="color:var(--gold);">—</div><div class="kpi-change">Time to debt-free · wins small debts first</div></div>
+          <!-- Extra Payment Slider -->
+          <div class="form-card" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+              <div style="flex:1;min-width:200px;">
+                <div style="font-weight:600;font-size:14px;margin-bottom:4px;">⚡ Extra Monthly Payment</div>
+                <div style="font-size:12px;color:var(--text-dim);">Additional money you can throw at your debts each month beyond the minimums.</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="mono" style="font-size:24px;font-weight:700;color:var(--accent);" id="debtExtraVal">₦50k</div>
+              </div>
+            </div>
+            <input type="range" id="debtExtraSlider" min="0" max="500000" step="5000" value="50000"
+              oninput="document.getElementById('debtExtraVal').textContent='₦'+Math.round(this.value/1000)+'k';runDebt()"
+              style="width:100%;margin-top:12px;"/>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;">
+              <span>₦0</span><span>₦500k</span>
+            </div>
           </div>
-          <div class="chart-card wide">
+
+          <!-- Debt Summary Cards -->
+          <div class="kpi-grid" style="margin-bottom:16px;" id="debtSummaryCards">
+            <div class="kpi-card"><div class="kpi-label">💳 Total Debt</div><div class="kpi-value sensitive" id="debtTotalBal" style="color:var(--red);">—</div><div class="kpi-change" id="debtCount">—</div></div>
+            <div class="kpi-card"><div class="kpi-label">📋 Monthly Minimums</div><div class="kpi-value sensitive" id="debtMinPmt" style="color:var(--gold);">—</div><div class="kpi-change">Required payments</div></div>
+            <div class="kpi-card"><div class="kpi-label">📊 Avg Interest Rate</div><div class="kpi-value" id="debtAvgRate" style="color:var(--red);">—</div><div class="kpi-change">Weighted by balance</div></div>
+            <div class="kpi-card"><div class="kpi-label">⚡ Total Monthly Payment</div><div class="kpi-value sensitive" id="debtTotalPmt" style="color:var(--accent);">—</div><div class="kpi-change">Minimums + extra</div></div>
+          </div>
+
+          <!-- Strategy Comparison -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;" id="debtStrategyGrid">
+            <div class="chart-card" style="border-top:3px solid #34d399;" id="avalancheCard">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <span style="font-size:20px;">❄️</span>
+                <div>
+                  <div class="chart-heading" style="font-size:16px;">Avalanche Method</div>
+                  <div style="font-size:10px;color:var(--text-dim);">Highest interest rate first</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:10px;color:var(--text-dim);">Time to Debt-Free</div>
+                  <div class="mono" style="font-size:18px;font-weight:700;color:#34d399;" id="avalTime">—</div>
+                </div>
+                <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:10px;color:var(--text-dim);">Total Interest Paid</div>
+                  <div class="mono sensitive" style="font-size:18px;font-weight:700;color:var(--red);" id="avalInterest">—</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Payoff order:</div>
+              <div id="avalPayoffOrder" style="display:flex;flex-direction:column;gap:4px;font-size:12px;"></div>
+            </div>
+            <div class="chart-card" style="border-top:3px solid #f4c553;" id="snowballCard">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <span style="font-size:20px;">⛄</span>
+                <div>
+                  <div class="chart-heading" style="font-size:16px;">Snowball Method</div>
+                  <div style="font-size:10px;color:var(--text-dim);">Smallest balance first</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+                <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:10px;color:var(--text-dim);">Time to Debt-Free</div>
+                  <div class="mono" style="font-size:18px;font-weight:700;color:#f4c553;" id="snowTime">—</div>
+                </div>
+                <div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">
+                  <div style="font-size:10px;color:var(--text-dim);">Total Interest Paid</div>
+                  <div class="mono sensitive" style="font-size:18px;font-weight:700;color:var(--red);" id="snowInterest">—</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">Payoff order:</div>
+              <div id="snowPayoffOrder" style="display:flex;flex-direction:column;gap:4px;font-size:12px;"></div>
+            </div>
+          </div>
+
+          <!-- Timeline Chart -->
+          <div class="chart-card wide" style="margin-bottom:16px;">
             <div class="chart-heading">Debt Elimination Timeline</div>
-            <div style="height:250px;margin-top:12px;"><canvas id="debtChart"></canvas></div>
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Total remaining debt month by month</div>
+            <div style="height:260px;margin-top:8px;"><canvas id="debtChart"></canvas></div>
           </div>
+
+          <!-- Per-Debt Breakdown Table -->
+          <div class="ledger-card" style="margin-bottom:16px;">
+            <div class="ledger-header">
+              <div class="serif ledger-title">Per-Debt Breakdown</div>
+              <div style="font-size:12px;color:var(--text-dim);">Payoff month for each strategy</div>
+            </div>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead><tr>
+                  <th>Debt</th><th>Balance</th><th>Rate</th><th>Min Payment</th>
+                  <th>Avalanche Payoff</th><th>Snowball Payoff</th>
+                </tr></thead>
+                <tbody id="debtBreakdownBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Recommendation -->
+          <div id="debtRecommendation"></div>
         </div>
       </div>
 

@@ -949,18 +949,158 @@ function runFire() {
 
 function runDebt() {
   if (!isPro()) return;
-  const debts = assets.filter(a => a.cat === 'liability').map(a => ({ name: a.name, balance: a.value, minPayment: Math.max(a.value * 0.02, 5000), interestRate: a.rate || 18 }));
-  if (!debts.length) { ['avalancheTime', 'snowballTime'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = 'No debts logged'; }); return; }
-  const aval = Calculators.debtPaydown(debts, 50000, 'avalanche');
-  const snow = Calculators.debtPaydown(debts, 50000, 'snowball');
-  const aEl = document.getElementById('avalancheTime'); if (aEl) aEl.textContent = aval.years + ' yr';
-  const sEl = document.getElementById('snowballTime');  if (sEl) sEl.textContent = snow.years + ' yr';
-  const ctx = document.getElementById('debtChart'); if (!ctx) return;
-  const cc = getCC();
-  const maxM = Math.max(aval.timeline.length, snow.timeline.length);
-  const data = { labels: Array.from({ length: maxM }, (_, i) => i + 1), datasets: [{ label: 'Avalanche', data: aval.timeline.map(t => t.totalDebt), borderColor: '#34d399', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false }, { label: 'Snowball', data: snow.timeline.map(t => t.totalDebt), borderColor: '#f4c553', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false }] };
-  if (debtChart) { debtChart.data = data; debtChart.update(); return; }
-  debtChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmtShort(c.parsed.y)}` } } }, scales: { x: { title: { display: true, text: 'Month', font: { size: 10 } }, grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v) } } } } });
+  const debts = assets.filter(a => a.cat === 'liability').map(a => ({
+    name: a.name, balance: a.value,
+    minPayment: Math.max(a.value * 0.02, 5000),
+    interestRate: a.rate || 18
+  }));
+  if (!debts.length) {
+    document.getElementById('debtSummaryCards').innerHTML = '<div class="kpi-card" style="grid-column:span 4;"><div class="empty"><div class="empty-icon">📋</div>No debts logged. Add a liability entry to get started.</div></div>';
+    ['debtStrategyGrid','debtBreakdownBody','debtRecommendation'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.innerHTML = '';
+    });
+    var chartCtx = document.getElementById('debtChart'); if (chartCtx) { chartCtx.style.display = 'none'; if (debtChart) { debtChart.destroy(); debtChart = null; } }
+    return;
+  }
+
+  var extraPmt = parseInt(document.getElementById('debtExtraSlider')?.value || 50000);
+  var aval = Calculators.debtPaydown(debts, extraPmt, 'avalanche');
+  var snow = Calculators.debtPaydown(debts, extraPmt, 'snowball');
+
+  // ══ Summary Cards ══
+  var totalBal = debts.reduce(function(s, d) { return s + d.balance; }, 0);
+  var totalMin = debts.reduce(function(s, d) { return s + d.minPayment; }, 0);
+  var sumRb = 0;
+  debts.forEach(function(d) { sumRb += d.balance * d.interestRate; });
+  var avgRate = totalBal > 0 ? (sumRb / totalBal).toFixed(1) : '0';
+
+  document.getElementById('debtTotalBal').textContent = fmt(totalBal);
+  document.getElementById('debtCount').textContent = debts.length + ' debt' + (debts.length !== 1 ? 's' : '');
+  document.getElementById('debtMinPmt').textContent = fmt(totalMin);
+  document.getElementById('debtAvgRate').textContent = avgRate + '%';
+  document.getElementById('debtTotalPmt').textContent = fmt(totalMin + extraPmt);
+
+  // ══ Strategy Comparison ══
+  // Avalanche
+  document.getElementById('avalTime').textContent = aval.months + ' mo (' + aval.years + ' yr)';
+  document.getElementById('avalInterest').textContent = fmt(aval.totalInterestPaid);
+  var avalOrderEl = document.getElementById('avalPayoffOrder');
+  avalOrderEl.innerHTML = aval.payoffOrder.map(function(d, i) {
+    var monthsStr = d.month + ' mo (' + (d.month / 12).toFixed(1) + ' yr)';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;">' +
+      '<span style="width:20px;height:20px;border-radius:50%;background:rgba(52,211,153,0.15);color:#34d399;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' + (i + 1) + '</span>' +
+      '<span style="flex:1;font-weight:500;">' + d.name + '</span>' +
+      '<span style="font-size:10px;color:var(--text-muted);">' + monthsStr + '</span>' +
+    '</div>';
+  }).join('');
+
+  // Snowball
+  document.getElementById('snowTime').textContent = snow.months + ' mo (' + snow.years + ' yr)';
+  document.getElementById('snowInterest').textContent = fmt(snow.totalInterestPaid);
+  var snowOrderEl = document.getElementById('snowPayoffOrder');
+  snowOrderEl.innerHTML = snow.payoffOrder.map(function(d, i) {
+    var monthsStr = d.month + ' mo (' + (d.month / 12).toFixed(1) + ' yr)';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:6px;">' +
+      '<span style="width:20px;height:20px;border-radius:50%;background:rgba(244,197,83,0.15);color:#f4c553;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">' + (i + 1) + '</span>' +
+      '<span style="flex:1;font-weight:500;">' + d.name + '</span>' +
+      '<span style="font-size:10px;color:var(--text-muted);">' + monthsStr + '</span>' +
+    '</div>';
+  }).join('');
+
+  // ══ Chart ══
+  var ctx = document.getElementById('debtChart');
+  if (ctx) {
+    ctx.style.display = '';
+    var cc = getCC();
+    var maxM = Math.max(aval.timeline.length, snow.timeline.length);
+    var data = {
+      labels: Array.from({ length: maxM }, function(_, i) { return i + 1; }),
+      datasets: [
+        { label: 'Avalanche', data: aval.timeline.map(function(t) { return t.totalDebt; }), borderColor: '#34d399', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false },
+        { label: 'Snowball', data: snow.timeline.map(function(t) { return t.totalDebt; }), borderColor: '#f4c553', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false }
+      ]
+    };
+    if (debtChart) { debtChart.data = data; debtChart.update(); } else {
+      debtChart = new Chart(ctx, { type: 'line', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { title: { display: true, text: 'Month', font: { size: 10 } }, grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: function(v) { return fmtShort(v); } } } } } });
+    }
+  }
+
+  // ══ Per-Debt Breakdown Table ══
+  var tbody = document.getElementById('debtBreakdownBody');
+  if (tbody) {
+    // Build a map from debt name to its perDebt info for each strategy
+    var avalMap = {}; aval.perDebt.forEach(function(d) { avalMap[d.name] = d; });
+    var snowMap = {}; snow.perDebt.forEach(function(d) { snowMap[d.name] = d; });
+
+    tbody.innerHTML = debts.map(function(d) {
+      var aInfo = avalMap[d.name];
+      var sInfo = snowMap[d.name];
+      var aMonth = aInfo ? aInfo.payoffMonth : '—';
+      var sMonth = sInfo ? sInfo.payoffMonth : '—';
+      var aStr = aMonth !== '—' ? aMonth + ' mo (' + (aMonth / 12).toFixed(1) + ' yr)' : '—';
+      var sStr = sMonth !== '—' ? sMonth + ' mo (' + (sMonth / 12).toFixed(1) + ' yr)' : '—';
+      var faster = aMonth !== '—' && sMonth !== '—' ? (aMonth < sMonth ? 'aval' : aMonth > sMonth ? 'snow' : 'tie') : null;
+      return '<tr>' +
+        '<td style="font-weight:500;">' + d.name + '</td>' +
+        '<td class="mono sensitive">' + fmt(d.balance) + '</td>' +
+        '<td class="mono">' + d.interestRate + '%</td>' +
+        '<td class="mono">' + fmt(d.minPayment) + '</td>' +
+        '<td class="mono" style="color:' + (faster === 'aval' ? '#34d399' : 'var(--text-dim)') + ';">' + aStr + (faster === 'aval' ? ' ✓' : '') + '</td>' +
+        '<td class="mono" style="color:' + (faster === 'snow' ? '#f4c553' : 'var(--text-dim)') + ';">' + sStr + (faster === 'snow' ? ' ✓' : '') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ══ Recommendation ══
+  var recEl = document.getElementById('debtRecommendation');
+  if (recEl) {
+    var interestSaved = Math.abs(aval.totalInterestPaid - snow.totalInterestPaid);
+    var avalWins = aval.totalInterestPaid < snow.totalInterestPaid;
+    var firstAvalMonth = aval.payoffOrder.length > 0 ? aval.payoffOrder[0].month : 999;
+    var firstSnowMonth = snow.payoffOrder.length > 0 ? snow.payoffOrder[0].month : 999;
+    var snowClearsFirstFaster = firstSnowMonth < firstAvalMonth;
+
+    var winnerMethod, winnerColor, winnerIcon;
+    if (avalWins) {
+      winnerMethod = 'Avalanche saves you ' + fmt(interestSaved) + ' in interest. That\'s the mathematically optimal choice.';
+      winnerColor = '#34d399';
+      winnerIcon = '❄️';
+    } else if (interestSaved > 0) {
+      winnerMethod = 'Snowball saves you ' + fmt(interestSaved) + ' in interest — unusual, but it can happen when your highest-rate debt is also your smallest.';
+      winnerColor = '#f4c553';
+      winnerIcon = '⛄';
+    } else {
+      winnerMethod = 'Both strategies cost the same in interest. Choose based on psychology.';
+      winnerColor = 'var(--text-dim)';
+      winnerIcon = '⚖️';
+    }
+
+    recEl.innerHTML =
+      '<div class="chart-card wide" style="padding:20px;">' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:10px;">💡 Personalized Recommendation</div>' +
+        '<div style="display:flex;align-items:flex-start;gap:14px;padding:16px;background:var(--surface2);border:1px solid ' + winnerColor + '44;border-radius:12px;margin-bottom:14px;">' +
+          '<div style="font-size:28px;flex-shrink:0;">' + winnerIcon + '</div>' +
+          '<div>' +
+            '<div style="font-size:14px;font-weight:600;color:' + winnerColor + ';margin-bottom:4px;">' + winnerMethod + '</div>' +
+            '<div style="font-size:12px;color:var(--text-dim);line-height:1.7;">' +
+              '<strong>Avalanche</strong> targets the highest-interest debt first — mathematically optimal, saves the most money.<br/>' +
+              '<strong>Snowball</strong> targets the smallest balance first — quick wins boost motivation and adherence.' +
+              (snowClearsFirstFaster ? '<br/><br/>⛄ Snowball clears your first debt ' + (firstAvalMonth - firstSnowMonth) + ' months earlier — a motivational win.' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;color:var(--text-dim);line-height:1.6;">' +
+          '<div style="background:var(--surface2);border-radius:10px;padding:14px;">' +
+            '<div style="font-weight:600;color:#34d399;margin-bottom:4px;">❄️ Choose Avalanche if:</div>' +
+            'You want to minimize total interest paid. You\'re disciplined and don\'t need quick wins to stay motivated. Your highest-rate debts are significantly more expensive than your others.' +
+          '</div>' +
+          '<div style="background:var(--surface2);border-radius:10px;padding:14px;">' +
+            '<div style="font-weight:600;color:#f4c553;margin-bottom:4px;">⛄ Choose Snowball if:</div>' +
+            'You need momentum and early progress to stay on track. Your smallest debts stress you out more than high-rate ones. Behavioral psychology matters more to you than pure math.' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
 }
 
 function runTax() {

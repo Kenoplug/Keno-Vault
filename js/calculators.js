@@ -165,7 +165,12 @@ const Calculators = (() => {
   // ── Debt Paydown Optimizer ─────────────────────────────────────
   function debtPaydown(debts, extraMonthlyPayment = 0, method = 'avalanche') {
     // debts: [{ name, balance, minPayment, interestRate }]
-    let debtList = debts.map(d => ({ ...d, balance: d.balance }));
+    let debtList = debts.map(d => ({
+      ...d,
+      originalBalance: d.balance,
+      payoffMonth: null,
+      interestAccrued: 0,
+    }));
     const totalMinPayment = debtList.reduce((s, d) => s + d.minPayment, 0);
     const totalPayment    = totalMinPayment + extraMonthlyPayment;
 
@@ -176,6 +181,7 @@ const Calculators = (() => {
       debtList.sort((a, b) => a.balance - b.balance); // lowest balance first
     }
 
+    const payoffOrder = [];
     const timeline = [];
     let month = 0;
     let totalInterestPaid = 0;
@@ -189,6 +195,7 @@ const Calculators = (() => {
         if (d.balance <= 0) return;
         const interest = d.balance * (d.interestRate / 100 / 12);
         totalInterestPaid += interest;
+        d.interestAccrued += interest;
         d.balance += interest;
         const payment = Math.min(d.minPayment, d.balance);
         d.balance -= payment;
@@ -203,17 +210,40 @@ const Calculators = (() => {
         remaining  -= payment;
       }
 
+      // Record debts paid off this month
+      debtList.forEach(d => {
+        if (d.balance <= 0.01 && d.payoffMonth === null) {
+          d.payoffMonth = month;
+          d.balance = 0;
+          payoffOrder.push({ name: d.name, month });
+        }
+      });
+
       const totalRemaining = debtList.reduce((s, d) => s + Math.max(0, d.balance), 0);
       timeline.push({ month, totalDebt: Math.round(totalRemaining), totalInterestPaid: Math.round(totalInterestPaid) });
 
       if (totalRemaining <= 0.01) break;
     }
 
+    // Per-debt summary
+    const perDebt = debtList.map(d => ({
+      name: d.name,
+      originalBalance: d.originalBalance,
+      interestRate: d.interestRate,
+      minPayment: d.minPayment,
+      payoffMonth: d.payoffMonth || month,
+      totalInterestPaid: Math.round(d.interestAccrued || 0),
+    }));
+
     return {
       months: month,
       years: (month / 12).toFixed(1),
       totalInterestPaid: Math.round(totalInterestPaid),
+      totalMinPayment,
+      extraMonthlyPayment,
       timeline,
+      perDebt,
+      payoffOrder,
       method,
     };
   }
