@@ -516,8 +516,8 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
           <div class="section-body">
             <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Select your primary currency. All values display in this currency.</p>
             <div class="currency-grid" id="currencyGrid">
-              <div class="currency-chip active" onclick="setCurrency('NGN')">₦ NGN</div>
-              <div class="currency-chip" onclick="setCurrency('USD')">$ USD</div>
+              <div class="currency-chip" onclick="setCurrency('NGN')">₦ NGN</div>
+              <div class="currency-chip active" onclick="setCurrency('USD')">$ USD</div>
               <div class="currency-chip" onclick="setCurrency('GBP')">£ GBP</div>
               <div class="currency-chip" onclick="setCurrency('EUR')">€ EUR</div>
               <div class="currency-chip" onclick="setCurrency('CAD')">CA$ CAD</div>
@@ -906,7 +906,7 @@ function initSettingsUI() {
     const pinSec = document.getElementById('pinSetupSection');
     if (pinSec) pinSec.style.display = alEl.checked ? 'block' : 'none';
   }
-  const cur = localStorage.getItem('kv-base-currency') || 'NGN';
+  const cur = localStorage.getItem('kv-base-currency') || 'USD';
   document.querySelectorAll('.currency-chip').forEach(c => {
     c.classList.toggle('active', c.textContent.includes(cur));
   });

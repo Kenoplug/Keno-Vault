@@ -322,7 +322,7 @@ const Calculators = (() => {
   const MOCK_RATES = { USD:1, NGN:1550, GBP:0.79, EUR:0.92, CAD:1.36, AUD:1.53, GHS:15.2 };
   let _rates = { ...MOCK_RATES };
   let _ratesLastFetched = null;
-  let _baseCurrency = 'NGN';
+  let _baseCurrency = 'USD';
 
   async function fetchFXRates() {
     try {
@@ -359,7 +359,7 @@ const Calculators = (() => {
     }
   }
 
-  function convertCurrency(amount, from = 'NGN', to = 'NGN') {
+  function convertCurrency(amount, from = 'USD', to = 'USD') {
     if (from === to) return amount;
     const fromRate = _rates[from] || 1;
     const toRate   = _rates[to]   || 1;
@@ -372,7 +372,7 @@ const Calculators = (() => {
   }
 
   function getBaseCurrency() {
-    return localStorage.getItem('kv-base-currency') || 'NGN';
+    return localStorage.getItem('kv-base-currency') || 'USD';
   }
 
   function formatCurrency(amount, currency = null) {
