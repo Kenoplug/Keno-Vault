@@ -1224,7 +1224,7 @@ function runTax() {
 }
 
 function runOptimizer() {
-  if (!isPro()) return;
+  if (!isGrowth()) return;
   var res = Calculators.allocationOptimizer(assets);
   var el  = document.getElementById('optimizerRecs');
   if (!el) return;
@@ -1453,7 +1453,7 @@ function buildMiniDonut(segments, size) {
 
 
 function renderScore() {
-  if (!isPro()) return;
+  if (!isGrowth()) return;
   var s   = Calculators.netWorthScore(assets);
   var opt = Calculators.allocationOptimizer(assets);
 
@@ -1732,7 +1732,7 @@ function renderScoreRecommendations(s, opt) {
 
 
 async function renderCurrency() {
-  if (!isPro()) return;
+  if (!isGrowth()) return;
 
   // Show loading while fetching
   var kpiEl = document.getElementById('currencyKPIs');
