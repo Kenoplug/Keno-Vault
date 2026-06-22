@@ -318,24 +318,43 @@ const Calculators = (() => {
     };
   }
 
-  // ── FX Rates (mock + live fetch) ──────────────────────────────
-  const MOCK_RATES = { USD:1, NGN:1580, GBP:0.79, EUR:0.92, CAD:1.36, AUD:1.53, GHS:15.2 };
+  // ── FX Rates (live fetch + cache) ───────────────────────────────
+  const MOCK_RATES = { USD:1, NGN:1550, GBP:0.79, EUR:0.92, CAD:1.36, AUD:1.53, GHS:15.2 };
   let _rates = { ...MOCK_RATES };
+  let _ratesLastFetched = null;
   let _baseCurrency = 'NGN';
 
   async function fetchFXRates() {
     try {
-      // Free tier: exchangerate-api or frankfurter.app
-      const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=NGN,GBP,EUR,CAD,AUD');
-      if (!res.ok) throw new Error('API error');
+      // open.er-api.com — free, no key, supports NGN + 160 currencies
+      const res = await fetch('https://open.er-api.com/v6/latest/USD');
+      if (!res.ok) throw new Error('API status ' + res.status);
       const data = await res.json();
-      _rates = { USD: 1, ...data.rates };
-      localStorage.setItem('kv-fx-rates', JSON.stringify({ rates: _rates, fetchedAt: Date.now() }));
+      if (data.result !== 'success') throw new Error('API result: ' + data.result);
+      // Extract rates we need
+      const raw = data.rates;
+      _rates = {
+        USD: 1,
+        NGN: raw.NGN || MOCK_RATES.NGN,
+        GBP: raw.GBP || MOCK_RATES.GBP,
+        EUR: raw.EUR || MOCK_RATES.EUR,
+        CAD: raw.CAD || MOCK_RATES.CAD,
+        AUD: raw.AUD || MOCK_RATES.AUD,
+        GHS: raw.GHS || MOCK_RATES.GHS,
+      };
+      _ratesLastFetched = Date.now();
+      localStorage.setItem('kv-fx-rates', JSON.stringify({ rates: _rates, fetchedAt: _ratesLastFetched }));
       return _rates;
     } catch(e) {
-      console.warn('[FX] Using cached/mock rates:', e.message);
+      console.warn('[FX] Live fetch failed, trying cache:', e.message);
       const cached = localStorage.getItem('kv-fx-rates');
-      if (cached) _rates = JSON.parse(cached).rates;
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          _rates = parsed.rates;
+          _ratesLastFetched = parsed.fetchedAt || null;
+        } catch(pe) {}
+      }
       return _rates;
     }
   }
@@ -367,13 +386,17 @@ const Calculators = (() => {
   // Init
   async function init() {
     _baseCurrency = getBaseCurrency();
-    // Check if we have fresh rates (< 24hrs)
+    // Check if we have fresh rates (< 12hrs)
     const cached = localStorage.getItem('kv-fx-rates');
     if (cached) {
-      const { rates, fetchedAt } = JSON.parse(cached);
-      if (Date.now() - fetchedAt < 24 * 60 * 60 * 1000) {
-        _rates = rates; return;
-      }
+      try {
+        const parsed = JSON.parse(cached);
+        const { rates, fetchedAt } = parsed;
+        _ratesLastFetched = fetchedAt || null;
+        if (fetchedAt && Date.now() - fetchedAt < 12 * 60 * 60 * 1000) {
+          _rates = rates; return;
+        }
+      } catch(e) {}
     }
     await fetchFXRates();
   }
@@ -385,5 +408,6 @@ const Calculators = (() => {
     fetchFXRates, convertCurrency, setBaseCurrency, getBaseCurrency,
     formatCurrency, init,
     get rates() { return _rates; },
+    get ratesLastFetched() { return _ratesLastFetched; },
   };
 })();

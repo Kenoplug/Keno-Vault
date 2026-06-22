@@ -1648,22 +1648,45 @@ function renderScoreRecommendations(s, opt) {
 }
 
 
-function renderCurrency() {
+async function renderCurrency() {
   if (!isPro()) return;
-  const total = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0)
-              - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
-  const currencies = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
-  const kpiEl = document.getElementById('currencyKPIs');
-  if (kpiEl) kpiEl.innerHTML = currencies.map(c => {
-    const converted = Calculators.convertCurrency(total, 'NGN', c);
-    return `<div class="kpi-card"><div class="kpi-label">${c}</div><div class="kpi-value sensitive">${Calculators.formatCurrency(converted, c)}</div><div class="kpi-change">Net Worth</div></div>`;
+
+  // Show loading while fetching
+  var kpiEl = document.getElementById('currencyKPIs');
+  var rateEl = document.getElementById('fxRateDisplay');
+  if (kpiEl) kpiEl.innerHTML = '<div class="kpi-card" style="grid-column:span 5;text-align:center;padding:28px;"><div class="spinner" style="margin:0 auto 12px;"></div><div style="font-size:13px;color:var(--text-dim);">Fetching live exchange rates…</div></div>';
+  if (rateEl) rateEl.innerHTML = '';
+
+  // Fetch fresh rates
+  await Calculators.fetchFXRates();
+
+  var total = assets.filter(function(a) { return a.cat !== 'liability'; }).reduce(function(s, a) { return s + a.value; }, 0)
+              - assets.filter(function(a) { return a.cat === 'liability'; }).reduce(function(s, a) { return s + a.value; }, 0);
+  var currencies = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
+
+  if (kpiEl) kpiEl.innerHTML = currencies.map(function(c) {
+    var converted = Calculators.convertCurrency(total, 'NGN', c);
+    return '<div class="kpi-card"><div class="kpi-label">' + c + '</div><div class="kpi-value sensitive">' + Calculators.formatCurrency(converted, c) + '</div><div class="kpi-change">Net Worth</div></div>';
   }).join('');
-  const rateEl = document.getElementById('fxRateDisplay');
-  if (rateEl) rateEl.innerHTML = Object.entries(Calculators.rates).map(([k, v]) =>
-    `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;">
-      <div style="font-size:10px;color:var(--text-dim);">1 USD =</div>
-      <div class="mono" style="font-size:14px;font-weight:600;">${k} ${typeof v === 'number' ? v.toFixed(2) : v}</div>
-    </div>`).join('');
+
+  // Rates display with last-updated info
+  var lastFetched = Calculators.ratesLastFetched;
+  var timeAgo = lastFetched ? Math.floor((Date.now() - lastFetched) / 60000) + ' min ago' : 'live';
+  if (rateEl) rateEl.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
+      '<span style="font-size:11px;color:var(--text-muted);">🕐 Updated: ' + timeAgo + '</span>' +
+      '<button class="btn btn-secondary btn-sm" onclick="renderCurrency()">↻ Refresh Rates</button>' +
+    '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;">' +
+      Object.entries(Calculators.rates).map(function(e) {
+        var k = e[0], v = e[1];
+        if (k === 'USD') return '';
+        return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;">' +
+          '<div style="font-size:10px;color:var(--text-dim);">1 USD =</div>' +
+          '<div class="mono" style="font-size:14px;font-weight:600;">' + k + ' ' + (typeof v === 'number' ? v.toFixed(2) : v) + '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
 }
 
 // ══ RENDER ALL ════════════════════════════════════════════════════
