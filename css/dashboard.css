@@ -682,7 +682,7 @@ canvas {
   .greeting-actions      { justify-content: flex-start; }
 
   /* Modals — full screen on mobile */
-  .modal                 { width: 100% !important; max-height: 85vh; border-radius: 16px 16px 0 0; }
+  .modal                 { width: 100% !important; max-height: 85vh; border-radius: 16px 16px 0 0; padding-bottom: 80px !important; }
   .modal-overlay.open    { align-items: flex-end; }
 }
 @media (max-width: 480px) {
