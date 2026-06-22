@@ -1245,7 +1245,7 @@ function runOptimizer() {
   // ── Top overview row ────────────────────────────────────────
   html +=
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;">' +
-      buildStatCard('Total Assets', fmt(total), '#f0f0f0', '') +
+      buildStatCard('Total Assets', fmt(total), getTheme() === 'light' ? '#0a0a0a' : '#f0f0f0', '') +
       buildStatCard('Risk Level', riskIcon + ' ' + riskScore, riskColor, 'Based on concentration & debt') +
       buildStatCard('Cash %', cashPct + '%', parseFloat(cashPct) > 35 ? '#f4c553' : parseFloat(cashPct) < 5 ? '#f87171' : '#34d399', 'Ideal: 10–30%') +
       buildStatCard('Investment %', invPct + '%', parseFloat(invPct) < 15 ? '#f87171' : parseFloat(invPct) >= 30 ? '#34d399' : '#f4c553', 'Ideal: >30%') +
