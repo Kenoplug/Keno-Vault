@@ -949,20 +949,33 @@ function runFire() {
 
 function runDebt() {
   if (!isPro()) return;
-  const debts = assets.filter(a => a.cat === 'liability').map(a => ({
-    name: a.name, balance: a.value,
-    minPayment: Math.max(a.value * 0.02, 5000),
-    interestRate: a.rate || 18
-  }));
+  var debts = assets.filter(function(a) { return a.cat === 'liability'; }).map(function(a) {
+    return {
+      name: a.name, balance: a.value,
+      minPayment: Math.max(a.value * 0.02, 5000),
+      interestRate: a.rate || 18
+    };
+  });
+
+  // ══ No debts — show placeholder, keep DOM intact ══
   if (!debts.length) {
-    document.getElementById('debtSummaryCards').innerHTML = '<div class="kpi-card" style="grid-column:span 4;"><div class="empty"><div class="empty-icon">📋</div>No debts logged. Add a liability entry to get started.</div></div>';
-    ['debtStrategyGrid','debtBreakdownBody','debtRecommendation'].forEach(function(id) {
-      var el = document.getElementById(id); if (el) el.innerHTML = '';
+    ['debtTotalBal','debtMinPmt','debtAvgRate','debtTotalPmt'].forEach(function(id) {
+      var el = document.getElementById(id); if (el) el.textContent = '—';
     });
-    var chartCtx = document.getElementById('debtChart'); if (chartCtx) { chartCtx.style.display = 'none'; if (debtChart) { debtChart.destroy(); debtChart = null; } }
+    var cnt = document.getElementById('debtCount'); if (cnt) cnt.textContent = 'No debts yet';
+    var grid = document.getElementById('debtStrategyGrid'); if (grid) grid.innerHTML =
+      '<div class="chart-card wide" style="text-align:center;padding:40px;">' +
+        '<div class="empty-icon" style="font-size:28px;">📋</div>' +
+        '<div style="font-size:14px;font-weight:600;color:var(--text-dim);margin-top:8px;">No liabilities logged yet</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Add a liability entry (e.g. GTBank loan, car finance) from the Assets page to unlock the Debt Optimizer.</div>' +
+      '</div>';
+    var body = document.getElementById('debtBreakdownBody'); if (body) body.innerHTML = '';
+    var rec  = document.getElementById('debtRecommendation'); if (rec) rec.innerHTML = '';
+    var ctx  = document.getElementById('debtChart'); if (ctx) { ctx.style.display = 'none'; if (debtChart) { debtChart.destroy(); debtChart = null; } }
     return;
   }
 
+  try {
   var extraPmt = parseInt(document.getElementById('debtExtraSlider')?.value || 50000);
   var aval = Calculators.debtPaydown(debts, extraPmt, 'avalanche');
   var snow = Calculators.debtPaydown(debts, extraPmt, 'snowball');
@@ -1100,6 +1113,11 @@ function runDebt() {
           '</div>' +
         '</div>' +
       '</div>';
+  }
+  } catch (e) {
+    console.error('[Debt] runDebt error:', e.message);
+    var grid = document.getElementById('debtStrategyGrid');
+    if (grid) grid.innerHTML = '<div class="chart-card wide" style="text-align:center;padding:40px;color:var(--red);">Error: ' + e.message + '</div>';
   }
 }
 
