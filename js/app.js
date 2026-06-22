@@ -5,7 +5,11 @@
 // ══ CONFIG ══════════════════════════════════════════════════════
 // Shared constants (SUPA_URL, SUPA_KEY, ADMIN_EMAIL, SITE_URL) are in js/config.js
 // Load that file before this one.
-const FREE_LIMIT  = 10;
+const FREE_LIMIT = 10;
+
+// ══ GLOBAL HELPERS (used by inline HTML oninput handlers) ═══════
+function curSym()  { return (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(Calculators.getBaseCurrency()) : '$'; }
+function fmtAmt(v) { return curSym() + Math.round(v || 0).toLocaleString(); }
 
 const sb = createSupabaseClient();
 
@@ -924,6 +928,13 @@ function renderInvestmentPage() {
 // ══ PRO ENGINES ═══════════════════════════════════════════════════
 function runFire() {
   if (!isPro()) return;
+  // Refresh slider displays with current currency symbol
+  var sSl = document.getElementById('fireSavings');
+  var sSv = document.getElementById('savingsVal');
+  if (sSl && sSv) sSv.textContent = fmtAmt(parseInt(sSl.value) || 500);
+  var eSl = document.getElementById('fireExpenses');
+  var eSv = document.getElementById('expensesVal');
+  if (eSl && eSv) eSv.textContent = fmtAmt(parseInt(eSl.value) || 30000);
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
   const res = Calculators.fireSimulation({
     currentAge:       parseInt(document.getElementById('fireAge').value),
@@ -950,6 +961,10 @@ function runFire() {
 
 function runDebt() {
   if (!isPro()) return;
+  // Refresh slider display with current currency symbol
+  var sl = document.getElementById('debtExtraSlider');
+  var sv = document.getElementById('debtExtraVal');
+  if (sl && sv) sv.textContent = fmtAmt(parseInt(sl.value) || 500);
   var debts = assets.filter(function(a) { return a.cat === 'liability'; }).map(function(a) {
     return {
       name: a.name, balance: a.value,

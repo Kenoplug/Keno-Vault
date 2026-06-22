@@ -506,7 +506,7 @@
               </div>
               <div class="slider-group">
                 <label class="slider-label">Monthly Savings <span id="savingsVal" class="slider-val">$500</span></label>
-                <input type="range" id="fireSavings" min="50" max="10000" step="50" value="500" oninput="document.getElementById('savingsVal').textContent='$'+Math.round(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireSavings" min="50" max="10000" step="50" value="500" oninput="document.getElementById('savingsVal').textContent=fmtAmt(this.value);runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Return % <span id="returnVal" class="slider-val">10%</span></label>
@@ -518,7 +518,7 @@
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Expenses <span id="expensesVal" class="slider-val">$30,000</span></label>
-                <input type="range" id="fireExpenses" min="6000" max="240000" step="1000" value="30000" oninput="document.getElementById('expensesVal').textContent='$'+Math.round(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireExpenses" min="6000" max="240000" step="1000" value="30000" oninput="document.getElementById('expensesVal').textContent=fmtAmt(this.value);runFire()">
               </div>
             </div>
             <div>
@@ -566,7 +566,7 @@
               </div>
             </div>
             <input type="range" id="debtExtraSlider" min="0" max="5000" step="50" value="500"
-              oninput="document.getElementById('debtExtraVal').textContent='$'+Math.round(this.value).toLocaleString();runDebt()"
+              oninput="document.getElementById('debtExtraVal').textContent=fmtAmt(this.value);runDebt()"
               style="width:100%;margin-top:12px;"/>
             <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;">
               <span>$0</span><span>$5,000</span>
