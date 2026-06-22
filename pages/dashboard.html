@@ -331,6 +331,10 @@
           <div class="chart-card">
             <div class="chart-title">Activity</div>
             <div class="chart-heading">Recent Changes</div>
+            <div style="display:flex;gap:6px;margin-top:4px;">
+              <button class="toggle-chip active" id="actTabFeed" onclick="showActivityTab('feed')">Activity</button>
+              <button class="toggle-chip" id="actTabAudit" onclick="showActivityTab('audit')">Audit Log</button>
+            </div>
             <div id="activityFeed" style="margin-top:12px;max-height:230px;overflow-y:auto;">
               <div class="empty"><div class="empty-icon" style="font-size:24px;">📋</div>No activity yet</div>
             </div>

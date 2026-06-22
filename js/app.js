@@ -814,6 +814,34 @@ function renderActivity() {
     </div>`).join('');
 }
 
+async function showActivityTab(tab) {
+  document.getElementById('actTabFeed').classList.toggle('active', tab === 'feed');
+  document.getElementById('actTabAudit').classList.toggle('active', tab === 'audit');
+  if (tab === 'feed') { renderActivity(); return; }
+  // Load audit log from Supabase
+  var feed = document.getElementById('activityFeed');
+  if (!feed) return;
+  if (!isGrowth()) { feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;">🔒</div>Audit log is a Growth feature</div>'; return; }
+  feed.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-dim);"><div class="spinner" style="margin:0 auto 8px;width:20px;height:20px;border-width:2px;"></div>Loading audit log…</div>';
+  try {
+    var { data } = await sb.from('audit_log').select('*').order('created_at', { ascending: false }).limit(50);
+    if (!data || !data.length) { feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;">📋</div>No audit entries yet</div>'; return; }
+    var icons = { created:'➕', updated:'✎', deleted:'🗑', login:'🔑' };
+    feed.innerHTML = data.map(function(e) {
+      var dt = new Date(e.created_at);
+      var ts = dt.toLocaleDateString('en',{month:'short',day:'numeric'}) + ' ' + dt.toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">' +
+        '<div style="font-size:14px;flex-shrink:0;">' + (icons[e.action] || '📌') + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-size:12px;font-weight:500;">' + (e.entity_name || e.action) + '</div>' +
+          '<div style="font-size:11px;color:var(--text-dim);">' + e.action + ' · ' + (e.entity_type || '') + (e.details ? ' · ' + e.details : '') + '</div>' +
+          '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">' + ts + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } catch(e) { feed.innerHTML = '<div class="empty" style="color:var(--red);">Error: ' + e.message + '</div>'; }
+}
+
 // ══ KPIs ═════════════════════════════════════════════════════════
 function renderKPIs() {
   let ta = 0, tl = 0, tp = 0, ti = 0, tint = 0;
