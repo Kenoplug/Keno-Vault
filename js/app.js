@@ -2005,11 +2005,7 @@ async function doBootWithSession(session, source) {
   showLoading('Loading your vault…');
 
   try {
-    // Add 8s timeout to each loader — Supabase deadlocks shouldn't freeze the app
-    var withTimeout = function(p, name) {
-      return Promise.race([p, new Promise(function(r) { setTimeout(function() { console.warn('[Boot] Timeout: ' + name); r(); }, 8000); })]);
-    };
-    await Promise.all([withTimeout(loadSubscription(),'sub'), withTimeout(loadAssets(),'assets'), withTimeout(loadHistory(),'history')]);
+    await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
     loadGoals(); // Non-blocking
     console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
     Security.init(isPro());
