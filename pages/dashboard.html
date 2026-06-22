@@ -161,39 +161,54 @@
 <div class="modal-overlay" id="upgradeModal">
   <div class="modal" style="text-align:center;">
     <div style="font-size:44px;margin-bottom:16px;">⬡</div>
-    <div class="modal-title">Upgrade to Keno Vault Pro</div>
-    <div class="modal-sub">Unlock your full financial intelligence suite</div>
-    <div class="pro-features-grid" style="margin-bottom:20px;">
-      <div class="pro-features-list">
+    <div class="modal-title">Unlock Keno Vault</div>
+    <div class="modal-sub">Choose the plan that fits your wealth journey</div>
+
+    <!-- GROWTH CARD -->
+    <div style="background:var(--surface2);border:2px solid var(--accent);border-radius:14px;padding:20px;margin-bottom:12px;position:relative;">
+      <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;">MOST POPULAR</div>
+      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:2px;margin-top:4px;">Growth ⬡</div>
+      <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;">$2.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
         <div class="pro-feature-item">✓ Unlimited entries</div>
+        <div class="pro-feature-item">✓ Unlimited history</div>
+        <div class="pro-feature-item">✓ Multi-Currency (160+)</div>
+        <div class="pro-feature-item">✓ Net Worth Score</div>
+        <div class="pro-feature-item">✓ Asset Optimizer</div>
+        <div class="pro-feature-item">✓ Goal Tracker</div>
+        <div class="pro-feature-item">✓ Custom Categories</div>
+        <div class="pro-feature-item">✓ Audit Log</div>
+      </div>
+      <div class="payment-instructions" style="font-size:11px;padding:12px;">
+        1. Send <strong>$2.99 USDT (TRC20)</strong> to the wallet below<br/>
+        2. Email receipt + your email to <strong>kenovault@gmail.com</strong><br/>
+        3. Activated within 24 hours ⚡<br/>
+        <span class="mono" style="font-size:10px;color:var(--accent);word-break:break-all;">TFzUFQj1SUB3GpvaZDq3ZbFrXEB4LjxkVv</span>
+      </div>
+    </div>
+
+    <!-- PRO CARD -->
+    <div style="background:var(--surface2);border:2px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;">
+      <div style="font-size:16px;font-weight:700;color:#f97316;margin-bottom:2px;">Pro ⬡</div>
+      <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;">$6.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
+        <div class="pro-feature-item">✓ Everything in Growth</div>
         <div class="pro-feature-item">✓ FIRE Simulator</div>
-        <div class="pro-feature-item">✓ Privacy Shield (B key)</div>
-        <div class="pro-feature-item">✓ Session Auto-Lock</div>
         <div class="pro-feature-item">✓ Tax-Drag Simulator</div>
         <div class="pro-feature-item">✓ Debt Optimizer</div>
+        <div class="pro-feature-item">✓ Depreciation Engine</div>
+        <div class="pro-feature-item">✓ Privacy Shield</div>
         <div class="pro-feature-item">✓ AES Encrypted Backups</div>
         <div class="pro-feature-item">✓ Legacy Mode</div>
-        <div class="pro-feature-item">✓ Net Worth Score</div>
-        <div class="pro-feature-item">✓ Multi-Currency FX</div>
-        <div class="pro-feature-item">✓ Depreciation Engine</div>
-        <div class="pro-feature-item">✓ Asset Optimizer</div>
       </div>
-      <div class="upgrade-price-box">
-        <div class="upgrade-price">$4.99<span>/mo</span></div>
-        <div style="font-size:12px;color:var(--text-dim);">or $39.99/year · Save 33%</div>
+      <div class="payment-instructions" style="font-size:11px;padding:12px;">
+        1. Send <strong>$6.99 USDT (TRC20)</strong> to the wallet below<br/>
+        2. Email receipt + your email to <strong>kenovault@gmail.com</strong><br/>
+        3. Activated within 24 hours ⚡<br/>
+        <span class="mono" style="font-size:10px;color:var(--accent);word-break:break-all;">TFzUFQj1SUB3GpvaZDq3ZbFrXEB4LjxkVv</span>
       </div>
     </div>
-    <div class="payment-instructions">
-      <div class="panel-label" style="margin-bottom:8px;">How to subscribe</div>
-      <div style="font-size:13px;color:var(--text-dim);line-height:1.8;text-align:left;">
-        1. Send <strong style="color:var(--text);">$4.99 USDT (TRC20)</strong> to:<br/>
-        <span class="mono" style="font-size:11px;color:var(--accent);word-break:break-all;">TFzUFQj1SUB3GpvaZDq3ZbFrXEB4LjxkVv</span><br/><br/>
-        2. Email receipt + your Google account email to:<br/>
-        <span style="color:var(--accent);">kenovault@gmail.com</span><br/><br/>
-        3. Pro activated within <strong style="color:var(--text);">24 hours ⚡</strong>
-      </div>
-    </div>
-    <button class="btn btn-secondary" onclick="closeModal('upgradeModal')" style="width:100%;margin-top:12px;">Maybe later</button>
+    <button class="btn btn-secondary" onclick="closeModal('upgradeModal')" style="width:100%;">Maybe later</button>
   </div>
 </div>
 
@@ -282,7 +297,7 @@
             <div style="font-weight:600;font-size:14px;">Unlock Keno Vault Pro ⬡</div>
             <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Unlimited entries, FIRE simulator, privacy shield, tax simulator & more.</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('upgradeModal')">Upgrade · $4.99/mo →</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
 
         <!-- KPIs -->
@@ -495,7 +510,7 @@
           <div class="serif" style="font-size:20px;margin-bottom:8px;">FIRE Retirement Simulator</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Drag sliders to simulate retirement scenarios in real time. Calculate your FI Number and see your financial independence trajectory.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
         <div id="fireContent" style="display:none;">
           <div class="fire-layout">
@@ -556,7 +571,7 @@
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Debt Paydown Optimizer</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Compare Snowball and Avalanche methods. See exactly how each strategy works against your debts — which saves more interest, which clears individual debts faster, and which fits your psychology.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
         <div id="debtContent" style="display:none;">
           <!-- Extra Payment Slider -->
@@ -679,7 +694,7 @@
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Tax-Drag & Net-of-Tax Simulator</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Know your true take-home wealth. Simulates CGT and withholding taxes on liquidation across all your assets.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
         <div id="taxContent" style="display:none;">
           <div class="kpi-grid" style="margin-bottom:16px;">
@@ -720,7 +735,7 @@
             Get a full breakdown of your portfolio allocation, concentration risks, liquidity analysis, and personalised diversification recommendations.
           </p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
         <div id="optimizerContent" style="display:none;">
           <div id="optimizerRecs"></div>
@@ -743,7 +758,7 @@
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Goal Tracker</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Set wealth milestones with target dates. Track progress with visual bars and projected arrival dates based on your savings rate.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Growth Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Growth →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
         <div id="goalsContent" style="display:none;">
           <div id="goalsList" style="display:flex;flex-direction:column;gap:14px;"></div>
@@ -790,7 +805,7 @@
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Net Worth Score (0–100)</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">A proprietary score evaluating debt ratio, liquidity, investment diversification and portfolio balance.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
 
         <!-- Rich Pro content -->
@@ -915,7 +930,7 @@
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Real-Time FX Rate Syncing</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">View your net worth in USD, GBP, EUR and more with live exchange rates updated daily.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
         </div>
         <div id="currencyContent" style="display:none;">
           <div class="kpi-grid" id="currencyKPIs" style="margin-bottom:16px;"></div>
