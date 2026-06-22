@@ -763,13 +763,13 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
           </div>
           <div class="section-body">
             <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.8;overflow-x:auto;">
-              <div style="color:var(--text-muted);margin-bottom:8px;">-- Activate Pro:</div>
+              <div style="color:var(--text-muted);margin-bottom:8px;">-- Activate Growth or Pro:</div>
               <div style="color:var(--accent);">INSERT INTO subscriptions (email, plan, status, provider)</div>
-              <div>VALUES ('user@email.com', 'pro', 'active', 'manual')</div>
+              <div>VALUES ('user@email.com', 'growth', 'active', 'manual')</div>
               <div>ON CONFLICT (email) DO UPDATE</div>
-              <div>SET plan='pro', status='active', updated_at=now();</div>
+              <div>SET plan='growth', status='active', updated_at=now();</div>
               <br/>
-              <div style="color:var(--text-muted);margin-bottom:8px;">-- Remove Pro:</div>
+              <div style="color:var(--text-muted);margin-bottom:8px;">-- Remove subscription:</div>
               <div style="color:var(--accent);">UPDATE subscriptions</div>
               <div>SET plan='free', status='inactive', updated_at=now()</div>
               <div>WHERE email='user@email.com';</div>
@@ -959,7 +959,7 @@ async function adminActivatePro() {
   showAdminResult('Processing…', 'info');
 
   try {
-    const isActive = plan === 'pro' ? 'active' : 'inactive';
+    const isActive = (plan === 'pro' || plan === 'growth') ? 'active' : 'inactive';
 
     // Upsert by email — no user_id needed for admin-created records
     const { error } = await sb.from('subscriptions').upsert({
@@ -986,7 +986,7 @@ async function adminActivatePro() {
   } catch (e) {
     // Fallback: try plain insert if upsert fails
     try {
-      const isActive = plan === 'pro' ? 'active' : 'inactive';
+      const isActive = (plan === 'pro' || plan === 'growth') ? 'active' : 'inactive';
       // First delete any existing row for this email
       await sb.from('subscriptions').delete().eq('email', email);
       // Then insert fresh
@@ -1052,7 +1052,7 @@ async function loadProUsers() {
   listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;"><div class="spinner" style="margin:0 auto 8px;width:24px;height:24px;border-width:2px;"></div>Loading…</div>';
   try {
     const { data, error } = await sb.from('subscriptions')
-      .select('*').eq('plan', 'pro')
+      .select('*').in('plan', ['pro', 'growth'])
       .order('created_at', { ascending: false });
     if (error) throw error;
     if (!data || !data.length) {
@@ -1069,7 +1069,7 @@ async function loadProUsers() {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">PRO ⬡</span>
+          <span style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">${s.plan === 'pro' ? 'PRO ⬡' : 'GROWTH ⬡'}</span>
           <button onclick="quickRemovePro('${s.email}')"
             style="background:transparent;border:1px solid rgba(248,113,113,0.3);color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">
             Remove
