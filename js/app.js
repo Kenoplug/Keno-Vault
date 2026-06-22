@@ -1033,9 +1033,18 @@ function runDebt() {
         { label: 'Snowball', data: snow.timeline.map(function(t) { return t.totalDebt; }), borderColor: '#f4c553', tension: 0.4, borderWidth: 2, pointRadius: 0, fill: false }
       ]
     };
-    if (debtChart) { debtChart.data = data; debtChart.update(); } else {
-      debtChart = new Chart(ctx, { type: 'line', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { title: { display: true, text: 'Month', font: { size: 10 } }, grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: function(v) { return fmtShort(v); } } } } } });
+    // Destroy stale chart before recreating
+    try { if (debtChart) { debtChart.destroy(); } } catch(e) {}
+    debtChart = null;
+    // Build new chart on a fresh canvas
+    var parent = ctx.parentNode;
+    if (parent) {
+      var fresh = document.createElement('canvas');
+      fresh.id = 'debtChart';
+      parent.replaceChild(fresh, ctx);
+      ctx = fresh;
     }
+    debtChart = new Chart(ctx, { type: 'line', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { title: { display: true, text: 'Month', font: { size: 10 } }, grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: function(v) { return fmtShort(v); } } } } } });
   }
 
   // ══ Per-Debt Breakdown Table ══
