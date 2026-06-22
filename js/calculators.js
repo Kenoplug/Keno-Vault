@@ -404,9 +404,25 @@ const Calculators = (() => {
     return localStorage.getItem('kv-base-currency') || 'USD';
   }
 
+  // Native currency — what the user's data is actually stored in
+  function getNativeCurrency() {
+    return localStorage.getItem('kv-native-currency') || getBaseCurrency();
+  }
+  function setNativeCurrency(c) {
+    localStorage.setItem('kv-native-currency', c);
+  }
+
   function formatCurrency(amount, currency) {
     var cur = currency || getBaseCurrency();
-    return getCurrencySymbol(cur) + Math.abs(amount).toLocaleString('en', {
+    var displayAmount = Math.abs(amount);
+    // Auto-convert from native to display currency when using base currency
+    if (!currency) {
+      var nativeCur = getNativeCurrency();
+      if (nativeCur && nativeCur !== cur) {
+        displayAmount = Math.abs(convertCurrency(Math.abs(amount), nativeCur, cur));
+      }
+    }
+    return getCurrencySymbol(cur) + displayAmount.toLocaleString('en', {
       minimumFractionDigits: 2, maximumFractionDigits: 2
     });
   }
@@ -434,6 +450,7 @@ const Calculators = (() => {
     reducingBalanceDepreciation, currentBookValue, fireSimulation,
     debtPaydown, taxDragSimulation, allocationOptimizer,
     fetchFXRates, convertCurrency, setBaseCurrency, getBaseCurrency,
+    getNativeCurrency, setNativeCurrency,
     formatCurrency, getCurrencySymbol, init,
     get rates() { return _rates; },
     get ratesLastFetched() { return _ratesLastFetched; },

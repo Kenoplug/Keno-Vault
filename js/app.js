@@ -9,7 +9,15 @@ const FREE_LIMIT = 10;
 
 // ══ GLOBAL HELPERS (used by inline HTML oninput handlers) ═══════
 function curSym()  { return (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(Calculators.getBaseCurrency()) : '$'; }
-function fmtAmt(v) { return curSym() + Math.round(v || 0).toLocaleString(); }
+function fmtAmt(v) {
+  var native = Calculators.getNativeCurrency();
+  var base   = Calculators.getBaseCurrency();
+  var amt    = Math.abs(v || 0);
+  if (native && native !== base) {
+    amt = Math.abs(Calculators.convertCurrency(amt, native, base));
+  }
+  return curSym() + Math.round(amt).toLocaleString();
+}
 
 // ══ DEBT MULTIPLIER ═══════════════════════════════════════════════
 var _debtMul = 1;
@@ -67,9 +75,14 @@ const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
 const fmt        = n  => Calculators.formatCurrency(Math.abs(n));
 const fmtSigned  = n  => (n < 0 ? '-' : '') + fmt(n);
 const fmtShort   = n  => {
-  const a = Math.abs(n);
-  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'€', CAD:'CA$', AUD:'AU$', GHS:'₵' };
-  const s = sym[Calculators.getBaseCurrency()] || '$';
+  var a = Math.abs(n);
+  var s = curSym();
+  // Auto-convert from native currency
+  var native = Calculators.getNativeCurrency();
+  var base   = Calculators.getBaseCurrency();
+  if (native && native !== base) {
+    a = Math.abs(Calculators.convertCurrency(a, native, base));
+  }
   if (a >= 1e9) return s + (a / 1e9).toFixed(1) + 'B';
   if (a >= 1e6) return s + (a / 1e6).toFixed(1) + 'M';
   if (a >= 1e3) return s + (a / 1e3).toFixed(0) + 'k';
