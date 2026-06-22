@@ -2005,8 +2005,12 @@ async function doBootWithSession(session, source) {
   showLoading('Loading your vault…');
 
   try {
-    await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
-    loadGoals(); // Non-blocking — don't hold up boot for goals table
+    // Add 8s timeout to each loader — Supabase deadlocks shouldn't freeze the app
+    var withTimeout = function(p, name) {
+      return Promise.race([p, new Promise(function(r) { setTimeout(function() { console.warn('[Boot] Timeout: ' + name); r(); }, 8000); })]);
+    };
+    await Promise.all([withTimeout(loadSubscription(),'sub'), withTimeout(loadAssets(),'assets'), withTimeout(loadHistory(),'history')]);
+    loadGoals(); // Non-blocking
     console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
     Security.init(isPro());
     renderAll();
@@ -2036,12 +2040,12 @@ sb.auth.getSession().then(({ data: { session }, error }) => {
 });
 
 // Step 2 — Safety net: if still spinning after 10s, give up and show login
-setTimeout(() => {
+setTimeout(function() {
   if (!bootDone) {
-    console.warn('[Boot] 10s timeout reached — showing auth');
+    console.warn('[Boot] 6s timeout — showing auth');
     showAuth();
   }
-}, 10000);
+}, 6000);
 
 // Step 3 — Auth state listener for sign-in / sign-out events
 sb.auth.onAuthStateChange((event, session) => {
