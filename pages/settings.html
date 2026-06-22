@@ -611,7 +611,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
             <span id="currentPlanBadge" class="status-badge free">Free</span>
           </div>
           <div class="section-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
               <div class="plan-card" id="freePlanCard">
                 <div class="plan-name">Free Forever</div>
                 <div class="plan-price">$0<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
@@ -619,20 +619,35 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                   <div class="plan-feature">✓ Up to 10 entries</div>
                   <div class="plan-feature">✓ Basic KPI dashboard</div>
                   <div class="plan-feature">✓ 30-day history</div>
-                  <div class="plan-feature">✓ Google sync</div>
-                  <div class="plan-feature" style="color:var(--text-muted);">— Pro features locked</div>
+                  <div class="plan-feature">✓ Google + email sign-in</div>
+                  <div class="plan-feature">✓ CSV export</div>
+                  <div class="plan-feature" style="color:var(--text-muted);">— Premium features locked</div>
+                </div>
+              </div>
+              <div class="plan-card" id="growthPlanCard">
+                <div class="plan-name" style="color:var(--accent);">Growth ⬡</div>
+                <div class="plan-price" style="color:var(--accent);">$2.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">Everything in Free, plus:</div>
+                <div class="plan-features">
+                  <div class="plan-feature">✓ Unlimited entries + history</div>
+                  <div class="plan-feature">✓ Multi-Currency FX (160+)</div>
+                  <div class="plan-feature">✓ Net Worth Score</div>
+                  <div class="plan-feature">✓ Asset Allocation Optimizer</div>
+                  <div class="plan-feature">✓ Custom categories + goals</div>
+                  <div class="plan-feature">✓ Advanced audit log</div>
                 </div>
               </div>
               <div class="plan-card" id="proPlanCard">
-                <div class="plan-name" style="color:var(--accent);">Pro ⬡</div>
-                <div class="plan-price" style="color:var(--accent);">$4.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
-                <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">or $39.99/year · save 33%</div>
+                <div class="plan-name" style="color:#f97316;">Pro ⬡</div>
+                <div class="plan-price" style="color:#f97316;">$6.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">Everything in Growth, plus:</div>
                 <div class="plan-features">
-                  <div class="plan-feature">✓ Unlimited entries</div>
-                  <div class="plan-feature">✓ FIRE Simulator</div>
-                  <div class="plan-feature">✓ Privacy Shield</div>
-                  <div class="plan-feature">✓ All Pro features</div>
-                  <div class="plan-feature">✓ Unlimited history</div>
+                  <div class="plan-feature">✓ FIRE Retirement Simulator</div>
+                  <div class="plan-feature">✓ Tax-Drag + Debt Optimizer</div>
+                  <div class="plan-feature">✓ Depreciation Engine</div>
+                  <div class="plan-feature">✓ Privacy Shield + Auto-Lock</div>
+                  <div class="plan-feature">✓ AES Encrypted Backups</div>
+                  <div class="plan-feature">✓ Legacy Dead-Man's Switch</div>
                 </div>
               </div>
             </div>
@@ -708,7 +723,8 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                 <label>Plan</label>
                 <div class="select-wrap">
                   <select id="adminPlan" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none;">
-                    <option value="pro">Pro — $4.99/month</option>
+                    <option value="growth">Growth — $2.99/month</option>
+                    <option value="pro">Pro — $6.99/month</option>
                     <option value="free">Free (downgrade)</option>
                   </select>
                 </div>
@@ -857,23 +873,28 @@ function setProfileUI(user) {
 }
 
 function updateBillingUI() {
-  const badge    = document.getElementById('currentPlanBadge');
-  const upgSec   = document.getElementById('upgradeSection');
-  const proSec   = document.getElementById('proActiveSection');
-  const freePlan = document.getElementById('freePlanCard');
-  const proPlan  = document.getElementById('proPlanCard');
+  var badge     = document.getElementById('currentPlanBadge');
+  var upgSec    = document.getElementById('upgradeSection');
+  var proSec    = document.getElementById('proActiveSection');
+  var freePlan  = document.getElementById('freePlanCard');
+  var growthPlan = document.getElementById('growthPlanCard');
+  var proPlan   = document.getElementById('proPlanCard');
+  [freePlan, growthPlan, proPlan].forEach(function(p) { if (p) p.classList.remove('current'); });
   if (isPro()) {
     if (badge)   { badge.textContent = 'Pro ⬡'; badge.className = 'status-badge active'; }
     if (upgSec)  upgSec.style.display  = 'none';
-    if (proSec)  proSec.style.display  = 'block';
+    if (proSec)  { proSec.style.display = 'block'; proSec.querySelector('.section-header-title').textContent = '⬡ Pro Plan Active'; }
     if (proPlan) proPlan.classList.add('current');
-    if (freePlan)freePlan.classList.remove('current');
+  } else if (isGrowth()) {
+    if (badge)   { badge.textContent = 'Growth ⬡'; badge.className = 'status-badge active'; }
+    if (upgSec)  upgSec.style.display  = 'block';
+    if (proSec)  proSec.style.display  = 'none';
+    if (growthPlan) growthPlan.classList.add('current');
   } else {
     if (badge)   { badge.textContent = 'Free'; badge.className = 'status-badge free'; }
     if (upgSec)  upgSec.style.display  = 'block';
     if (proSec)  proSec.style.display  = 'none';
-    if (freePlan)freePlan.classList.add('current');
-    if (proPlan) proPlan.classList.remove('current');
+    if (freePlan) freePlan.classList.add('current');
   }
 }
 

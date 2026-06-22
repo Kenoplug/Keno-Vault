@@ -70,6 +70,7 @@ const BADGE_LIGHT = {
 };
 
 // ══ HELPERS ══════════════════════════════════════════════════════
+const isGrowth   = () => userPlan === 'growth' || userPlan === 'pro';
 const isPro      = () => userPlan === 'pro';
 const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
 const fmt        = n  => Calculators.formatCurrency(Math.abs(n));
@@ -186,31 +187,36 @@ function switchPage(name) {
 
 // Explicit lock/content ID mapping (IDs differ between pages)
 var PRO_PAGE_IDS = {
-  fire:      { lock: 'fireLock',      content: 'fireContent' },
-  debt:      { lock: 'debtLock',      content: 'debtContent' },
-  tax:       { lock: 'taxLock',       content: 'taxContent'  },
-  optimizer: { lock: 'optimizerLock', content: 'optimizerContent' },
-  score:     { lock: 'scoreLockPage', content: 'scoreContent' },
-  currency:  { lock: 'currencyLock',  content: 'currencyContent' },
+  // Growth tier unlocks
+  score:     { lock: 'scoreLockPage', content: 'scoreContent',     tier: 'growth' },
+  currency:  { lock: 'currencyLock',  content: 'currencyContent',  tier: 'growth' },
+  optimizer: { lock: 'optimizerLock', content: 'optimizerContent', tier: 'growth' },
+  goals:     { lock: 'goalsLock',     content: 'goalsContent',     tier: 'growth' },
+  // Pro tier unlocks
+  fire:      { lock: 'fireLock',      content: 'fireContent',      tier: 'pro' },
+  debt:      { lock: 'debtLock',      content: 'debtContent',      tier: 'pro' },
+  tax:       { lock: 'taxLock',       content: 'taxContent',       tier: 'pro' },
 };
 
 function switchProPage(name) {
   switchPage(name);
-  var pro = isPro();
   var ids = PRO_PAGE_IDS[name];
   if (ids) {
+    var neededTier = ids.tier || 'pro';
+    var unlocked = (neededTier === 'growth') ? isGrowth() : isPro();
     var lockEl    = document.getElementById(ids.lock);
     var contentEl = document.getElementById(ids.content);
-    if (lockEl)    lockEl.style.display    = pro ? 'none'  : 'block';
-    if (contentEl) contentEl.style.display = pro ? 'block' : 'none';
+    if (lockEl)    lockEl.style.display    = unlocked ? 'none'  : 'block';
+    if (contentEl) contentEl.style.display = unlocked ? 'block' : 'none';
+    if (!unlocked) { openModal('upgradeModal'); return; }
   }
-  if (!pro) { openModal('upgradeModal'); return; }
   if (name === 'fire')      { runFire();        return; }
   if (name === 'debt')      { runDebt();        return; }
   if (name === 'tax')       { runTax();         return; }
   if (name === 'optimizer') { runOptimizer();   return; }
   if (name === 'score')     { renderScore();    return; }
   if (name === 'currency')  { renderCurrency(); return; }
+  if (name === 'goals')     { renderGoals();    return; }
 }
 
 function togglePanel(panelId, chipId) {
@@ -370,14 +376,18 @@ function setUserUI(user) {
 // ══ SUBSCRIPTION ═════════════════════════════════════════════════
 async function loadSubscription() {
   try {
-    // Check by email first — covers manually activated Pro accounts
+    // Check by email first
     const { data: byEmail } = await sb.from('subscriptions')
       .select('plan, status').eq('email', currentUser.email).maybeSingle();
 
-    // Accept 'pro' regardless of status value (status may be null in some rows)
     if (byEmail?.plan === 'pro') {
       userPlan = 'pro';
       console.log('[Sub] Pro confirmed by email:', currentUser.email);
+      return;
+    }
+    if (byEmail?.plan === 'growth') {
+      userPlan = 'growth';
+      console.log('[Sub] Growth confirmed by email:', currentUser.email);
       return;
     }
 
@@ -388,9 +398,15 @@ async function loadSubscription() {
     if (byId?.plan === 'pro') {
       userPlan = 'pro';
       console.log('[Sub] Pro confirmed by user_id');
-      // Backfill email so future lookups work
       sb.from('subscriptions').update({ email: currentUser.email })
-        .eq('user_id', currentUser.id).then(() => {});
+        .eq('user_id', currentUser.id).then(function(){});
+      return;
+    }
+    if (byId?.plan === 'growth') {
+      userPlan = 'growth';
+      console.log('[Sub] Growth confirmed by user_id');
+      sb.from('subscriptions').update({ email: currentUser.email })
+        .eq('user_id', currentUser.id).then(function(){});
       return;
     }
 
@@ -401,38 +417,44 @@ async function loadSubscription() {
   }
 }
 
-function updateProUI() {
-  const pro    = isPro();
-  const planEl = document.getElementById('sidebarPlan');
-  const banner = document.getElementById('proBanner');
-  if (planEl) planEl.textContent = pro ? 'Pro Plan ⬡' : 'Free Plan';
-  if (banner) banner.style.display = pro ? 'none' : 'flex';
+function updatePlanUI() {
+  var planEl = document.getElementById('sidebarPlan');
+  var banner = document.getElementById('proBanner');
+  if (planEl) {
+    if (isPro()) planEl.textContent = 'Pro Plan ⬡';
+    else if (isGrowth()) planEl.textContent = 'Growth Plan ⬡';
+    else planEl.textContent = 'Free Plan';
+  }
+  // Show upgrade banner for free users only
+  if (banner) banner.style.display = (userPlan === 'free') ? 'flex' : 'none';
 
-  // Score KPI overlay
+  // Score KPI overlay — visible to free, hidden for growth+
   var scoreLockOverlay = document.getElementById('scoreLockOverlay');
-  if (scoreLockOverlay) scoreLockOverlay.style.display = pro ? 'none' : 'flex';
+  if (scoreLockOverlay) scoreLockOverlay.style.display = isGrowth() ? 'none' : 'flex';
 
-  // Pro lock icons in sidebar
+  // Pro lock icons in sidebar — show for free, hide for growth+
   document.querySelectorAll('.pro-lock').forEach(function(el) {
-    el.style.display = pro ? 'none' : 'inline';
+    el.style.display = isGrowth() ? 'none' : 'inline';
   });
 
-  // If currently on a pro page, show/hide using correct IDs
+  // Gated pages
   Object.keys(PRO_PAGE_IDS).forEach(function(n) {
     var activePg = document.getElementById('page-' + n);
     if (!activePg || !activePg.classList.contains('active')) return;
-    var ids      = PRO_PAGE_IDS[n];
-    var lockEl   = document.getElementById(ids.lock);
-    var contEl   = document.getElementById(ids.content);
-    if (lockEl) lockEl.style.display   = pro ? 'none'  : 'block';
-    if (contEl) contEl.style.display   = pro ? 'block' : 'none';
+    var ids   = PRO_PAGE_IDS[n];
+    var lockEl = document.getElementById(ids.lock);
+    var contEl = document.getElementById(ids.content);
+    var neededTier = ids.tier || 'pro';
+    var unlocked = (neededTier === 'growth') ? isGrowth() : isPro();
+    if (lockEl) lockEl.style.display = unlocked ? 'none'  : 'block';
+    if (contEl) contEl.style.display = unlocked ? 'block' : 'none';
   });
 
-  // Update score KPI card color
-  if (pro) {
-    const s = Calculators.netWorthScore(assets);
-    const scoreEl = document.getElementById('kpiScore');
-    const lblEl   = document.getElementById('kpiScoreLabel');
+  // Update score KPI card
+  if (isGrowth()) {
+    var s = Calculators.netWorthScore(assets);
+    var scoreEl = document.getElementById('kpiScore');
+    var lblEl   = document.getElementById('kpiScoreLabel');
     if (scoreEl) { scoreEl.textContent = s.score + '/100'; scoreEl.style.color = s.color; }
     if (lblEl)   lblEl.textContent = s.label;
   }
@@ -456,7 +478,7 @@ async function loadAssets() {
 }
 
 async function loadHistory() {
-  const limit = isPro() ? 500 : 30;
+  const limit = isGrowth() ? 500 : 30;
   const { data } = await sb.from('nw_history').select('*')
     .order('created_at', { ascending: true }).limit(limit);
   if (data) nwHistory = data.map(r => ({ id: r.id, nw: parseFloat(r.nw) || 0, ts: r.label }));
@@ -504,7 +526,7 @@ async function snapHistory() {
     .insert({ user_id: currentUser.id, nw, label }).select().single();
   if (data) {
     nwHistory.push({ id: data.id, nw, ts: label });
-    if (!isPro() && nwHistory.length > 30) nwHistory = nwHistory.slice(-30);
+    if (!isGrowth() && nwHistory.length > 30) nwHistory = nwHistory.slice(-30);
   }
 }
 
@@ -534,7 +556,7 @@ function calcPreview() {
 // ══ ADD ASSET ════════════════════════════════════════════════════
 async function addAsset() {
   if (!currentUser) { UI.toast('Sign in first', 'error'); return; }
-  if (!isPro() && assets.length >= FREE_LIMIT) { openModal('upgradeModal'); return; }
+  if (!isGrowth() && assets.length >= FREE_LIMIT) { openModal('upgradeModal'); return; }
 
   const name  = document.getElementById('fName').value.trim();
   const cat   = document.getElementById('fCategory').value;
@@ -581,6 +603,7 @@ async function addAsset() {
     asset.id = newId;
     assets.push(asset);
     addActivity(`Added "${name}"`, cat);
+    logAudit('created', 'asset', name, 'Value: ' + fmt(value));
     await snapHistory();
     renderAll();
     setSyncState('synced', 'Saved ✓');
@@ -603,6 +626,7 @@ async function deleteAsset(id) {
     await dbDelete(id);
     assets = assets.filter(x => x.id !== id);
     addActivity(`Removed "${a.name}"`, a.cat, 'red');
+    logAudit('deleted', 'asset', a.name, 'Was: ' + fmt(a.value));
     await snapHistory();
     renderAll();
     setSyncState('synced', 'Synced');
@@ -714,6 +738,7 @@ async function saveEdit() {
     });
     await dbUpdate(a);
     addActivity(`Updated "${name}"`, cat, 'blue');
+    logAudit('updated', 'asset', name, 'New value: ' + fmt(value));
     await snapHistory();
     renderAll();
     closeModal('editModal');
@@ -807,15 +832,15 @@ function renderKPIs() {
   const invEl  = document.getElementById('kpiInvest');   if (invEl)  invEl.textContent  = fmt(ti);
   const intEl  = document.getElementById('kpiInterest'); if (intEl)  intEl.textContent  = fmt(tint);
 
-  if (isPro()) {
-    const s = Calculators.netWorthScore(assets);
-    const scoreEl = document.getElementById('kpiScore'); if (scoreEl) { scoreEl.textContent = s.score + '/100'; scoreEl.style.color = s.color; }
-    const lblEl   = document.getElementById('kpiScoreLabel'); if (lblEl) lblEl.textContent = s.label;
-    const lockEl  = document.getElementById('scoreLockOverlay'); if (lockEl) lockEl.style.display = 'none';
+  if (isGrowth()) {
+    var s = Calculators.netWorthScore(assets);
+    var scoreEl = document.getElementById('kpiScore'); if (scoreEl) { scoreEl.textContent = s.score + '/100'; scoreEl.style.color = s.color; }
+    var lblEl   = document.getElementById('kpiScoreLabel'); if (lblEl) lblEl.textContent = s.label;
+    var lockEl  = document.getElementById('scoreLockOverlay'); if (lockEl) lockEl.style.display = 'none';
   }
 
-  const lw = document.getElementById('limitWarning');
-  if (lw) lw.style.display = (!isPro() && assets.length >= FREE_LIMIT) ? 'block' : 'none';
+  var lw = document.getElementById('limitWarning');
+  if (lw) lw.style.display = (!isGrowth() && assets.length >= FREE_LIMIT) ? 'block' : 'none';
   const ec = document.getElementById('entryCount');
   if (ec) ec.textContent = `(${assets.length} entr${assets.length === 1 ? 'y' : 'ies'})`;
 }
@@ -1756,6 +1781,113 @@ async function renderCurrency() {
     '</div>';
 }
 
+// ══ GOALS ═════════════════════════════════════════════════════════
+var _goals = [];
+
+async function loadGoals() {
+  if (!isGrowth()) return;
+  try {
+    var { data } = await sb.from('goals').select('*').order('created_at', { ascending: true });
+    _goals = (data || []).map(function(g) { return { id: g.id, name: g.name, target: parseFloat(g.target_amount)||0, current: parseFloat(g.current_amount)||0, deadline: g.deadline, createdAt: g.created_at }; });
+  } catch(e) { console.warn('[Goals] Load error:', e.message); }
+}
+
+async function saveGoal() {
+  var editId = document.getElementById('gEditId').value;
+  var name   = document.getElementById('gName').value.trim();
+  var target = parseFloat(document.getElementById('gTarget').value) || 0;
+  var deadline = document.getElementById('gDeadline').value || null;
+  if (!name || target <= 0) { UI.toast('Enter a name and target amount', 'error'); return; }
+  try {
+    if (editId) {
+      await sb.from('goals').update({ name: name, target_amount: target, deadline: deadline || null, updated_at: new Date().toISOString() }).eq('id', editId);
+      UI.toast('Goal updated', 'success');
+    } else {
+      var nw = assets.filter(function(a) { return a.cat !== 'liability'; }).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+      await sb.from('goals').insert({ user_id: currentUser.id, name: name, target_amount: target, current_amount: nw, deadline: deadline || null });
+      UI.toast('Goal created', 'success');
+      logAudit('created', 'goal', name, 'Target: ' + fmt(target));
+    }
+    closeModal('goalModal');
+    await loadGoals();
+    renderGoals();
+  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteGoal(id) {
+  if (!confirm('Delete this goal?')) return;
+  try {
+    await sb.from('goals').delete().eq('id', id);
+    await loadGoals();
+    renderGoals();
+    UI.toast('Goal deleted', 'info');
+  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+}
+
+function openGoalModal(id) {
+  document.getElementById('gEditId').value = '';
+  document.getElementById('goalModalTitle').textContent = 'New Goal';
+  document.getElementById('gName').value = '';
+  document.getElementById('gTarget').value = '';
+  document.getElementById('gDeadline').value = '';
+  if (id) {
+    var g = _goals.find(function(x) { return x.id === id; });
+    if (g) {
+      document.getElementById('gEditId').value = g.id;
+      document.getElementById('goalModalTitle').textContent = 'Edit Goal';
+      document.getElementById('gName').value = g.name;
+      document.getElementById('gTarget').value = g.target;
+      document.getElementById('gDeadline').value = g.deadline ? g.deadline.slice(0,10) : '';
+    }
+  }
+  openModal('goalModal');
+}
+
+async function renderGoals() {
+  if (!isGrowth()) return;
+  await loadGoals();
+  var listEl = document.getElementById('goalsList');
+  var emptyEl = document.getElementById('goalsEmpty');
+  if (!listEl) return;
+  if (!_goals.length) {
+    listEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  listEl.style.display = 'flex';
+  if (emptyEl) emptyEl.style.display = 'none';
+  // Auto-update current from latest net worth
+  var nw = assets.filter(function(a){return a.cat!=='liability';}).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+  listEl.innerHTML = _goals.map(function(g) {
+    var pct = g.target > 0 ? Math.min(Math.round((g.current / g.target) * 100), 100) : 0;
+    var barColor = pct >= 100 ? '#34d399' : pct >= 50 ? '#f4c553' : pct >= 25 ? '#f97316' : '#f87171';
+    var remaining = Math.max(0, g.target - g.current);
+    var deadlineText = g.deadline ? ' · Due ' + new Date(g.deadline).toLocaleDateString('en', { month:'short', day:'numeric', year:'numeric' }) : '';
+    return '<div class="kpi-card" style="padding:20px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
+        '<div><div style="font-size:14px;font-weight:600;">' + g.name + '</div><div style="font-size:11px;color:var(--text-dim);">' + fmt(g.current) + ' of ' + fmt(g.target) + deadlineText + '</div></div>' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span class="mono" style="font-size:18px;font-weight:700;color:' + barColor + ';">' + pct + '%</span>' +
+          '<button class="icon-btn edit" onclick="openGoalModal(\\'' + g.id + '\\')" style="font-size:11px;">✎</button>' +
+          '<button class="icon-btn del" onclick="deleteGoal(\\'' + g.id + '\\')" style="font-size:11px;">✕</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;transition:width .6s ease;"></div>' +
+      '</div>' +
+      (remaining > 0 ? '<div style="font-size:10px;color:var(--text-muted);margin-top:6px;">' + fmt(remaining) + ' remaining to reach goal</div>' : '<div style="font-size:10px;color:#34d399;margin-top:6px;">🎉 Goal reached!</div>') +
+    '</div>';
+  }).join('');
+}
+
+// ══ AUDIT LOG ══════════════════════════════════════════════════════
+async function logAudit(action, entityType, entityName, details) {
+  if (!isGrowth()) return;
+  try {
+    await sb.from('audit_log').insert({ user_id: currentUser.id, action: action, entity_type: entityType, entity_name: entityName, details: details || null });
+  } catch(e) { /* silent */ }
+}
+
 // ══ RENDER ALL ════════════════════════════════════════════════════
 function renderAll() {
   renderKPIs();
@@ -1764,7 +1896,7 @@ function renderAll() {
   renderBar();
   renderHistory();
   renderActivity();
-  updateProUI();
+  updatePlanUI();
 }
 
 
@@ -1873,7 +2005,7 @@ async function doBootWithSession(session, source) {
   showLoading('Loading your vault…');
 
   try {
-    await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
+    await Promise.all([loadSubscription(), loadAssets(), loadHistory(), loadGoals()]);
     console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
     Security.init(isPro());
     renderAll();
@@ -1883,6 +2015,7 @@ async function doBootWithSession(session, source) {
                    currentUser.user_metadata?.given_name ||
                    currentUser.email?.split('@')[0] || 'there';
       UI.toast('Welcome back, ' + name + '! \uD83D\uDC4B', 'success');
+      logAudit('login', 'session', currentUser.email, '');
     }
   } catch (err) {
     console.error('[Boot] Error:', err);

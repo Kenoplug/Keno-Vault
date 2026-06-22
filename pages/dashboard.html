@@ -219,6 +219,7 @@
       <a class="nav-item" id="nav-optimizer" onclick="switchProPage('optimizer')">🎯 Asset Optimizer <span class="pro-lock">🔒</span></a>
 
       <div class="nav-section">Analytics</div>
+      <a class="nav-item" id="nav-goals" onclick="switchProPage('goals')">🎯 Goal Tracker <span class="pro-lock">🔒</span></a>
       <a class="nav-item" id="nav-score" onclick="switchProPage('score')">⚡ Net Worth Score <span class="pro-lock">🔒</span></a>
       <a class="nav-item" id="nav-currency" onclick="switchProPage('currency')">🌍 Multi-Currency <span class="pro-lock">🔒</span></a>
 
@@ -719,6 +720,54 @@
         </div>
         <div id="optimizerContent" style="display:none;">
           <div id="optimizerRecs"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ GOALS PAGE ═══════ -->
+      <div class="page" id="page-goals">
+        <div class="greeting">
+          <div>
+            <h2 class="serif greeting-title">Goal <span class="accent">Tracker</span></h2>
+            <p class="text-dim" style="font-size:13px;">Set wealth milestones and track your progress toward each one.</p>
+          </div>
+          <div class="greeting-actions">
+            <button class="btn btn-primary btn-sm" onclick="openGoalModal()">+ New Goal</button>
+          </div>
+        </div>
+        <div id="goalsLock" class="pro-gate-card">
+          <div class="pro-gate-icon">🎯</div>
+          <div class="serif" style="font-size:20px;margin-bottom:8px;">Goal Tracker</div>
+          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Set wealth milestones with target dates. Track progress with visual bars and projected arrival dates based on your savings rate.</p>
+          <div class="pro-badge" style="margin:0 auto 16px;">⬡ Growth Feature</div>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade to Growth →</button>
+        </div>
+        <div id="goalsContent" style="display:none;">
+          <div id="goalsList" style="display:flex;flex-direction:column;gap:14px;"></div>
+          <div id="goalsEmpty" class="empty" style="padding:60px 20px;">
+            <div class="empty-icon">🎯</div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-dim);margin-top:8px;">No goals yet</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Set your first wealth milestone to start tracking.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOAL MODAL -->
+      <div class="modal-overlay" id="goalModal">
+        <div class="modal">
+          <div class="modal-header">
+            <div><div class="modal-title" id="goalModalTitle">New Goal</div><div class="modal-sub">Set a wealth milestone to track</div></div>
+            <button class="icon-btn" onclick="closeModal('goalModal')" style="font-size:16px;">✕</button>
+          </div>
+          <div class="form-grid-2" style="margin-bottom:12px;">
+            <div class="field span-2"><label>Goal Name</label><input type="text" id="gName" placeholder="e.g. Reach $100k net worth"/></div>
+            <div class="field"><label>Target Amount</label><input type="number" id="gTarget" min="0" step="0.01" placeholder="100000"/></div>
+            <div class="field"><label>Deadline (optional)</label><input type="date" id="gDeadline"/></div>
+          </div>
+          <input type="hidden" id="gEditId"/>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('goalModal')">Cancel</button>
+            <button class="btn btn-primary" id="saveGoalBtn" onclick="saveGoal()">Save Goal</button>
+          </div>
         </div>
       </div>
 

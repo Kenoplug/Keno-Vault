@@ -46,7 +46,7 @@ create table if not exists subscriptions (
   id                       uuid default gen_random_uuid() primary key,
   user_id                  uuid references auth.users(id) on delete cascade,
   email                    text,
-  plan                     text default 'free' check (plan in ('free','pro')),
+  plan                     text default 'free' check (plan in ('free','growth','pro')),
   status                   text default 'active' check (status in ('active','inactive','cancelled','expired')),
   provider                 text default 'manual',
   provider_customer_id     text,
@@ -130,6 +130,48 @@ create trigger subscriptions_updated_at
   before update on subscriptions
   for each row execute function update_updated_at_column();
 
+-- ── GOALS TABLE (Growth tier) ─────────────────────────────────
+create table if not exists goals (
+  id               uuid default gen_random_uuid() primary key,
+  user_id          uuid references auth.users(id) on delete cascade not null,
+  name             text not null,
+  target_amount    numeric not null default 0,
+  current_amount   numeric default 0,
+  deadline         timestamptz,
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now()
+);
+
+-- ── AUDIT LOG TABLE (Growth tier) ─────────────────────────────
+create table if not exists audit_log (
+  id           uuid default gen_random_uuid() primary key,
+  user_id      uuid references auth.users(id) on delete cascade not null,
+  action       text not null,
+  entity_type  text,
+  entity_name  text,
+  details      text,
+  created_at   timestamptz default now()
+);
+
+-- RLS for new tables
+alter table goals     enable row level security;
+alter table audit_log enable row level security;
+
+create policy "goals_own" on goals
+  for all using (auth.uid() = user_id);
+create policy "audit_log_own" on audit_log
+  for select using (auth.uid() = user_id);
+create policy "audit_log_insert" on audit_log
+  for insert with check (auth.uid() = user_id);
+
+-- Indexes
+create index if not exists goals_user_id_idx    on goals(user_id);
+create index if not exists audit_log_user_idx   on audit_log(user_id);
+create index if not exists audit_log_created_idx on audit_log(created_at);
+
+-- ── CUSTOM CATEGORIES (Growth tier) ───────────────────────────
+alter table assets add column if not exists custom_cat text;
+
 -- ── VERIFY ───────────────────────────────────────────────────
 -- After running, you should see these tables:
 select table_name from information_schema.tables
@@ -138,5 +180,7 @@ order by table_name;
 
 -- Expected output:
 -- assets
+-- audit_log
+-- goals
 -- nw_history
 -- subscriptions
