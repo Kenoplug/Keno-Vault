@@ -1868,8 +1868,8 @@ async function renderGoals() {
         '<div><div style="font-size:14px;font-weight:600;">' + g.name + '</div><div style="font-size:11px;color:var(--text-dim);">' + fmt(g.current) + ' of ' + fmt(g.target) + deadlineText + '</div></div>' +
         '<div style="display:flex;align-items:center;gap:6px;">' +
           '<span class="mono" style="font-size:18px;font-weight:700;color:' + barColor + ';">' + pct + '%</span>' +
-          '<button class="icon-btn edit" onclick="openGoalModal(\\'' + g.id + '\\')" style="font-size:11px;">✎</button>' +
-          '<button class="icon-btn del" onclick="deleteGoal(\\'' + g.id + '\\')" style="font-size:11px;">✕</button>' +
+          '<button class="icon-btn edit" onclick="openGoalModal(\'' + g.id + '\')" style="font-size:11px;">✎</button>' +
+          '<button class="icon-btn del" onclick="deleteGoal(\'' + g.id + '\')" style="font-size:11px;">✕</button>' +
         '</div>' +
       '</div>' +
       '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;">' +
