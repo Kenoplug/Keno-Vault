@@ -318,32 +318,59 @@ const Calculators = (() => {
     };
   }
 
-  // ── FX Rates (live fetch + cache) ───────────────────────────────
-  const MOCK_RATES = { USD:1, NGN:1550, GBP:0.79, EUR:0.92, CAD:1.36, AUD:1.53, GHS:15.2 };
+  // ── FX Rates (live fetch + cache, 160+ currencies) ──────────────
+  const CURRENCY_SYMBOLS = {
+    USD:'$',  EUR:'€',  GBP:'£',  JPY:'¥',  CNY:'¥',  INR:'₹',
+    AUD:'AU$',CAD:'CA$',CHF:'CHF',NZD:'NZ$',MXN:'MX$',BRL:'R$',
+    NGN:'₦',  GHS:'₵',  KES:'KSh', ZAR:'R',  EGP:'E£',  MAD:'DH',
+    KRW:'₩',  RUB:'₽',  TRY:'₺',  SEK:'kr', NOK:'kr', DKK:'kr',
+    PLN:'zł', HUF:'Ft', CZK:'Kč', RON:'lei',BGN:'лв', HRK:'kn',
+    SGD:'S$', HKD:'HK$',TWD:'NT$',THB:'฿',  MYR:'RM', IDR:'Rp',
+    PHP:'₱',  VND:'₫',  PKR:'₨',  BDT:'৳',  AED:'د.إ',SAR:'﷼',
+    QAR:'QR', KWD:'KD', ILS:'₪',  CLP:'CLP',COP:'COL$',PEN:'S/',
+    ARS:'AR$',UYU:'\$U',CRC:'₡',  DOP:'RD$',JMD:'J$', TTD:'TT$',
+    ANG:'ƒ',  AWG:'ƒ',  BBD:'Bds$',BSD:'B$', BMD:'BD$',BZD:'BZ$',
+    KYD:'CI$',XCD:'EC$',GYD:'GY$', LRD:'L$', NAD:'N$', SZL:'E',
+    LSL:'M',  BWP:'P',  MWK:'MK', ZMW:'ZK', TZS:'TSh',UGX:'USh',
+    RWF:'RF', BIF:'FBu',ETB:'Br',  GHS:'₵',  NGN:'₦',  GMD:'D',
+    SLL:'Le', GNF:'FG', XOF:'CFA', XAF:'FCFA',XOF:'CFA',XAF:'FCFA',
+    LKR:'₨',  NPR:'₨',  BDT:'৳',  MMK:'K',  KHR:'៛',  LAK:'₭',
+    MNT:'₮',  KPW:'₩',  IRR:'﷼',  IQD:'ع.د',SYP:'£S', JOD:'JD',
+    LBP:'£L', OMR:'﷼',  BHD:'BD', KWD:'KD', AED:'د.إ',SAR:'﷼',
+    QAR:'QR', YER:'﷼',  FJD:'FJ$',TOP:'T$', WST:'WS$',VUV:'VT',
+    PGK:'K',  SBD:'SI$',KID:'KI$',TVD:'TV$',NOK:'kr', SEK:'kr',
+    DKK:'kr', ISK:'kr', ALL:'L',  MDL:'L',  GEL:'₾',  AMD:'֏',
+    AZN:'₼',  BYN:'Br', UAH:'₴',  KZT:'₸',  KGS:'с',  TJS:'SM',
+    UZS:'soʻm',TMT:'m', MKD:'ден',RSD:'дин',BAM:'KM', ISK:'kr',
+  };
+  function getCurrencySymbol(code) {
+    return CURRENCY_SYMBOLS[code] || code + ' ';
+  }
+
+  const MOCK_RATES = { USD:1, EUR:0.92, GBP:0.79, JPY:161, CNY:6.79, INR:94.4,
+    AUD:1.43, CAD:1.41, CHF:0.81, NZD:1.74, MXN:17.3, BRL:5.16,
+    NGN:1365, GHS:11.3, KES:129, ZAR:16.5, EGP:49.9, MAD:9.31,
+    KRW:1531, RUB:73.3, TRY:46.5, SEK:9.58, NOK:9.69, DKK:6.51,
+    PLN:3.71, HUF:307, CZK:21.1, SGD:1.29, HKD:7.84, THB:32.9,
+    MYR:4.13, IDR:17789, PHP:60.7, VND:26421, PKR:280, AED:3.67,
+    SAR:3.75, ILS:2.96, ARS:1460, CLP:899, COP:3477, PEN:3.42 };
   let _rates = { ...MOCK_RATES };
   let _ratesLastFetched = null;
   let _baseCurrency = 'USD';
 
   async function fetchFXRates() {
     try {
-      // open.er-api.com — free, no key, supports NGN + 160 currencies
+      // open.er-api.com — free, no key, 160+ currencies
       const res = await fetch('https://open.er-api.com/v6/latest/USD');
       if (!res.ok) throw new Error('API status ' + res.status);
       const data = await res.json();
       if (data.result !== 'success') throw new Error('API result: ' + data.result);
-      // Extract rates we need
-      const raw = data.rates;
-      _rates = {
-        USD: 1,
-        NGN: raw.NGN || MOCK_RATES.NGN,
-        GBP: raw.GBP || MOCK_RATES.GBP,
-        EUR: raw.EUR || MOCK_RATES.EUR,
-        CAD: raw.CAD || MOCK_RATES.CAD,
-        AUD: raw.AUD || MOCK_RATES.AUD,
-        GHS: raw.GHS || MOCK_RATES.GHS,
-      };
+      // Store ALL rates from the API
+      _rates = data.rates;  // 160+ currency pairs
+      _rates.USD = 1;
       _ratesLastFetched = Date.now();
       localStorage.setItem('kv-fx-rates', JSON.stringify({ rates: _rates, fetchedAt: _ratesLastFetched }));
+      console.log('[FX] Loaded ' + Object.keys(_rates).length + ' live currency rates');
       return _rates;
     } catch(e) {
       console.warn('[FX] Live fetch failed, trying cache:', e.message);
@@ -359,10 +386,12 @@ const Calculators = (() => {
     }
   }
 
-  function convertCurrency(amount, from = 'USD', to = 'USD') {
+  function convertCurrency(amount, from, to) {
+    from = from || getBaseCurrency();
+    to   = to   || getBaseCurrency();
     if (from === to) return amount;
-    const fromRate = _rates[from] || 1;
-    const toRate   = _rates[to]   || 1;
+    var fromRate = _rates[from] || 1;
+    var toRate   = _rates[to]   || 1;
     return (amount / fromRate) * toRate;
   }
 
@@ -375,10 +404,9 @@ const Calculators = (() => {
     return localStorage.getItem('kv-base-currency') || 'USD';
   }
 
-  function formatCurrency(amount, currency = null) {
-    const cur = currency || getBaseCurrency();
-    const symbols = { NGN:'₦', USD:'$', GBP:'£', EUR:'€', CAD:'CA$', AUD:'AU$', GHS:'₵' };
-    return (symbols[cur] || cur + ' ') + Math.abs(amount).toLocaleString('en', {
+  function formatCurrency(amount, currency) {
+    var cur = currency || getBaseCurrency();
+    return getCurrencySymbol(cur) + Math.abs(amount).toLocaleString('en', {
       minimumFractionDigits: 2, maximumFractionDigits: 2
     });
   }
@@ -387,7 +415,7 @@ const Calculators = (() => {
   async function init() {
     _baseCurrency = getBaseCurrency();
     // Check if we have fresh rates (< 12hrs)
-    const cached = localStorage.getItem('kv-fx-rates');
+    var cached = localStorage.getItem('kv-fx-rates');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -406,7 +434,7 @@ const Calculators = (() => {
     reducingBalanceDepreciation, currentBookValue, fireSimulation,
     debtPaydown, taxDragSimulation, allocationOptimizer,
     fetchFXRates, convertCurrency, setBaseCurrency, getBaseCurrency,
-    formatCurrency, init,
+    formatCurrency, getCurrencySymbol, init,
     get rates() { return _rates; },
     get ratesLastFetched() { return _ratesLastFetched; },
   };

@@ -42,10 +42,12 @@ const fmt        = n  => Calculators.formatCurrency(Math.abs(n));
 const fmtSigned  = n  => (n < 0 ? '-' : '') + fmt(n);
 const fmtShort   = n  => {
   const a = Math.abs(n);
-  if (a >= 1e9) return '₦' + (a / 1e9).toFixed(1) + 'B';
-  if (a >= 1e6) return '₦' + (a / 1e6).toFixed(1) + 'M';
-  if (a >= 1e3) return '₦' + (a / 1e3).toFixed(0) + 'k';
-  return '₦' + a.toFixed(0);
+  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'€', CAD:'CA$', AUD:'AU$', GHS:'₵' };
+  const s = sym[Calculators.getBaseCurrency()] || '$';
+  if (a >= 1e9) return s + (a / 1e9).toFixed(1) + 'B';
+  if (a >= 1e6) return s + (a / 1e6).toFixed(1) + 'M';
+  if (a >= 1e3) return s + (a / 1e3).toFixed(0) + 'k';
+  return s + a.toFixed(0);
 };
 const getBadge   = () => getTheme() === 'light' ? BADGE_LIGHT : BADGE_DARK;
 
@@ -1660,30 +1662,41 @@ async function renderCurrency() {
   // Fetch fresh rates
   await Calculators.fetchFXRates();
 
+  var baseCur = Calculators.getBaseCurrency();
   var total = assets.filter(function(a) { return a.cat !== 'liability'; }).reduce(function(s, a) { return s + a.value; }, 0)
               - assets.filter(function(a) { return a.cat === 'liability'; }).reduce(function(s, a) { return s + a.value; }, 0);
-  var currencies = ['USD', 'GBP', 'EUR', 'CAD', 'AUD'];
 
-  if (kpiEl) kpiEl.innerHTML = currencies.map(function(c) {
-    var converted = Calculators.convertCurrency(total, 'NGN', c);
+  // Show net worth in 6 major currencies
+  var displayCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'INR', 'CAD', 'AUD', 'NGN', 'ZAR'];
+  // Remove base currency from list (it's already shown), keep unique and limited
+  displayCurrencies = displayCurrencies.filter(function(c) { return c !== baseCur; }).slice(0, 9);
+
+  if (kpiEl) kpiEl.innerHTML = displayCurrencies.map(function(c) {
+    var converted = Calculators.convertCurrency(total, baseCur, c);
     return '<div class="kpi-card"><div class="kpi-label">' + c + '</div><div class="kpi-value sensitive">' + Calculators.formatCurrency(converted, c) + '</div><div class="kpi-change">Net Worth</div></div>';
   }).join('');
 
-  // Rates display with last-updated info
+  // Rates display — show popular currencies grouped by region
   var lastFetched = Calculators.ratesLastFetched;
-  var timeAgo = lastFetched ? Math.floor((Date.now() - lastFetched) / 60000) + ' min ago' : 'live';
+  var timeAgo = lastFetched ? Math.floor((Date.now() - lastFetched) / 60000) + ' min ago' : 'just now';
+  var rateCount = Object.keys(Calculators.rates).length;
+
+  // Popular rates to display (1 USD = X)
+  var popularRates = ['EUR','GBP','JPY','CNY','INR','AUD','CAD','CHF','NZD','MXN','BRL','KRW','SGD','HKD','NGN','ZAR','KES','GHS','EGP','AED','SAR','TRY','RUB','SEK','NOK','DKK','PLN','THB','MYR','IDR','PHP','VND','PKR','BDT','ILS','ARS','CLP','COP','PEN'];
+
   if (rateEl) rateEl.innerHTML =
     '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
-      '<span style="font-size:11px;color:var(--text-muted);">🕐 Updated: ' + timeAgo + '</span>' +
+      '<span style="font-size:11px;color:var(--text-muted);">🕐 Updated ' + timeAgo + ' · ' + rateCount + ' currencies</span>' +
       '<button class="btn btn-secondary btn-sm" onclick="renderCurrency()">↻ Refresh Rates</button>' +
     '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:10px;">' +
-      Object.entries(Calculators.rates).map(function(e) {
-        var k = e[0], v = e[1];
-        if (k === 'USD') return '';
-        return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;">' +
-          '<div style="font-size:10px;color:var(--text-dim);">1 USD =</div>' +
-          '<div class="mono" style="font-size:14px;font-weight:600;">' + k + ' ' + (typeof v === 'number' ? v.toFixed(2) : v) + '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
+      popularRates.map(function(k) {
+        var v = Calculators.rates[k];
+        if (!v) return '';
+        return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;">' +
+          '<div style="font-size:9px;color:var(--text-muted);">1 USD =</div>' +
+          '<div class="mono" style="font-size:13px;font-weight:600;">' + Calculators.getCurrencySymbol(k) + ' ' + (typeof v === 'number' ? v.toFixed(2) : v) + '</div>' +
+          '<div style="font-size:9px;color:var(--text-dim);">' + k + '</div>' +
         '</div>';
       }).join('') +
     '</div>';
