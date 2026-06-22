@@ -2005,7 +2005,8 @@ async function doBootWithSession(session, source) {
   showLoading('Loading your vault…');
 
   try {
-    await Promise.all([loadSubscription(), loadAssets(), loadHistory(), loadGoals()]);
+    await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
+    loadGoals(); // Non-blocking — don't hold up boot for goals table
     console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
     Security.init(isPro());
     renderAll();
