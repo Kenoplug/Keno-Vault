@@ -654,6 +654,9 @@ canvas {
   .sidebar       { display: none !important; }
   .main-content  { flex: 1; min-width: 0; }
 
+  /* Debt Optimizer — stack strategy cards on mobile */
+  #debtStrategyGrid { grid-template-columns: 1fr !important; }
+
   /* Spacing — extra bottom for mobile nav bar */
   .page-content  { padding: 16px 16px 90px !important; }
 
