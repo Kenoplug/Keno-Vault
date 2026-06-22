@@ -432,9 +432,11 @@ function updatePlanUI() {
   var scoreLockOverlay = document.getElementById('scoreLockOverlay');
   if (scoreLockOverlay) scoreLockOverlay.style.display = isGrowth() ? 'none' : 'flex';
 
-  // Pro lock icons in sidebar — show for free, hide for growth+
+  // Lock icons — hide based on actual tier, not blanket
   document.querySelectorAll('.pro-lock').forEach(function(el) {
-    el.style.display = isGrowth() ? 'none' : 'inline';
+    var tier = el.getAttribute('data-tier') || 'growth';
+    if (tier === 'growth') el.style.display = isGrowth() ? 'none' : 'inline';
+    else el.style.display = isPro() ? 'none' : 'inline';
   });
 
   // Gated pages
