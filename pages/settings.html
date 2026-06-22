@@ -515,15 +515,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
           </div>
           <div class="section-body">
             <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Select your primary currency. All values display in this currency.</p>
-            <div class="currency-grid" id="currencyGrid">
-              <div class="currency-chip" onclick="setCurrency('NGN')">₦ NGN</div>
-              <div class="currency-chip active" onclick="setCurrency('USD')">$ USD</div>
-              <div class="currency-chip" onclick="setCurrency('GBP')">£ GBP</div>
-              <div class="currency-chip" onclick="setCurrency('EUR')">€ EUR</div>
-              <div class="currency-chip" onclick="setCurrency('CAD')">CA$ CAD</div>
-              <div class="currency-chip" onclick="setCurrency('AUD')">A$ AUD</div>
-              <div class="currency-chip" onclick="setCurrency('GHS')">₵ GHS</div>
-            </div>
+            <div class="currency-grid" id="currencyGrid"></div>
           </div>
         </div>
 
@@ -906,10 +898,7 @@ function initSettingsUI() {
     const pinSec = document.getElementById('pinSetupSection');
     if (pinSec) pinSec.style.display = alEl.checked ? 'block' : 'none';
   }
-  const cur = localStorage.getItem('kv-base-currency') || 'USD';
-  document.querySelectorAll('.currency-chip').forEach(c => {
-    c.classList.toggle('active', c.textContent.includes(cur));
-  });
+  buildCurrencyGrid();
   if (isPro()) {
     const legLock = document.getElementById('legacyLock');
     const legCont = document.getElementById('legacyContent');
@@ -1144,9 +1133,37 @@ function saveLegacySettings() {
 function testLegacyEmail() { toast('Test email requires backend (coming soon)', 'info'); }
 
 // ══ CURRENCY ══
+function buildCurrencyGrid() {
+  var grid = document.getElementById('currencyGrid');
+  if (!grid) return;
+  // 40 major world currencies
+  var list = [
+    'USD','EUR','GBP','JPY','CNY','INR',
+    'AUD','CAD','CHF','NZD','MXN','BRL',
+    'NGN','GHS','KES','ZAR','EGP','MAD',
+    'KRW','RUB','TRY','SEK','NOK','DKK',
+    'PLN','HUF','CZK','RON','BGN',
+    'SGD','HKD','TWD','THB','MYR','IDR',
+    'PHP','VND','PKR','BDT','AED','SAR',
+    'ILS','ARS','CLP','COP','PEN','UYU',
+    'CRC','DOP','JMD','TTD','BSD','BBD',
+    'FJD','TOP','WST','VUV','PGK','SBD',
+    'LKR','NPR','MMK','KHR','MNT',
+    'UAH','KZT','GEL','AMD','AZN',
+    'ISK','ALL','MDL','RSD','BAM'
+  ];
+  var cur = localStorage.getItem('kv-base-currency') || 'USD';
+  grid.innerHTML = list.map(function(c) {
+    var sym = (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(c) : c;
+    var active = c === cur ? ' active' : '';
+    return '<div class=\"currency-chip' + active + '\" onclick=\"setCurrency(\\''+c+'\\')\">' + sym + ' ' + c + '</div>';
+  }).join('');
+}
+
 function setCurrency(cur) {
   localStorage.setItem('kv-base-currency', cur);
-  document.querySelectorAll('.currency-chip').forEach(c => c.classList.toggle('active', c.textContent.includes(cur)));
+  Calculators.setBaseCurrency(cur);
+  buildCurrencyGrid();
   toast('Base currency set to ' + cur, 'success');
 }
 
