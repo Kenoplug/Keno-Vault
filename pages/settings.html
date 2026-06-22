@@ -809,8 +809,9 @@ function toast(msg, type = 'info') {
   container.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
-const isPro   = () => userPlan === 'pro';
-const isAdmin = () => currentUser?.email === ADMIN_EMAIL;
+const isGrowth = () => userPlan === 'growth' || userPlan === 'pro';
+const isPro    = () => userPlan === 'pro';
+const isAdmin  = () => currentUser?.email === ADMIN_EMAIL;
 
 // ══ THEME ══
 function getTheme() { return localStorage.getItem('kv-theme') || 'dark'; }
@@ -1323,18 +1324,21 @@ async function bootSettings(session) {
   currentUser = session.user;
 
   try {
-    // Load subscription — check by user_id first, then by email
-    const { data: byId } = await sb.from('subscriptions')
-      .select('plan,status').eq('user_id', currentUser.id).maybeSingle();
-    if (byId?.plan === 'pro' && byId?.status === 'active') {
-      userPlan = 'pro';
-    } else {
-      const { data: byEmail } = await sb.from('subscriptions')
-        .select('plan,status').eq('email', currentUser.email).maybeSingle();
-      userPlan = (byEmail?.plan === 'pro') ? 'pro' : 'free';
+    // Load subscription — matches dashboard app.js logic
+    var { data: byEmail } = await sb.from('subscriptions')
+      .select('plan,status').eq('email', currentUser.email).maybeSingle();
+    if (byEmail?.plan === 'pro') { userPlan = 'pro'; }
+    else if (byEmail?.plan === 'growth') { userPlan = 'growth'; }
+    else {
+      var { data: byId } = await sb.from('subscriptions')
+        .select('plan,status').eq('user_id', currentUser.id).maybeSingle();
+      if (byId?.plan === 'pro') { userPlan = 'pro'; }
+      else if (byId?.plan === 'growth') { userPlan = 'growth'; }
+      else { userPlan = 'free'; }
     }
   } catch(e) {
     console.warn('[Settings] Subscription load error:', e.message);
+    userPlan = 'free';
   }
 
   setProfileUI(currentUser);
