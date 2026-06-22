@@ -566,10 +566,20 @@
               </div>
             </div>
             <input type="range" id="debtExtraSlider" min="0" max="100000" step="500" value="500"
-              oninput="document.getElementById('debtExtraVal').textContent=fmtAmt(this.value);runDebt()"
+              oninput="updateDebtDisplay();runDebt()"
               style="width:100%;margin-top:12px;"/>
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-top:4px;">
-              <span id="debtMinLabel">—</span><span id="debtMaxLabel">—</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;">
+              <div style="display:flex;gap:4px;" id="debtMulChips">
+                <button class="toggle-chip active" onclick="setDebtMul(1,this)">×1</button>
+                <button class="toggle-chip" onclick="setDebtMul(10,this)">×10</button>
+                <button class="toggle-chip" onclick="setDebtMul(100,this)">×100</button>
+                <button class="toggle-chip" onclick="setDebtMul(1000,this)">×1k</button>
+                <button class="toggle-chip" onclick="setDebtMul(10000,this)">×10k</button>
+                <button class="toggle-chip" onclick="setDebtMul(100000,this)">×100k</button>
+              </div>
+              <div style="font-size:10px;color:var(--text-muted);">
+                <span id="debtMinLabel">—</span> – <span id="debtMaxLabel">—</span>
+              </div>
             </div>
           </div>
 

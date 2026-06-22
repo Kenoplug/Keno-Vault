@@ -11,6 +11,28 @@ const FREE_LIMIT = 10;
 function curSym()  { return (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(Calculators.getBaseCurrency()) : '$'; }
 function fmtAmt(v) { return curSym() + Math.round(v || 0).toLocaleString(); }
 
+// ══ DEBT MULTIPLIER ═══════════════════════════════════════════════
+var _debtMul = 1;
+function setDebtMul(mul, btn) {
+  _debtMul = mul;
+  document.querySelectorAll('#debtMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  updateDebtDisplay();
+  runDebt();
+}
+function getDebtExtra() {
+  var sl = document.getElementById('debtExtraSlider');
+  return (parseInt(sl ? sl.value : 500) || 0) * _debtMul;
+}
+function updateDebtDisplay() {
+  var sv = document.getElementById('debtExtraVal');
+  if (sv) sv.textContent = fmtAmt(getDebtExtra());
+  var mn = document.getElementById('debtMinLabel');
+  var mx = document.getElementById('debtMaxLabel');
+  if (mn) mn.textContent = curSym() + '0';
+  if (mx) mx.textContent = fmtAmt(100000 * _debtMul);
+}
+
 const sb = createSupabaseClient();
 
 // ══ STATE ════════════════════════════════════════════════════════
@@ -961,14 +983,7 @@ function runFire() {
 
 function runDebt() {
   if (!isPro()) return;
-  // Refresh slider display & labels with current currency symbol
-  var sl = document.getElementById('debtExtraSlider');
-  var sv = document.getElementById('debtExtraVal');
-  var mn = document.getElementById('debtMinLabel');
-  var mx = document.getElementById('debtMaxLabel');
-  if (sl && sv) sv.textContent = fmtAmt(parseInt(sl.value) || 500);
-  if (mn) mn.textContent = curSym() + '0';
-  if (mx) mx.textContent = curSym() + '100,000';
+  updateDebtDisplay();
   var debts = assets.filter(function(a) { return a.cat === 'liability'; }).map(function(a) {
     return {
       name: a.name, balance: a.value,
@@ -996,7 +1011,7 @@ function runDebt() {
   }
 
   try {
-  var extraPmt = parseInt(document.getElementById('debtExtraSlider')?.value || 50000);
+  var extraPmt = getDebtExtra();
   var aval = Calculators.debtPaydown(debts, extraPmt, 'avalanche');
   var snow = Calculators.debtPaydown(debts, extraPmt, 'snowball');
 
