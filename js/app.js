@@ -298,15 +298,14 @@ async function signInWithGoogle() {
 
 async function signOut() {
   if (!confirm('Sign out of Keno Vault?')) return;
-  showLoading('Signing out…');
   bootDone = false;
   currentUser = null;
   userPlan = 'free';
   assets = [];
   nwHistory = [];
   await sb.auth.signOut();
-  renderAll();
-  showAuth();
+  // Redirect to landing page — ensures clean state for next login
+  window.location.href = SITE_URL;
 }
 
 function setUserUI(user) {
