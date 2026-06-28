@@ -44,7 +44,15 @@ function checkAppVersion() {
   }, 800);
 }
 
-// ══ CURRENCY LABELS ═══════════════════════════════════════════════
+// ══ CURRENCY HELPERS ══════════════════════════════════════════════
+function toNativeAmount(amount) {
+  var native = Calculators.getNativeCurrency();
+  var base   = Calculators.getBaseCurrency();
+  if (native !== base) {
+    return Calculators.convertCurrency(amount, base, native);
+  }
+  return amount;
+}
 function updateCurrencyLabels() {
   var sym = curSym();
   var labels = { lblEValue: 'Value ('+sym+')', lblESalvage: 'Salvage Value ('+sym+')', lblFValue: 'Current Value ('+sym+')', lblFSalvage: 'Salvage Value ('+sym+')' };
@@ -597,7 +605,8 @@ async function addAsset() {
 
   const name  = document.getElementById('fName').value.trim();
   const cat   = document.getElementById('fCategory').value;
-  const value = parseFloat(document.getElementById('fValue').value);
+  var value = parseFloat(document.getElementById('fValue').value);
+  if (!isNaN(value) && value > 0) value = toNativeAmount(value);
   const notes = document.getElementById('fNotes').value.trim();
   const errEl = document.getElementById('formError');
   if (errEl) errEl.textContent = '';
@@ -737,8 +746,9 @@ async function saveEdit() {
   if (!a) return;
   const name  = document.getElementById('eName').value.trim();
   const cat   = document.getElementById('eCat').value;
-  const value = parseFloat(document.getElementById('eValue').value);
+  var value = parseFloat(document.getElementById('eValue').value);
   if (!name || isNaN(value) || value < 0) { UI.toast('Fill required fields', 'error'); return; }
+  value = toNativeAmount(value);
   const notes     = document.getElementById('eNotes').value.trim();
   const principal = parseFloat(document.getElementById('ePrincipal').value) || null;
   const rate      = parseFloat(document.getElementById('eRate').value)      || null;
