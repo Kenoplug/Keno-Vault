@@ -21,6 +21,7 @@ function fmtAmt(v) {
 
 // ══ VERSION CHECK ════════════════════════════════════════════════
 function checkAppVersion() {
+  if (typeof APP_VERSION === 'undefined') { console.warn('[Version] APP_VERSION not loaded — skipping check'); return; }
   var stored = localStorage.getItem('kv-version');
   if (stored === APP_VERSION) return;
   localStorage.setItem('kv-version', APP_VERSION);
