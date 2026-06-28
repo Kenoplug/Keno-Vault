@@ -667,6 +667,7 @@ async function addAsset() {
 async function deleteAsset(id) {
   const a = assets.find(x => x.id === id);
   if (!a) return;
+  if (!confirm('Delete "' + a.name + '" (' + fmt(a.value) + ')?\n\nThis cannot be undone.')) return;
   setSyncState('syncing', 'Deleting…');
   try {
     await dbDelete(id);
