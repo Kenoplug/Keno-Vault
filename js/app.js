@@ -19,6 +19,30 @@ function fmtAmt(v) {
   return curSym() + Math.round(amt).toLocaleString();
 }
 
+// ══ VERSION CHECK ════════════════════════════════════════════════
+function checkAppVersion() {
+  var stored = localStorage.getItem('kv-version');
+  if (stored === APP_VERSION) return;
+  localStorage.setItem('kv-version', APP_VERSION);
+  // Show update popup
+  setTimeout(function() {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.id = 'versionPopup';
+    overlay.innerHTML =
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:32px 28px;text-align:center;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.5);">' +
+        '<div style="font-size:40px;margin-bottom:12px;">⬡</div>' +
+        '<div class="serif" style="font-size:20px;margin-bottom:8px;">Keno Vault Updated</div>' +
+        '<p style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:8px;">A new version is available with improvements, fixes, and fresh features to keep your vault running smoothly.</p>' +
+        '<p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">Version ' + APP_VERSION + ' · Refresh to apply changes</p>' +
+        '<button onclick="location.reload()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Update Now →</button>' +
+        '<button onclick="document.getElementById(\'versionPopup\').remove()" style="width:100%;margin-top:8px;padding:10px;background:transparent;color:var(--text-dim);border:none;border-radius:10px;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Later</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+  }, 800);
+}
+
 // ══ DEBT MULTIPLIER ═══════════════════════════════════════════════
 var _debtMul = 1;
 function setDebtMul(mul, btn) {
@@ -2041,6 +2065,7 @@ async function doBootWithSession(session, source) {
     Security.init(isPro());
     renderAll();
     showApp();
+    checkAppVersion();
     if (source === 'SIGNED_IN') {
       const name = currentUser.user_metadata?.full_name ||
                    currentUser.user_metadata?.given_name ||
