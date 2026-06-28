@@ -654,7 +654,13 @@ async function addAsset() {
     renderAll();
     setSyncState('synced', 'Saved ✓');
     UI.toast(`"${name}" added`, 'success');
-    ['fName','fValue','fNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    ['fName','fValue','fNotes','fPrincipal','fRate','fYears','fUsefulLife','fSalvage','fDeprecRate'].forEach(function(id) { var el = document.getElementById(id); if(el) el.value = ''; });
+    // Collapse and reset panels
+    document.getElementById('fCategory').value = 'cash';
+    handleCatChange();
+    ['investPanel','deprecPanel'].forEach(function(id) { var p = document.getElementById(id); if(p) p.classList.remove('open'); });
+    ['investToggle','deprecToggle'].forEach(function(id) { var c = document.getElementById(id); if(c) c.classList.remove('active'); });
+    document.getElementById('fPreview').style.display = 'none';
   } catch(e) {
     setSyncState('error', 'Error');
     UI.toast('Error: ' + e.message, 'error');
