@@ -44,6 +44,16 @@ function checkAppVersion() {
   }, 800);
 }
 
+// ══ CURRENCY LABELS ═══════════════════════════════════════════════
+function updateCurrencyLabels() {
+  var sym = curSym();
+  var labels = { lblEValue: 'Value ('+sym+')', lblESalvage: 'Salvage Value ('+sym+')', lblFValue: 'Current Value ('+sym+')', lblFSalvage: 'Salvage Value ('+sym+')' };
+  Object.keys(labels).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = labels[id];
+  });
+}
+
 // ══ DEBT MULTIPLIER ═══════════════════════════════════════════════
 var _debtMul = 1;
 function setDebtMul(mul, btn) {
@@ -2066,6 +2076,7 @@ async function doBootWithSession(session, source) {
     Security.init(isPro());
     renderAll();
     showApp();
+    updateCurrencyLabels();
     checkAppVersion();
     if (source === 'SIGNED_IN') {
       const name = currentUser.user_metadata?.full_name ||
