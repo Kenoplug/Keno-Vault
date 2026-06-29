@@ -1776,7 +1776,7 @@ function renderScoreRecommendations(s, opt) {
 
   if (!hasInvest)
     recs.push({ priority:'high', icon:'📈', title:'Start investing — your wealth is not growing',
-      desc:'You have zero investment exposure. Even modest allocations to index funds, fixed income, or crypto can compound significantly over time. Start with as little as ' + fmt(toNativeAmount(100)) + '.' });
+      desc:'You have zero investment exposure. Even modest allocations to index funds, fixed income, or crypto can compound significantly over time. Start with as little as ' + Calculators.formatCurrency(Calculators.convertCurrency(100, 'USD', Calculators.getBaseCurrency()), Calculators.getBaseCurrency()) + '.' });
   else if (invest < 15)
     recs.push({ priority:'high', icon:'📈', title:'Critically low investment allocation',
       desc:'Only ' + invest + '% in investments is well below the 30%+ target. Increasing this is the single biggest lever to raise your Net Worth Score.' });
