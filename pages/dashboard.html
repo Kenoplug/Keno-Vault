@@ -10,8 +10,14 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
 <script src="../js/config.js"></script>
 <link rel="stylesheet" href="../css/dashboard.css"/>
+<style>
+  .nav-item i, .kpi-label i, .greeting-title i, .btn i, .chart-heading i, .section-header-title i { width:18px;height:18px;vertical-align:-3px;margin-right:4px; }
+  .sidebar-logo-icon i { width:16px;height:16px; }
+  .mob-nav-icon i { width:20px;height:20px; }
+</style>
 </head>
 <body>
 <a href="#page-dashboard" style="position:absolute;top:-100px;left:8px;z-index:9999;padding:8px 16px;background:var(--accent);color:#fff;border-radius:0 0 8px 8px;font-weight:600;font-size:13px;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-100px'">Skip to content</a>
@@ -116,8 +122,8 @@
     <div class="form-grid-2" style="margin-bottom:12px;">
       <div class="field span-2"><label>Name</label><input type="text" id="eName"/></div>
       <div class="field"><label>Category</label><div class="select-wrap"><select id="eCat" onchange="handleEditCat()">
-        <option value="cash">💵 Liquid Cash</option><option value="physical">📦 Physical Assets</option>
-        <option value="investment">📈 Investments</option><option value="liability">⚠️ Liabilities</option>
+        <option value="cash"><i data-lucide="banknote"></i> Liquid Cash</option><option value="physical"><i data-lucide="package"></i> Physical Assets</option>
+        <option value="investment"><i data-lucide="trending-up"></i> Investments</option><option value="liability"><i data-lucide="alert-triangle"></i> Liabilities</option>
       </select></div></div>
       <div class="field"><label id="lblEValue">Value ($)</label><input type="number" id="eValue" min="0" step="0.01"/></div>
       <div class="field span-2"><label>Notes</label><textarea id="eNotes" rows="2"></textarea></div>
@@ -133,7 +139,7 @@
     </div>
     <div id="eDeprecWrap" style="display:none;margin-bottom:10px;">
       <div class="toggle-chip" id="editDeprecToggle" onclick="togglePanel('editDeprecPanel','editDeprecToggle')">
-        📉 Depreciation Settings <span class="pro-badge" style="font-size:9px;padding:1px 6px;margin-left:4px;">Pro</span>
+        <i data-lucide="trending-down"></i> Depreciation Settings <span class="pro-badge" style="font-size:9px;padding:1px 6px;margin-left:4px;">Pro</span>
       </div>
     </div>
     <div id="editDeprecPanel" class="collapsible-panel">
@@ -237,23 +243,23 @@
     </a>
     <nav class="sidebar-nav">
       <div class="nav-section">Main</div>
-      <a class="nav-item active" id="nav-dashboard" onclick="switchPage('dashboard')">📊 Dashboard</a>
-      <a class="nav-item" id="nav-assets" onclick="switchPage('assets')">📦 Assets & Ledger</a>
-      <a class="nav-item" id="nav-investments" onclick="switchPage('investments')">📈 Investments</a>
+      <a class="nav-item active" id="nav-dashboard" onclick="switchPage('dashboard')"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+      <a class="nav-item" id="nav-assets" onclick="switchPage('assets')"><i data-lucide="package"></i> Assets & Ledger</a>
+      <a class="nav-item" id="nav-investments" onclick="switchPage('investments')"><i data-lucide="trending-up"></i> Investments</a>
 
       <div class="nav-section">Pro Intelligence</div>
-      <a class="nav-item" id="nav-fire" onclick="switchProPage('fire')">🔥 FIRE Simulator <span class="pro-lock" data-tier="pro">🔒</span></a>
-      <a class="nav-item" id="nav-debt" onclick="switchProPage('debt')">⚖️ Debt Optimizer <span class="pro-lock" data-tier="pro">🔒</span></a>
-      <a class="nav-item" id="nav-tax" onclick="switchProPage('tax')">🧾 Tax Simulator <span class="pro-lock" data-tier="pro">🔒</span></a>
-      <a class="nav-item" id="nav-optimizer" onclick="switchProPage('optimizer')">🎯 Asset Optimizer <span class="pro-lock" data-tier="growth">🔒</span></a>
+      <a class="nav-item" id="nav-fire" onclick="switchProPage('fire')"><i data-lucide="flame"></i> FIRE Simulator <span class="pro-lock" data-tier="pro">🔒</span></a>
+      <a class="nav-item" id="nav-debt" onclick="switchProPage('debt')"><i data-lucide="scale"></i> Debt Optimizer <span class="pro-lock" data-tier="pro">🔒</span></a>
+      <a class="nav-item" id="nav-tax" onclick="switchProPage('tax')"><i data-lucide="receipt"></i> Tax Simulator <span class="pro-lock" data-tier="pro">🔒</span></a>
+      <a class="nav-item" id="nav-optimizer" onclick="switchProPage('optimizer')"><i data-lucide="target"></i> Asset Optimizer <span class="pro-lock" data-tier="growth">🔒</span></a>
 
       <div class="nav-section">Analytics</div>
-      <a class="nav-item" id="nav-goals" onclick="switchProPage('goals')">🎯 Goal Tracker <span class="pro-lock" data-tier="growth">🔒</span></a>
-      <a class="nav-item" id="nav-score" onclick="switchProPage('score')">⚡ Net Worth Score <span class="pro-lock" data-tier="growth">🔒</span></a>
-      <a class="nav-item" id="nav-currency" onclick="switchProPage('currency')">🌍 Multi-Currency <span class="pro-lock" data-tier="growth">🔒</span></a>
+      <a class="nav-item" id="nav-goals" onclick="switchProPage('goals')"><i data-lucide="target"></i> Goal Tracker <span class="pro-lock" data-tier="growth">🔒</span></a>
+      <a class="nav-item" id="nav-score" onclick="switchProPage('score')"><i data-lucide="zap"></i> Net Worth Score <span class="pro-lock" data-tier="growth">🔒</span></a>
+      <a class="nav-item" id="nav-currency" onclick="switchProPage('currency')"><i data-lucide="globe"></i> Multi-Currency <span class="pro-lock" data-tier="growth">🔒</span></a>
 
       <div class="nav-section">Account</div>
-      <a class="nav-item" href="settings.html">⚙ Settings</a>
+      <a class="nav-item" href="settings.html"><i data-lucide="settings"></i> Settings</a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-chip" onclick="window.location.href='settings.html'">
@@ -283,7 +289,7 @@
           <div class="sync-dot" id="syncDot"></div>
           <span id="syncLabel" style="font-size:11px;color:var(--text-dim);">—</span>
         </div>
-        <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)" aria-label="Toggle privacy shield">🛡 Shield</button>
+        <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)" aria-label="Toggle privacy shield"><i data-lucide="shield"></i> Shield</button>
         <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button>
         <button class="topbar-btn" onclick="signOut()" style="color:var(--text-muted);">Sign out</button>
       </div>
@@ -300,7 +306,7 @@
             <p class="text-dim" id="greetSub" style="font-size:13px;margin-top:2px;">Here's your financial snapshot for today.</p>
           </div>
           <div class="greeting-actions">
-            <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV()"><i data-lucide="download"></i> Export CSV</button>
             <button class="btn btn-primary btn-sm" onclick="switchPage('assets')">+ Add Asset</button>
           </div>
         </div>
@@ -322,22 +328,22 @@
             <div class="kpi-change" id="kpiNetSub">Assets minus liabilities</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">◈ Cash & Physical</div>
+            <div class="kpi-label"><i data-lucide="diamond"></i> Cash & Physical</div>
             <div class="kpi-value sensitive" id="kpiPhysical" style="color:var(--green);">$0.00</div>
             <div class="kpi-change">Liquid + tangible assets</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">◇ Investments</div>
+            <div class="kpi-label"><i data-lucide="diamond"></i> Investments</div>
             <div class="kpi-value sensitive" id="kpiInvest" style="color:var(--gold);">$0.00</div>
             <div class="kpi-change">Current market value</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">↑ Projected Interest</div>
+            <div class="kpi-label"><i data-lucide="arrow-up"></i> Projected Interest</div>
             <div class="kpi-value sensitive" id="kpiInterest" style="color:var(--purple);">$0.00</div>
             <div class="kpi-change">At maturity</div>
           </div>
           <div class="kpi-card" style="position:relative;">
-            <div class="kpi-label">⚡ Net Worth Score</div>
+            <div class="kpi-label"><i data-lucide="zap"></i> Net Worth Score</div>
             <div class="kpi-value" id="kpiScore">—</div>
             <div class="kpi-change" id="kpiScoreLabel">—</div>
             <div class="pro-lock-overlay" id="scoreLockOverlay">
@@ -413,10 +419,10 @@
               <input type="text" id="fName" placeholder="e.g. GTBank savings, iPhone 15, CSCS portfolio…"/></div>
             <div class="field"><label>Category</label><div class="select-wrap">
               <select id="fCategory" onchange="handleCatChange()">
-                <option value="cash">💵 Liquid Cash</option>
-                <option value="physical">📦 Physical Assets</option>
-                <option value="investment">📈 Investments</option>
-                <option value="liability">⚠️ Liabilities</option>
+                <option value="cash"><i data-lucide="banknote"></i> Liquid Cash</option>
+                <option value="physical"><i data-lucide="package"></i> Physical Assets</option>
+                <option value="investment"><i data-lucide="trending-up"></i> Investments</option>
+                <option value="liability"><i data-lucide="alert-triangle"></i> Liabilities</option>
               </select></div></div>
             <div class="field"><label id="lblFValue">Current Value ($)</label>
               <input type="number" id="fValue" placeholder="0.00" min="0" step="0.01"/></div>
@@ -425,7 +431,7 @@
           </div>
 
           <div id="investToggleWrap" style="margin-bottom:10px;display:none;">
-            <div class="toggle-chip" id="investToggle" onclick="togglePanel('investPanel','investToggle')">⚙ Investment Details</div>
+            <div class="toggle-chip" id="investToggle" onclick="togglePanel('investPanel','investToggle')"><i data-lucide="settings"></i> Investment Details</div>
           </div>
           <div id="investPanel" class="collapsible-panel">
             <div class="invest-panel-inner">
@@ -445,7 +451,7 @@
 
           <div id="deprecToggleWrap" style="margin-bottom:10px;display:none;">
             <div class="toggle-chip" id="deprecToggle" onclick="togglePanel('deprecPanel','deprecToggle')">
-              📉 Depreciation Settings <span class="pro-badge" style="font-size:9px;padding:1px 6px;margin-left:4px;">Pro</span>
+              <i data-lucide="trending-down"></i> Depreciation Settings <span class="pro-badge" style="font-size:9px;padding:1px 6px;margin-left:4px;">Pro</span>
             </div>
           </div>
           <div id="deprecPanel" class="collapsible-panel">
@@ -473,7 +479,7 @@
           <div class="ledger-header">
             <div class="serif ledger-title">All Entries <span class="entry-count" id="entryCount"></span></div>
             <div style="display:flex;gap:8px;">
-              <button class="btn btn-danger btn-sm" onclick="confirmClear()">🗑 Clear All</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmClear()"><i data-lucide="trash-2"></i> Clear All</button>
             </div>
           </div>
           <div style="overflow-x:auto;">
@@ -592,7 +598,7 @@
           <div class="form-card" style="margin-bottom:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
               <div style="flex:1;min-width:200px;">
-                <div style="font-weight:600;font-size:14px;margin-bottom:4px;">⚡ Extra Monthly Payment</div>
+                <div style="font-weight:600;font-size:14px;margin-bottom:4px;"><i data-lucide="zap"></i> Extra Monthly Payment</div>
                 <div style="font-size:12px;color:var(--text-dim);">Additional money you can throw at your debts each month beyond the minimums.</div>
               </div>
               <div style="text-align:right;">
@@ -619,10 +625,10 @@
 
           <!-- Debt Summary Cards -->
           <div class="kpi-grid" style="margin-bottom:16px;" id="debtSummaryCards">
-            <div class="kpi-card"><div class="kpi-label">💳 Total Debt</div><div class="kpi-value sensitive" id="debtTotalBal" style="color:var(--red);">—</div><div class="kpi-change" id="debtCount">—</div></div>
-            <div class="kpi-card"><div class="kpi-label">📋 Monthly Minimums</div><div class="kpi-value sensitive" id="debtMinPmt" style="color:var(--gold);">—</div><div class="kpi-change">Required payments</div></div>
-            <div class="kpi-card"><div class="kpi-label">📊 Avg Interest Rate</div><div class="kpi-value" id="debtAvgRate" style="color:var(--red);">—</div><div class="kpi-change">Weighted by balance</div></div>
-            <div class="kpi-card"><div class="kpi-label">⚡ Total Monthly Payment</div><div class="kpi-value sensitive" id="debtTotalPmt" style="color:var(--accent);">—</div><div class="kpi-change">Minimums + extra</div></div>
+            <div class="kpi-card"><div class="kpi-label"><i data-lucide="credit-card"></i> Total Debt</div><div class="kpi-value sensitive" id="debtTotalBal" style="color:var(--red);">—</div><div class="kpi-change" id="debtCount">—</div></div>
+            <div class="kpi-card"><div class="kpi-label"><i data-lucide="clipboard-list"></i> Monthly Minimums</div><div class="kpi-value sensitive" id="debtMinPmt" style="color:var(--gold);">—</div><div class="kpi-change">Required payments</div></div>
+            <div class="kpi-card"><div class="kpi-label"><i data-lucide="layout-dashboard"></i> Avg Interest Rate</div><div class="kpi-value" id="debtAvgRate" style="color:var(--red);">—</div><div class="kpi-change">Weighted by balance</div></div>
+            <div class="kpi-card"><div class="kpi-label"><i data-lucide="zap"></i> Total Monthly Payment</div><div class="kpi-value sensitive" id="debtTotalPmt" style="color:var(--accent);">—</div><div class="kpi-change">Minimums + extra</div></div>
           </div>
 
           <!-- Strategy Comparison -->
@@ -858,13 +864,13 @@
                 <div class="kpi-change" style="margin-top:6px;">of assets are debt-financed</div>
               </div>
               <div class="kpi-card">
-                <div class="kpi-label" style="color:var(--blue);">💧 Liquid Buffer</div>
+                <div class="kpi-label" style="color:var(--blue);"><i data-lucide="droplets"></i> Liquid Buffer</div>
                 <div class="kpi-value" id="scoreLiquid" style="color:var(--blue);">—</div>
                 <div id="liquidBar" style="margin-top:10px;"></div>
                 <div class="kpi-change" style="margin-top:6px;">of wealth is liquid/accessible</div>
               </div>
               <div class="kpi-card">
-                <div class="kpi-label" style="color:var(--green);">📈 Investment %</div>
+                <div class="kpi-label" style="color:var(--green);"><i data-lucide="trending-up"></i> Investment %</div>
                 <div class="kpi-value" id="scoreInvest" style="color:var(--green);">—</div>
                 <div id="investBar" style="margin-top:10px;"></div>
                 <div class="kpi-change" style="margin-top:6px;">of wealth is actively invested</div>
@@ -987,15 +993,15 @@
     <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
     <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Pro Intelligence</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
-      <button class="mob-menu-item" onclick="switchProPage('fire');closeMobileMenu()">🔥 FIRE Simulator</button>
-      <button class="mob-menu-item" onclick="switchProPage('debt');closeMobileMenu()">⚖️ Debt Optimizer</button>
-      <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()">🧾 Tax Simulator</button>
-      <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()">🎯 Optimizer</button>
-      <button class="mob-menu-item" onclick="switchProPage('score');closeMobileMenu()">⚡ NW Score</button>
-      <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()">🌍 Currency</button>
+      <button class="mob-menu-item" onclick="switchProPage('fire');closeMobileMenu()"><i data-lucide="flame"></i> FIRE Simulator</button>
+      <button class="mob-menu-item" onclick="switchProPage('debt');closeMobileMenu()"><i data-lucide="scale"></i> Debt Optimizer</button>
+      <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()"><i data-lucide="receipt"></i> Tax Simulator</button>
+      <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()"><i data-lucide="target"></i> Optimizer</button>
+      <button class="mob-menu-item" onclick="switchProPage('score');closeMobileMenu()"><i data-lucide="zap"></i> NW Score</button>
+      <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()"><i data-lucide="globe"></i> Currency</button>
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="mob-menu-item" style="flex:1;" onclick="window.location.href='settings.html'">⚙ Settings</button>
+      <button class="mob-menu-item" style="flex:1;" onclick="window.location.href='settings.html'"><i data-lucide="settings"></i> Settings</button>
       <button class="mob-menu-item" style="flex:1;color:var(--red);" onclick="closeMobileMenu();signOut()">Sign Out</button>
     </div>
   </div>
@@ -1058,5 +1064,6 @@
 }
 </style>
 
+<script>lucide.createIcons();</script>
 </body>
 </html>
