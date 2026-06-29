@@ -244,7 +244,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
     <div style="font-size:13px;color:var(--text-dim);margin-left:8px;">/ <span id="settingsPageTitle">Settings</span></div>
   </div>
   <div class="topbar-right">
-    <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()"><i data-lucide="sun-moon"></i> Dark</button>
+    <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()">Dark</button>
     <a href="dashboard.html" class="topbar-btn" style="text-decoration:none;">← Dashboard</a>
     <button class="topbar-btn" onclick="signOut()" style="color:var(--text-muted);">Sign out</button>
   </div>
@@ -860,7 +860,7 @@ function applyTheme(t) {
   const dm = document.getElementById('darkModeToggle');
   if (dm) dm.checked = t === 'dark';
   const tb = document.getElementById('themeToggleBtn');
-  if (tb) tb.textContent = t === 'dark' ? '<i data-lucide="sun-moon"></i> Dark' : '☀️ Light';
+  if (tb) tb.textContent = t === 'dark' ? 'Dark' : 'Light';
 }
 function toggleTheme() { applyTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
 applyTheme(getTheme());

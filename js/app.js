@@ -213,7 +213,7 @@ function applyTheme(t) {
 function toggleTheme() {
   applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
   var btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = getTheme() === 'dark' ? '🌙 Dark' : '☀️ Light';
+  if (btn) btn.textContent = getTheme() === 'dark' ? 'Dark' : 'Light';
   rerenderCharts();
 }
 applyTheme(getTheme());
