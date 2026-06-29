@@ -16,11 +16,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-.feature-icon i, .section-tag i, .hero-tag i, .security-icon i, .check i, .pricing-features li i { width:18px;height:18px;vertical-align:-3px;margin-right:2px; }
-.security-icon i { width:20px;height:20px; }
-.feature-icon i { width:22px;height:22px; }
+.feature-icon i, .section-tag i, .hero-tag i, .security-icon i, .check i, .pricing-features li i { font-size:18px;vertical-align:-3px;margin-right:4px; }
+.security-icon i { font-size:20px; }
+.feature-icon i { font-size:22px; }
 </style>
 <style>
 :root{
@@ -278,16 +278,16 @@ footer{padding:48px;border-top:1px solid var(--border);}
             Keno Vault
           </div>
           <div class="preview-nav-section">Main</div>
-          <div class="preview-nav-item active"><i data-lucide="layout-dashboard"></i> Dashboard</div>
-          <div class="preview-nav-item"><i data-lucide="package"></i> Assets</div>
-          <div class="preview-nav-item"><i data-lucide="trending-up"></i> Investments</div>
-          <div class="preview-nav-item"><i data-lucide="flame"></i> FIRE Simulator</div>
+          <div class="preview-nav-item active"><i class="fas fa-chart-pie"></i> Dashboard</div>
+          <div class="preview-nav-item"><i class="fas fa-box"></i> Assets</div>
+          <div class="preview-nav-item"><i class="fas fa-arrow-trend-up"></i> Investments</div>
+          <div class="preview-nav-item"><i class="fas fa-fire"></i> FIRE Simulator</div>
           <div class="preview-nav-section">Analytics</div>
-          <div class="preview-nav-item"><i data-lucide="zap"></i> Net Worth Score</div>
-          <div class="preview-nav-item"><i data-lucide="globe"></i> Multi-Currency</div>
-          <div class="preview-nav-item"><i data-lucide="receipt"></i> Tax Simulator</div>
+          <div class="preview-nav-item"><i class="fas fa-bolt"></i> Net Worth Score</div>
+          <div class="preview-nav-item"><i class="fas fa-globe"></i> Multi-Currency</div>
+          <div class="preview-nav-item"><i class="fas fa-receipt"></i> Tax Simulator</div>
           <div class="preview-nav-section">Account</div>
-          <div class="preview-nav-item"><i data-lucide="settings"></i> Settings</div>
+          <div class="preview-nav-item"><i class="fas fa-gear"></i> Settings</div>
         </div>
         <div class="preview-main">
           <div class="preview-greeting">
@@ -298,7 +298,7 @@ footer{padding:48px;border-top:1px solid var(--border);}
             <div class="preview-kpi">
               <div class="preview-kpi-label">Net Worth</div>
               <div class="preview-kpi-val" style="color:var(--orange);">$24,500</div>
-              <div class="preview-kpi-sub"><i data-lucide="arrow-up"></i> 12.4% vs last month</div>
+              <div class="preview-kpi-sub"><i class="fas fa-arrow-up"></i> 12.4% vs last month</div>
             </div>
             <div class="preview-kpi">
               <div class="preview-kpi-label">Investments</div>
@@ -401,7 +401,7 @@ footer{padding:48px;border-top:1px solid var(--border);}
 
 <!-- SECURITY -->
 <section class="security" id="security">
-  <div class="section-tag"><i data-lucide="lock"></i> Security</div>
+  <div class="section-tag"><i class="fas fa-lock"></i> Security</div>
   <h2 class="section-title">Built like a bank vault.</h2>
   <div class="security-grid">
     <div>
@@ -782,6 +782,6 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 
-<script>lucide.createIcons();</script>
+
 </body>
 </html>
