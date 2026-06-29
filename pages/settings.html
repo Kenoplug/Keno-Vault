@@ -497,8 +497,8 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
             <div id="encryptedBackupContent" style="display:none;">
               <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px;">Export your entire vault as an AES-256 encrypted JSON file. Set a strong password — you'll need it to restore.</p>
               <div style="display:grid;gap:12px;margin-bottom:14px;">
-                <div class="field"><label>Encryption Password</label><input type="password" id="encryptPassword" placeholder="Choose a strong password<i class="fas fa-ellipsis"></i>"/></div>
-                <div class="field"><label>Confirm Password</label><input type="password" id="encryptConfirm" placeholder="Repeat password<i class="fas fa-ellipsis"></i>"/></div>
+                <div class="field"><label>Encryption Password</label><input type="password" id="encryptPassword" placeholder="Choose a strong password…"/></div>
+                <div class="field"><label>Confirm Password</label><input type="password" id="encryptConfirm" placeholder="Repeat password…"/></div>
               </div>
               <button class="btn btn-primary" onclick="doEncryptedExport()"><i class="fas fa-shield"></i> Export Encrypted Backup</button>
               <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
@@ -509,7 +509,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                   <div style="font-size:13px;font-weight:600;">Click to upload .enc.json</div>
                 </div>
                 <div id="decryptSection" style="display:none;margin-top:12px;">
-                  <div class="field"><label>Decryption Password</label><input type="password" id="decryptPassword" placeholder="Enter backup password<i class="fas fa-ellipsis"></i>"/></div>
+                  <div class="field"><label>Decryption Password</label><input type="password" id="decryptPassword" placeholder="Enter backup password…"/></div>
                   <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="doEncryptedImport()"><i class="fas fa-unlock"></i> Decrypt & Restore</button>
                 </div>
                 <div id="restoreResult" style="margin-top:8px;font-size:12px;min-height:16px;"></div>

@@ -715,13 +715,18 @@ async function deleteAsset(id) {
 
 // ══ EDIT ═════════════════════════════════════════════════════════
 function openEditModal(id) {
-  const a = assets.find(x => x.id === id);
+  var a = assets.find(function(x) { return x.id === id; });
   if (!a) return;
   editId = id;
-  document.getElementById('eName').value     = a.name;
-  document.getElementById('eCat').value      = a.cat;
-  document.getElementById('eValue').value    = a.value;
-  document.getElementById('eNotes').value    = a.notes || '';
+  document.getElementById('eName').value  = a.name;
+  document.getElementById('eCat').value   = a.cat;
+  // Show value in display currency (convert from native)
+  var displayVal = a.value;
+  var native = Calculators.getNativeCurrency();
+  var base   = Calculators.getBaseCurrency();
+  if (native !== base) displayVal = Calculators.convertCurrency(a.value, native, base);
+  document.getElementById('eValue').value = parseFloat(displayVal).toFixed(2);
+  document.getElementById('eNotes').value = a.notes || '';
   document.getElementById('ePrincipal').value = a.principal || '';
   document.getElementById('eRate').value     = a.rate  || '';
   document.getElementById('eYears').value    = a.years || '';
