@@ -23,7 +23,7 @@
   <div class="loading-logo">⬡</div>
   <div class="serif" style="font-size:22px;color:var(--text);">Keno Vault</div>
   <div class="spinner"></div>
-  <div style="color:var(--text-dim);font-size:13px;" id="loadingMsg">Loading…</div>
+  <div style="color:var(--text-dim);font-size:13px;" id="loadingMsg">Loading<i class="fas fa-ellipsis"></i></div>
 </div>
 
 <!-- AUTH -->
@@ -112,7 +112,7 @@
   <div class="modal">
     <div class="modal-header">
       <div><div class="modal-title">Edit Entry</div><div class="modal-sub">Update asset details</div></div>
-      <button class="icon-btn" onclick="closeModal('editModal')" style="font-size:16px;">✕</button>
+      <button class="icon-btn" onclick="closeModal('editModal')" style="font-size:16px;"><i class="fas fa-xmark"></i></button>
     </div>
     <div class="form-grid-2" style="margin-bottom:12px;">
       <div class="field span-2"><label>Name</label><input type="text" id="eName"/></div>
@@ -162,7 +162,7 @@
 <!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal" style="text-align:center;max-width:400px;">
-    <div style="font-size:28px;margin-bottom:8px;" id="confirmIcon">⚠️</div>
+    <div style="font-size:28px;margin-bottom:8px;" id="confirmIcon"><i class="fas fa-triangle-exclamation"></i></div>
     <div class="modal-title" id="confirmTitle">Are you sure?</div>
     <div class="modal-sub" id="confirmMsg" style="margin-bottom:20px;"></div>
     <div style="display:flex;gap:10px;justify-content:center;">
@@ -185,14 +185,14 @@
       <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:2px;margin-top:4px;">Growth ⬡</div>
       <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;">$2.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
-        <div class="pro-feature-item">✓ Unlimited entries</div>
-        <div class="pro-feature-item">✓ Unlimited history</div>
-        <div class="pro-feature-item">✓ Multi-Currency (160+)</div>
-        <div class="pro-feature-item">✓ Net Worth Score</div>
-        <div class="pro-feature-item">✓ Asset Optimizer</div>
-        <div class="pro-feature-item">✓ Goal Tracker</div>
-        <div class="pro-feature-item">✓ Custom Categories</div>
-        <div class="pro-feature-item">✓ Audit Log</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Unlimited entries</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Unlimited history</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Multi-Currency (160+)</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Net Worth Score</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Asset Optimizer</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Goal Tracker</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Custom Categories</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Audit Log</div>
       </div>
       <div class="payment-instructions" style="font-size:11px;padding:12px;">
         1. Send <strong>$2.99 USDT (TRC20)</strong> to the wallet below<br/>
@@ -207,14 +207,14 @@
       <div style="font-size:16px;font-weight:700;color:#f97316;margin-bottom:2px;">Pro ⬡</div>
       <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;">$6.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
-        <div class="pro-feature-item">✓ Everything in Growth</div>
-        <div class="pro-feature-item">✓ FIRE Simulator</div>
-        <div class="pro-feature-item">✓ Tax-Drag Simulator</div>
-        <div class="pro-feature-item">✓ Debt Optimizer</div>
-        <div class="pro-feature-item">✓ Depreciation Engine</div>
-        <div class="pro-feature-item">✓ Privacy Shield</div>
-        <div class="pro-feature-item">✓ AES Encrypted Backups</div>
-        <div class="pro-feature-item">✓ Legacy Mode</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Everything in Growth</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> FIRE Simulator</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Tax-Drag Simulator</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Debt Optimizer</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Depreciation Engine</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Privacy Shield</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> AES Encrypted Backups</div>
+        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Legacy Mode</div>
       </div>
       <div class="payment-instructions" style="font-size:11px;padding:12px;">
         1. Send <strong>$6.99 USDT (TRC20)</strong> to the wallet below<br/>
@@ -243,15 +243,15 @@
       <a class="nav-item" id="nav-investments" onclick="switchPage('investments')"><i class="fas fa-arrow-trend-up"></i> Investments</a>
 
       <div class="nav-section">Pro Intelligence</div>
-      <a class="nav-item" id="nav-fire" onclick="switchProPage('fire')"><i class="fas fa-fire"></i> FIRE Simulator <span class="pro-lock" data-tier="pro">🔒</span></a>
-      <a class="nav-item" id="nav-debt" onclick="switchProPage('debt')"><i class="fas fa-scale-balanced"></i> Debt Optimizer <span class="pro-lock" data-tier="pro">🔒</span></a>
-      <a class="nav-item" id="nav-tax" onclick="switchProPage('tax')"><i class="fas fa-receipt"></i> Tax Simulator <span class="pro-lock" data-tier="pro">🔒</span></a>
-      <a class="nav-item" id="nav-optimizer" onclick="switchProPage('optimizer')"><i class="fas fa-bullseye"></i> Asset Optimizer <span class="pro-lock" data-tier="growth">🔒</span></a>
+      <a class="nav-item" id="nav-fire" onclick="switchProPage('fire')"><i class="fas fa-fire"></i> FIRE Simulator <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-debt" onclick="switchProPage('debt')"><i class="fas fa-scale-balanced"></i> Debt Optimizer <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-tax" onclick="switchProPage('tax')"><i class="fas fa-receipt"></i> Tax Simulator <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-optimizer" onclick="switchProPage('optimizer')"><i class="fas fa-bullseye"></i> Asset Optimizer <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
 
       <div class="nav-section">Analytics</div>
-      <a class="nav-item" id="nav-goals" onclick="switchProPage('goals')"><i class="fas fa-bullseye"></i> Goal Tracker <span class="pro-lock" data-tier="growth">🔒</span></a>
-      <a class="nav-item" id="nav-score" onclick="switchProPage('score')"><i class="fas fa-bolt"></i> Net Worth Score <span class="pro-lock" data-tier="growth">🔒</span></a>
-      <a class="nav-item" id="nav-currency" onclick="switchProPage('currency')"><i class="fas fa-globe"></i> Multi-Currency <span class="pro-lock" data-tier="growth">🔒</span></a>
+      <a class="nav-item" id="nav-goals" onclick="switchProPage('goals')"><i class="fas fa-bullseye"></i> Goal Tracker <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-score" onclick="switchProPage('score')"><i class="fas fa-bolt"></i> Net Worth Score <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-currency" onclick="switchProPage('currency')"><i class="fas fa-globe"></i> Multi-Currency <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
 
       <div class="nav-section">Account</div>
       <a class="nav-item" href="settings.html"><i class="fas fa-gear"></i> Settings</a>
@@ -260,13 +260,13 @@
       <div class="user-chip" onclick="window.location.href='settings.html'">
         <div class="user-avatar">
           <img id="sidebarAvatar" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;"/>
-          <span id="sidebarAvatarFallback">👤</span>
+          <span id="sidebarAvatarFallback"><i class="fas fa-user"></i></span>
         </div>
         <div class="user-info">
           <div class="user-name" id="sidebarName">—</div>
           <div class="user-plan" id="sidebarPlan">Free Plan</div>
         </div>
-        <span style="font-size:10px;color:var(--text-muted);">→</span>
+        <span style="font-size:10px;color:var(--text-muted);"><i class="fas fa-arrow-right"></i></span>
       </div>
     </div>
   </aside>
@@ -297,7 +297,7 @@
       <div class="page active" id="page-dashboard">
         <div class="greeting">
           <div>
-            <h2 class="serif greeting-title">Welcome back, <span class="accent" id="greetName">—</span> 👋</h2>
+            <h2 class="serif greeting-title">Welcome back, <span class="accent" id="greetName">—</span> <i class="fas fa-hand"></i></h2>
             <p class="text-dim" id="greetSub" style="font-size:13px;margin-top:2px;">Here's your financial snapshot for today.</p>
           </div>
           <div class="greeting-actions">
@@ -312,7 +312,7 @@
             <div style="font-weight:600;font-size:14px;">Unlock Keno Vault Pro ⬡</div>
             <div style="font-size:12px;color:var(--text-dim);margin-top:2px;">Unlimited entries, FIRE simulator, privacy shield, tax simulator & more.</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
 
         <!-- KPIs -->
@@ -355,7 +355,7 @@
             <div class="chart-heading">Net Worth Breakdown</div>
             <div style="height:220px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:12px;">
               <canvas id="donutChart"></canvas>
-              <div id="donutEmpty" class="empty" style="position:absolute;"><div class="empty-icon">🍩</div>Add entries</div>
+              <div id="donutEmpty" class="empty" style="position:absolute;"><div class="empty-icon"><i class="fas fa-chart-pie"></i></div>Add entries</div>
             </div>
           </div>
           <div class="chart-card">
@@ -366,7 +366,7 @@
               <button class="toggle-chip" id="actTabAudit" onclick="showActivityTab('audit')">Audit Log</button>
             </div>
             <div id="activityFeed" style="margin-top:12px;max-height:230px;overflow-y:auto;">
-              <div class="empty"><div class="empty-icon" style="font-size:24px;">📋</div>No activity yet</div>
+              <div class="empty"><div class="empty-icon" style="font-size:24px;"><i class="fas fa-clipboard-list"></i></div>No activity yet</div>
             </div>
           </div>
         </div>
@@ -379,7 +379,7 @@
           </div>
           <div style="height:180px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:12px;">
             <canvas id="historyChart"></canvas>
-            <div id="historyEmpty" class="empty" style="position:absolute;"><div class="empty-icon">📈</div>Add entries to see history</div>
+            <div id="historyEmpty" class="empty" style="position:absolute;"><div class="empty-icon"><i class="fas fa-arrow-trend-up"></i></div>Add entries to see history</div>
           </div>
         </div>
 
@@ -389,7 +389,7 @@
           <div class="chart-heading">Investment Projection</div>
           <div style="height:200px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:12px;">
             <canvas id="barChart"></canvas>
-            <div id="barEmpty" class="empty" style="position:absolute;"><div class="empty-icon">📊</div>Add investments with compound interest details</div>
+            <div id="barEmpty" class="empty" style="position:absolute;"><div class="empty-icon"><i class="fas fa-chart-pie"></i></div>Add investments with compound interest details</div>
           </div>
         </div>
       </div>
@@ -401,7 +401,7 @@
         </div>
 
         <div id="limitWarning" class="limit-warning" style="display:none;">
-          ⚠ Free plan: 10 entry limit reached.
+          <i class="fas fa-triangle-exclamation"></i> Free plan: 10 entry limit reached.
           <button onclick="openModal('upgradeModal')" class="link-btn">Upgrade to Pro</button> for unlimited entries.
         </div>
 
@@ -411,7 +411,7 @@
           <div class="divider"></div>
           <div class="form-grid" style="margin-bottom:14px;">
             <div class="field span-2"><label>Name / Description</label>
-              <input type="text" id="fName" placeholder="e.g. GTBank savings, iPhone 15, CSCS portfolio…"/></div>
+              <input type="text" id="fName" placeholder="e.g. GTBank savings, iPhone 15, CSCS portfolio<i class="fas fa-ellipsis"></i>"/></div>
             <div class="field"><label>Category</label><div class="select-wrap">
               <select id="fCategory" onchange="handleCatChange()">
                 <option value="cash"><i class="fas fa-money-bill"></i> Liquid Cash</option>
@@ -422,7 +422,7 @@
             <div class="field"><label id="lblFValue">Current Value ($)</label>
               <input type="number" id="fValue" placeholder="0.00" min="0" step="0.01"/></div>
             <div class="field span-2"><label>Notes (optional)</label>
-              <textarea id="fNotes" rows="2" placeholder="e.g. Fixed deposit, checking account, real estate…"></textarea></div>
+              <textarea id="fNotes" rows="2" placeholder="e.g. Fixed deposit, checking account, real estate<i class="fas fa-ellipsis"></i>"></textarea></div>
           </div>
 
           <div id="investToggleWrap" style="margin-bottom:10px;display:none;">
@@ -484,7 +484,7 @@
                 <th>Projected</th><th>Interest</th><th>Rate/Term</th><th style="text-align:center;">Actions</th>
               </tr></thead>
               <tbody id="tableBody">
-                <tr><td colspan="8"><div class="empty"><div class="empty-icon">🪙</div>No entries yet</div></td></tr>
+                <tr><td colspan="8"><div class="empty"><div class="empty-icon"><i class="fas fa-coins"></i></div>No entries yet</div></td></tr>
               </tbody>
               <tfoot id="tableFoot" style="display:none;"><tr>
                 <td colspan="2" class="foot-label">Totals</td><td></td>
@@ -505,14 +505,14 @@
           <div class="chart-title">Projection</div><div class="chart-heading">Current vs Future Value vs Interest</div>
           <div style="height:280px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:12px;">
             <canvas id="investChart2"></canvas>
-            <div id="investEmpty" class="empty" style="position:absolute;"><div class="empty-icon">📊</div>No investments logged</div>
+            <div id="investEmpty" class="empty" style="position:absolute;"><div class="empty-icon"><i class="fas fa-chart-pie"></i></div>No investments logged</div>
           </div>
         </div>
         <div class="ledger-card">
           <div class="ledger-header"><div class="serif ledger-title">Investment Positions</div></div>
           <div style="overflow-x:auto;"><table>
             <thead><tr><th>Asset</th><th>Principal</th><th>Rate</th><th>Term</th><th>Current Value</th><th>Projected FV</th><th>Interest Gain</th><th>Multiplier</th></tr></thead>
-            <tbody id="investTableBody"><tr><td colspan="8"><div class="empty"><div class="empty-icon">📈</div>No investments logged</div></td></tr></tbody>
+            <tbody id="investTableBody"><tr><td colspan="8"><div class="empty"><div class="empty-icon"><i class="fas fa-arrow-trend-up"></i></div>No investments logged</div></td></tr></tbody>
           </table></div>
         </div>
       </div>
@@ -521,11 +521,11 @@
       <div class="page" id="page-fire">
         <div class="greeting"><div><h2 class="serif greeting-title">FIRE <span class="accent">Simulator</span></h2><p class="text-dim" style="font-size:13px;">Calculate your Financial Independence, Retire Early trajectory.</p></div></div>
         <div id="fireLock" class="pro-gate-card">
-          <div class="pro-gate-icon">🔥</div>
+          <div class="pro-gate-icon"><i class="fas fa-fire"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">FIRE Retirement Simulator</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Drag sliders to simulate retirement scenarios in real time. Calculate your FI Number and see your financial independence trajectory.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="fireContent" style="display:none;">
           <div class="fire-layout">
@@ -582,11 +582,11 @@
           </div>
         </div>
         <div id="debtLock" class="pro-gate-card">
-          <div class="pro-gate-icon">⚖️</div>
+          <div class="pro-gate-icon"><i class="fas fa-scale-balanced"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Debt Paydown Optimizer</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Compare Snowball and Avalanche methods. See exactly how each strategy works against your debts — which saves more interest, which clears individual debts faster, and which fits your psychology.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="debtContent" style="display:none;">
           <!-- Extra Payment Slider -->
@@ -630,7 +630,7 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;" id="debtStrategyGrid">
             <div class="chart-card" style="border-top:3px solid #34d399;" id="avalancheCard">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                <span style="font-size:20px;">❄️</span>
+                <span style="font-size:20px;"><i class="fas fa-snowflake"></i></span>
                 <div>
                   <div class="chart-heading" style="font-size:16px;">Avalanche Method</div>
                   <div style="font-size:10px;color:var(--text-dim);">Highest interest rate first</div>
@@ -651,7 +651,7 @@
             </div>
             <div class="chart-card" style="border-top:3px solid #f4c553;" id="snowballCard">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                <span style="font-size:20px;">⛄</span>
+                <span style="font-size:20px;"><i class="fas fa-snowman"></i></span>
                 <div>
                   <div class="chart-heading" style="font-size:16px;">Snowball Method</div>
                   <div style="font-size:10px;color:var(--text-dim);">Smallest balance first</div>
@@ -705,11 +705,11 @@
       <div class="page" id="page-tax">
         <div class="greeting"><div><h2 class="serif greeting-title">Tax-Drag <span class="accent">Simulator</span></h2><p class="text-dim" style="font-size:13px;">Your true net-of-tax wealth on liquidation.</p></div></div>
         <div id="taxLock" class="pro-gate-card">
-          <div class="pro-gate-icon">🧾</div>
+          <div class="pro-gate-icon"><i class="fas fa-receipt"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Tax-Drag & Net-of-Tax Simulator</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Know your true take-home wealth. Simulates CGT and withholding taxes on liquidation across all your assets.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="taxContent" style="display:none;">
           <div class="kpi-grid" style="margin-bottom:16px;">
@@ -744,13 +744,13 @@
           </div>
         </div>
         <div id="optimizerLock" class="pro-gate-card">
-          <div class="pro-gate-icon">🎯</div>
+          <div class="pro-gate-icon"><i class="fas fa-bullseye"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Asset Location Optimizer</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">
             Get a full breakdown of your portfolio allocation, concentration risks, liquidity analysis, and personalised diversification recommendations.
           </p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="optimizerContent" style="display:none;">
           <div id="optimizerRecs"></div>
@@ -769,16 +769,16 @@
           </div>
         </div>
         <div id="goalsLock" class="pro-gate-card">
-          <div class="pro-gate-icon">🎯</div>
+          <div class="pro-gate-icon"><i class="fas fa-bullseye"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Goal Tracker</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Set wealth milestones with target dates. Track progress with visual bars and projected arrival dates based on your savings rate.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Growth Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="goalsContent" style="display:none;">
           <div id="goalsList" style="display:flex;flex-direction:column;gap:14px;"></div>
           <div id="goalsEmpty" class="empty" style="padding:60px 20px;">
-            <div class="empty-icon">🎯</div>
+            <div class="empty-icon"><i class="fas fa-bullseye"></i></div>
             <div style="font-size:14px;font-weight:500;color:var(--text-dim);margin-top:8px;">No goals yet</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Set your first wealth milestone to start tracking.</div>
           </div>
@@ -790,7 +790,7 @@
         <div class="modal">
           <div class="modal-header">
             <div><div class="modal-title" id="goalModalTitle">New Goal</div><div class="modal-sub">Set a wealth milestone to track</div></div>
-            <button class="icon-btn" onclick="closeModal('goalModal')" style="font-size:16px;">✕</button>
+            <button class="icon-btn" onclick="closeModal('goalModal')" style="font-size:16px;"><i class="fas fa-xmark"></i></button>
           </div>
           <div class="form-grid-2" style="margin-bottom:12px;">
             <div class="field span-2"><label>Goal Name</label><input type="text" id="gName" placeholder="e.g. Reach $100k net worth"/></div>
@@ -816,11 +816,11 @@
 
         <!-- Lock gate -->
         <div id="scoreLockPage" class="pro-gate-card">
-          <div class="pro-gate-icon">⚡</div>
+          <div class="pro-gate-icon"><i class="fas fa-bolt"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Net Worth Score (0–100)</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">A proprietary score evaluating debt ratio, liquidity, investment diversification and portfolio balance.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
 
         <!-- Rich Pro content -->
@@ -853,7 +853,7 @@
             <!-- 3 metric cards -->
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
               <div class="kpi-card">
-                <div class="kpi-label" style="color:var(--red);">⚠ Debt Ratio</div>
+                <div class="kpi-label" style="color:var(--red);"><i class="fas fa-triangle-exclamation"></i> Debt Ratio</div>
                 <div class="kpi-value" id="scoreDebt" style="color:var(--red);">—</div>
                 <div id="debtBar" style="margin-top:10px;"></div>
                 <div class="kpi-change" style="margin-top:6px;">of assets are debt-financed</div>
@@ -941,11 +941,11 @@
       <div class="page" id="page-currency">
         <div class="greeting"><div><h2 class="serif greeting-title">Multi-Currency <span class="accent">Engine</span></h2><p class="text-dim" style="font-size:13px;">Your wealth in any currency, updated daily.</p></div></div>
         <div id="currencyLock" class="pro-gate-card">
-          <div class="pro-gate-icon">🌍</div>
+          <div class="pro-gate-icon"><i class="fas fa-globe"></i></div>
           <div class="serif" style="font-size:20px;margin-bottom:8px;">Real-Time FX Rate Syncing</div>
           <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">View your net worth in USD, GBP, EUR and more with live exchange rates updated daily.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
-          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade →</button>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="currencyContent" style="display:none;">
           <div class="kpi-grid" id="currencyKPIs" style="margin-bottom:16px;"></div>
@@ -968,16 +968,16 @@
 <nav id="mobileBottomNav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--surface);border-top:1px solid var(--border);padding:8px 0 env(safe-area-inset-bottom,8px);">
   <div style="display:flex;align-items:center;justify-content:space-around;max-width:500px;margin:0 auto;">
     <button id="mob-dashboard" class="mob-nav-btn active" onclick="switchPage('dashboard')">
-      <div class="mob-nav-icon">📊</div><div class="mob-nav-label">Dashboard</div>
+      <div class="mob-nav-icon"><i class="fas fa-chart-pie"></i></div><div class="mob-nav-label">Dashboard</div>
     </button>
     <button id="mob-assets" class="mob-nav-btn" onclick="switchPage('assets')">
-      <div class="mob-nav-icon">📦</div><div class="mob-nav-label">Assets</div>
+      <div class="mob-nav-icon"><i class="fas fa-box"></i></div><div class="mob-nav-label">Assets</div>
     </button>
     <button id="mob-investments" class="mob-nav-btn" onclick="switchPage('investments')">
-      <div class="mob-nav-icon">📈</div><div class="mob-nav-label">Invest</div>
+      <div class="mob-nav-icon"><i class="fas fa-arrow-trend-up"></i></div><div class="mob-nav-label">Invest</div>
     </button>
     <button class="mob-nav-btn" onclick="openMobileMenu()">
-      <div class="mob-nav-icon">⋯</div><div class="mob-nav-label">More</div>
+      <div class="mob-nav-icon"><i class="fas fa-ellipsis"></i></div><div class="mob-nav-label">More</div>
     </button>
   </div>
 </nav>
