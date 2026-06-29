@@ -681,9 +681,9 @@ canvas {
   .greeting              { flex-direction: column; gap: 8px; }
   .greeting-actions      { justify-content: flex-start; }
 
-  /* Modals — full screen on mobile */
-  .modal                 { width: 100% !important; max-height: 85vh; border-radius: 16px 16px 0 0; padding-bottom: 80px !important; }
-  .modal-overlay.open    { align-items: flex-end; }
+  /* Modals — centered on mobile */
+  .modal                 { width: 95% !important; max-height: 85vh; border-radius: 16px; padding-bottom: 24px !important; }
+  .modal-overlay.open    { align-items: center; }
 }
 @media (max-width: 480px) {
   .kpi-grid              { grid-template-columns: 1fr !important; }
