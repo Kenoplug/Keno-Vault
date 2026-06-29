@@ -39,7 +39,7 @@ const Security = (() => {
     });
   }
 
-  // ── Auto-Lock PIN (PBKDF2 via Web Crypto API) ───────────────────
+  // ── Auto-Lock PIN (PBKDF2 via Web Crypto API, 100k iterations) ──
   async function setPin(pin) {
     if (!_isPro) return false;
     try {

@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="../css/dashboard.css"/>
 </head>
 <body>
+<a href="#page-dashboard" style="position:absolute;top:-100px;left:8px;z-index:9999;padding:8px 16px;background:var(--accent);color:#fff;border-radius:0 0 8px 8px;font-weight:600;font-size:13px;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-100px'">Skip to content</a>
 <div id="toast"></div>
 
 <!-- LOADING -->
@@ -157,6 +158,19 @@
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="text-align:center;max-width:400px;">
+    <div style="font-size:28px;margin-bottom:8px;" id="confirmIcon">⚠️</div>
+    <div class="modal-title" id="confirmTitle">Are you sure?</div>
+    <div class="modal-sub" id="confirmMsg" style="margin-bottom:20px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk" style="background:var(--red);color:#fff;border:none;">Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- UPGRADE MODAL -->
 <div class="modal-overlay" id="upgradeModal">
   <div class="modal" style="text-align:center;">
@@ -269,8 +283,8 @@
           <div class="sync-dot" id="syncDot"></div>
           <span id="syncLabel" style="font-size:11px;color:var(--text-dim);">—</span>
         </div>
-        <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)">🛡 Shield</button>
-        <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()">🌙 Dark</button>
+        <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)" aria-label="Toggle privacy shield">🛡 Shield</button>
+        <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle theme">🌙 Dark</button>
         <button class="topbar-btn" onclick="signOut()" style="color:var(--text-muted);">Sign out</button>
       </div>
     </div>

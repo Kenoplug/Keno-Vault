@@ -19,6 +19,29 @@ function fmtAmt(v) {
   return curSym() + Math.round(amt).toLocaleString();
 }
 
+// ══ STYLED CONFIRM DIALOG ═════════════════════════════════════════
+function showConfirm(title, msg, okText, icon) {
+  return new Promise(function(resolve) {
+    document.getElementById('confirmIcon').textContent = icon || '⚠️';
+    document.getElementById('confirmTitle').textContent = title || 'Are you sure?';
+    document.getElementById('confirmMsg').textContent = msg || '';
+    document.getElementById('confirmOk').textContent = okText || 'Confirm';
+    var okBtn = document.getElementById('confirmOk');
+    okBtn.style.background = (okText === 'Delete' || okText === 'Sign Out') ? 'var(--red)' : 'var(--red)';
+    okBtn.style.color = '#fff';
+    okBtn.style.border = 'none';
+    function cleanup(val) {
+      closeModal('confirmModal');
+      document.getElementById('confirmCancel').onclick = null;
+      document.getElementById('confirmOk').onclick = null;
+      resolve(val);
+    }
+    document.getElementById('confirmCancel').onclick = function() { cleanup(false); };
+    document.getElementById('confirmOk').onclick = function() { cleanup(true); };
+    openModal('confirmModal');
+  });
+}
+
 // ══ VERSION CHECK ════════════════════════════════════════════════
 function checkAppVersion() {
   if (typeof APP_VERSION === 'undefined') { console.warn('[Version] APP_VERSION not loaded — skipping check'); return; }
@@ -387,7 +410,7 @@ async function signInWithGoogle() {
 }
 
 async function signOut() {
-  if (!confirm('Sign out of Keno Vault?')) return;
+  var confirmed = await showConfirm('Sign Out', 'You will need to sign in again to access your vault.', 'Sign Out', '👋'); if (!confirmed) return;
   bootDone = false;
   currentUser = null;
   userPlan = 'free';
@@ -673,7 +696,7 @@ async function addAsset() {
 async function deleteAsset(id) {
   const a = assets.find(x => x.id === id);
   if (!a) return;
-  if (!confirm('Delete "' + a.name + '" (' + fmt(a.value) + ')?\n\nThis cannot be undone.')) return;
+  var confirmed = await showConfirm('Delete Asset', '"' + a.name + '" (' + fmt(a.value) + ')\nThis cannot be undone.', 'Delete', '🗑'); if (!confirmed) return;
   setSyncState('syncing', 'Deleting…');
   try {
     await dbDelete(id);
@@ -809,7 +832,7 @@ async function saveEdit() {
 // ══ CLEAR ALL ════════════════════════════════════════════════════
 async function confirmClear() {
   if (!assets.length) { UI.toast('Vault is empty', 'info'); return; }
-  if (!confirm(`Clear all ${assets.length} entries? This cannot be undone.`)) return;
+  var confirmed = await showConfirm('Clear All Entries', 'Delete all ' + assets.length + ' entries? This cannot be undone.', 'Clear All', '🗑'); if (!confirmed) return;
   setSyncState('syncing', 'Clearing…');
   try {
     await sb.from('assets').delete().eq('user_id', currentUser.id);
@@ -1897,7 +1920,7 @@ async function saveGoal() {
 }
 
 async function deleteGoal(id) {
-  if (!confirm('Delete this goal?')) return;
+  var confirmed = await showConfirm('Delete Goal', 'This goal and its progress will be permanently removed.', 'Delete', '🗑'); if (!confirmed) return;
   try {
     await sb.from('goals').delete().eq('id', id);
     await loadGoals();
