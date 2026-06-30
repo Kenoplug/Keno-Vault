@@ -675,30 +675,26 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
         <!-- How to subscribe -->
         <div class="settings-section" id="upgradeSection">
           <div class="section-header">
-            <div><div class="section-header-title">How to Subscribe</div><div class="section-header-sub">Manual activation · 24hr turnaround</div></div>
+            <div><div class="section-header-title">How to Subscribe</div><div class="section-header-sub">Instant activation · Pay with card, bank, or crypto</div></div>
           </div>
           <div class="section-body">
             <div style="display:flex;flex-direction:column;gap:14px;">
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
-                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 1 — Send Payment</div>
-                <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">
-                  Send <strong style="color:var(--text);">$4.99 USDT (TRC20)</strong> to:<br/>
-                  <span class="mono" style="font-size:11px;color:var(--accent);word-break:break-all;display:block;margin-top:4px;background:var(--surface3);padding:8px;border-radius:6px;">YTFzUFQj1SUB3GpvaZDq3ZbFrXEB4LjxkVv</span>
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 1 — Choose Your Plan</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+                  <button class="btn btn-primary" onclick="upgradeTo('growth')" style="flex:1;min-width:140px;">Growth — $1.99/mo</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('pro')" style="flex:1;min-width:140px;">Pro — $3.99/mo</button>
                 </div>
               </div>
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
-                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 2 — Email Receipt</div>
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 2 — Complete Checkout</div>
                 <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">
-                  Send your payment screenshot + the email address below to:<br/>
-                  <strong style="color:var(--accent);">kenovault@gmail.com</strong>
-                </div>
-                <div style="margin-top:10px;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;">
-                  Your account email: <strong id="billingEmail" class="mono" style="color:var(--accent);">—</strong>
+                  Pay securely via <strong style="color:var(--text);">Bachs</strong> — card, bank transfer, mobile money, or crypto. Your account email: <strong id="billingEmail" class="mono" style="color:var(--accent);">—</strong>
                 </div>
               </div>
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
-                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 3 — Activated <i class="fas fa-bolt"></i></div>
-                <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">Pro is activated within <strong style="color:var(--text);">24 hours</strong> after payment confirmation. You'll see "Pro Plan ⬡" in your sidebar immediately after.</div>
+                <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 3 — Activated Instantly <i class="fas fa-bolt"></i></div>
+                <div style="font-size:13px;color:var(--text-dim);line-height:1.7;">Your plan activates <strong style="color:var(--text);">immediately</strong> after payment. No manual confirmation needed.</div>
               </div>
             </div>
           </div>
@@ -1237,6 +1233,21 @@ function setCurrency(cur) {
     msg += ' (values auto-converted from ' + Calculators.getNativeCurrency() + ')';
   }
   toast(msg, 'success');
+}
+
+// ══ BACHS UPGRADE ══
+async function upgradeTo(plan) {
+  if (!currentUser) { toast('Sign in first', 'error'); return; }
+  try {
+    var resp = await fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentUser.email, plan: plan }),
+    });
+    var data = await resp.json();
+    if (data.url) { window.location.href = data.url; }
+    else { toast('Payment service unavailable. Try again later.', 'error'); }
+  } catch(e) { toast('Payment error: ' + e.message, 'error'); }
 }
 
 // ══ PREFERENCES ══

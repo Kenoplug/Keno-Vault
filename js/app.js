@@ -85,6 +85,33 @@ function updateCurrencyLabels() {
   });
 }
 
+// ══ BACHS UPGRADE ════════════════════════════════════════════════
+var EDGE_URL = 'https://soxqotattmhahzpehycz.supabase.co/functions/v1/create-checkout';
+
+async function upgradeTo(plan) {
+  if (!currentUser) { UI.toast('Sign in first', 'error'); return; }
+  try {
+    var btn = document.querySelector('#upgradeModal .btn-primary');
+    if (btn) { btn.disabled = true; btn.textContent = 'Connecting to checkout…'; }
+    var resp = await fetch(EDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: currentUser.email, plan: plan }),
+    });
+    var data = await resp.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      UI.toast('Payment service unavailable. Try again or contact support.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Pay — Card · Bank · Crypto'; }
+    }
+  } catch(e) {
+    UI.toast('Payment service error: ' + e.message, 'error');
+    var btn = document.querySelector('#upgradeModal .btn-primary');
+    if (btn) { btn.disabled = false; btn.textContent = 'Pay — Card · Bank · Crypto'; }
+  }
+}
+
 // ══ DEBT MULTIPLIER ═══════════════════════════════════════════════
 var _debtMul = 1;
 function setDebtMul(mul, btn) {
