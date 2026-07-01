@@ -2,8 +2,8 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPA_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPA_URL = Deno.env.get("SB_URL")!;
+const SUPA_SERVICE_KEY = Deno.env.get("SB_SERVICE_KEY")!;
 const WEBHOOK_SECRET = Deno.env.get("BACHS_WEBHOOK_SECRET") || "";
 
 serve(async (req) => {
