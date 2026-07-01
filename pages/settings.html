@@ -1241,7 +1241,7 @@ async function upgradeTo(plan) {
   try {
     var resp = await fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/create-checkout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
       body: JSON.stringify({ email: currentUser.email, plan: plan }),
     });
     var data = await resp.json();

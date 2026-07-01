@@ -95,10 +95,11 @@ async function upgradeTo(plan) {
     if (btn) { btn.disabled = true; btn.textContent = 'Connecting to checkout…'; }
     var resp = await fetch(EDGE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
       body: JSON.stringify({ email: currentUser.email, plan: plan }),
     });
     var data = await resp.json();
+    console.log('[Bachs]', data);
     if (data.url) {
       window.location.href = data.url;
     } else {
