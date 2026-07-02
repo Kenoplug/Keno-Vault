@@ -1,4 +1,4 @@
-// Create Bachs Checkout Session — Edge Function
+// Create Bachs Checkout Session — Edge Function v2
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 
 const BACHS_KEY = Deno.env.get("BACHS_SECRET_KEY")!;
@@ -15,6 +15,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type, Authorization" } });
   }
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ version: 2, hasKey: !!BACHS_KEY, keyPrefix: BACHS_KEY ? BACHS_KEY.slice(0,12) + "..." : "MISSING", sandbox: isSandbox }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+  }
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
   }
@@ -22,7 +25,7 @@ serve(async (req) => {
     const { email, plan } = await req.json();
     const productId = PRODUCTS[plan];
     if (!email || !productId) return new Response(JSON.stringify({ error: "Missing email or invalid plan" }), { status: 400 });
-    console.log("[Checkout]", plan, "for", email, "sandbox:", isSandbox);
+    console.log("[Checkout]", plan, "for", email);
     const bachsResp = await fetch(BACHS_BASE + "/v1/checkout-sessions", {
       method: "POST",
       headers: { "Authorization": "Bearer " + BACHS_KEY, "Content-Type": "application/json" },
@@ -35,13 +38,11 @@ serve(async (req) => {
       }),
     });
     const data = await bachsResp.json();
-    console.log("[Checkout] Status:", bachsResp.status, JSON.stringify(data).slice(0,200));
     if (!bachsResp.ok) {
-      return new Response(JSON.stringify({ error: "Payment service error", bachs: data }), { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      return new Response(JSON.stringify({ error: "Bachs API error", status: bachsResp.status, bachs: data }), { status: 502, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
     }
     return new Response(JSON.stringify({ url: data.checkout_url }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
   } catch (e) {
-    console.error("[Checkout] Exception:", e.message || e);
     return new Response(JSON.stringify({ error: "Internal error", detail: e.message || String(e) }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
   }
 });
