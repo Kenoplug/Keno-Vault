@@ -31,7 +31,7 @@ serve(async (req) => {
       headers: { "Authorization": "Bearer " + BACHS_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         product_cart: [{ product_id: productId, quantity: 1 }],
-        customer: { email: email },
+        customer: { email: email, name: email },
         return_url: SITE_URL + "/pages/dashboard.html?checkout=success",
         cancel_url: SITE_URL + "/pages/dashboard.html?checkout=cancelled",
         metadata: { plan: plan, user_email: email },
