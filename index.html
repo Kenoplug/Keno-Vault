@@ -525,7 +525,7 @@ footer{padding:48px;border-top:1px solid var(--border);}
       </div>
     </div>
     <p style="text-align:center;margin-top:24px;font-size:13px;color:var(--text-muted);">
-      Pay via USDT (TRC20) · Manual activation within 24hrs · Cancel anytime
+      Pay via card, bank transfer, mobile money, or crypto · Instant activation · Cancel anytime
     </p>
   </div>
 </section>
@@ -700,7 +700,7 @@ const LEGAL_CONTENT = {
     <p>Financial data is stored on Supabase infrastructure. All data is encrypted at rest and in transit (TLS 1.3). Row-Level Security ensures complete data isolation between users. Your PIN is secured with PBKDF2 key derivation (100,000 iterations, SHA-256). Encrypted backups use AES-256-GCM via the Web Crypto API &mdash; we never see your backup password.</p>
 
     <h3>4. Data Sharing</h3>
-    <p>We do not sell, rent, or trade your personal data. We share data only with Supabase (database/auth), Google (OAuth only &mdash; no financial data shared), and Vercel (hosting &mdash; serves application files only, no access to financial data).</p>
+    <p>We do not sell, rent, or trade your personal data. We share data only with Supabase (database/auth), Google (OAuth only &mdash; no financial data shared), Vercel (hosting &mdash; serves application files only, no access to financial data), and Bachs (payment processing &mdash; receives email and transaction amount to process your subscription).</p>
 
     <h3>5. Legacy Mode</h3>
     <p>If you enable Legacy Mode, your encrypted vault data is transferred to your designated heir after the inactivity threshold. Only someone with your backup password can decrypt it. We do not retain a copy.</p>
@@ -728,10 +728,10 @@ const LEGAL_CONTENT = {
     <div class="divider"></div>
 
     <h3>1. Pro Payments</h3>
-    <p>Keno Vault Pro ($4.99/month) is activated manually after payment via <strong style="color:#f0f0f0;">USDT (TRC20)</strong>. Cryptocurrency transactions are irreversible on the blockchain, but we prioritize fairness.</p>
+    <p>Keno Vault subscriptions are billed at $1.99/mo (Growth) or $3.99/mo (Pro) via <strong style="color:#f0f0f0;">Bachs</strong>, our payment processor. Payments can be made by card, bank transfer, mobile money, or cryptocurrency. Subscriptions activate instantly upon successful payment.</p>
 
     <h3>2. 7-Day Money-Back Guarantee</h3>
-    <p>Not satisfied within <strong style="color:#f0f0f0;">7 days</strong> of activation? Email <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a> with your account email and USDT transaction hash for a full refund to your original wallet within 5 business days.</p>
+    <p>Not satisfied within <strong style="color:#f0f0f0;">7 days</strong> of activation? Email <a href="mailto:kenovault@gmail.com">kenovault@gmail.com</a> with your account email for a full refund within 5 business days. Refunds are processed back to your original payment method.</p>
 
     <h3>3. Eligibility</h3>
     <p>Refunds are granted when requested within 7 days of activation, the account is in good standing, and Pro features were not working as described. Refunds are not granted after 7 days, for terminated accounts, or for payments sent to incorrect wallet addresses.</p>

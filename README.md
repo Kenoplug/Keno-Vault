@@ -44,15 +44,19 @@ Push to GitHub, import into [Vercel](https://vercel.com) — auto-detected as a 
 
 ---
 
+## Payments
+
+Payments processed via **Bachs** — card, bank transfer, mobile money, and crypto in 135+ currencies. Subscriptions activate instantly upon successful payment via webhook. No manual activation needed.
+
 ## Pro Activation (Admin)
 
-Manual activation via Supabase SQL Editor:
+Automatic via Bachs checkout + webhook. For manual overrides:
 
 ```sql
 INSERT INTO subscriptions (email, plan, status, provider)
-VALUES ('user@example.com', 'pro', 'active', 'manual')
+VALUES ('user@example.com', 'growth', 'active', 'bachs')
 ON CONFLICT (email) DO UPDATE
-SET plan = 'pro', status = 'active', updated_at = now();
+SET plan = 'growth', status = 'active', updated_at = now();
 ```
 
 ---
@@ -64,6 +68,7 @@ SET plan = 'pro', status = 'active', updated_at = now();
 | Frontend | Vanilla HTML/CSS/JS |
 | Styling | Tailwind CDN + custom properties |
 | Charts | Chart.js v4 |
+| Payments | Bachs (checkout + webhook) |
 | Auth & DB | Supabase (PostgreSQL + RLS) |
 | Hosting | Vercel |
 | Encryption | Web Crypto API (AES-256-GCM + PBKDF2) |
