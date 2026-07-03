@@ -196,10 +196,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 48px;height:64px;
   top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
 
 /* FOOTER */
-footer{padding:48px;border-top:1px solid var(--border);}
-.footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px;}
-.footer-links{display:flex;gap:24px;}
-.footer-links a{font-size:13px;color:var(--text-muted);text-decoration:none;transition:color .2s;}
+footer{padding:64px 48px 40px;border-top:1px solid var(--border);}
+.footer-inner{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:28px;}
+.footer-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;}
+.footer-links{display:flex;gap:28px;flex-wrap:wrap;}
+.footer-links a{font-size:13px;color:var(--text-dim);text-decoration:none;transition:color .2s;}
+.footer-links a:hover{color:var(--orange);}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:24px;border-top:1px solid var(--border);}
+.footer-disclaimer{font-size:12px;color:var(--text-muted);line-height:1.6;max-width:500px;}
+.footer-legal{display:flex;gap:20px;flex-wrap:wrap;}
 .footer-links a:hover{color:var(--text-dim);}
 
 /* ANIMATIONS */
@@ -546,26 +551,31 @@ footer{padding:48px;border-top:1px solid var(--border);}
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div class="nav-logo-icon" style="width:28px;height:28px;font-size:14px;">⬡</div>
-      <span style="font-weight:700;font-size:15px;">Keno Vault</span>
-      <span style="color:var(--text-muted);font-size:13px;margin-left:8px;">© 2025</span>
+    <div class="footer-top">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="nav-logo-icon" style="width:32px;height:32px;font-size:16px;">⬡</div>
+        <div>
+          <div style="font-weight:700;font-size:16px;">Keno Vault</div>
+          <div style="font-size:12px;color:var(--text-muted);">Own Your Wealth</div>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#security">Security</a>
+        <a href="pages/dashboard.html">Dashboard</a>
+        <a href="pages/settings.html">Settings</a>
+      </div>
     </div>
-    <div class="footer-links">
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#security">Security</a>
-      <a href="pages/dashboard.html">Dashboard</a>
-      <a href="pages/settings.html">Settings</a>
+    <div class="footer-bottom">
+      <div class="footer-disclaimer">Keno Vault is not a licensed financial advisor, broker, or investment service. All figures are for personal tracking and informational purposes only.</div>
+      <div class="footer-legal">
+        <a href="#" onclick="openLegal('terms');return false;" class="legal-footer-link">Terms of Service</a>
+        <a href="#" onclick="openLegal('privacy');return false;" class="legal-footer-link">Privacy Policy</a>
+        <a href="#" onclick="openLegal('refund');return false;" class="legal-footer-link">Refund Policy</a>
+      </div>
     </div>
-  </div>
-  <div style="max-width:1100px;margin:20px auto 0;padding:20px 48px 0;border-top:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-    <div style="font-size:12px;color:var(--text-muted);">Keno Vault is not a licensed financial advisor. All figures are for personal tracking only.</div>
-    <div style="display:flex;gap:20px;">
-      <a href="#" onclick="openLegal('terms');return false;" class="legal-footer-link">Terms of Service</a>
-      <a href="#" onclick="openLegal('privacy');return false;" class="legal-footer-link">Privacy Policy</a>
-      <a href="#" onclick="openLegal('refund');return false;" class="legal-footer-link">Refund Policy</a>
-    </div>
+    <div style="text-align:center;font-size:12px;color:var(--text-muted);padding-top:8px;">© 2026 Keno Vault</div>
   </div>
 </footer>
 
@@ -595,7 +605,7 @@ document.querySelectorAll('.feature-card,.pricing-card,.security-item').forEach(
 
 <style>
 .legal-footer-link{font-size:12px;color:var(--text-muted);text-decoration:none;transition:color .2s;}
-.legal-footer-link:hover{color:#f97316;}
+.legal-footer-link:hover{color:var(--orange);}
 .legal-tab{padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
   border:1px solid #333;background:transparent;color:#666;transition:all .15s;font-family:'DM Sans',sans-serif;}
 .legal-tab:hover{border-color:#f97316;color:#f97316;}
