@@ -1055,16 +1055,18 @@ async function adminDeactivatePro() {
       plan: 'free', status: 'inactive', updated_at: new Date().toISOString(),
     }).eq('email', email);
     if (error) throw error;
-    showAdminResult(`<i class="fas fa-circle-check"></i> Pro removed for ${email}.`, 'success');
-    toast(`Pro removed for ${email}`, 'info');
+    showAdminResult('<i class=\"fas fa-circle-check\"></i> Pro removed for ' + email + '.', 'success');
+    toast('Pro removed for ' + email, 'info');
     loadProUsers();
     document.getElementById('adminEmail').value = '';
+    fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/bachs-webhook', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'admin_downgrade', email: email, plan:'free' }) }).catch(function(){});
   } catch (e) {
     // Fallback: delete row entirely
     try {
       await sb.from('subscriptions').delete().eq('email', email);
-      showAdminResult(`<i class="fas fa-circle-check"></i> Subscription record deleted for ${email}.`, 'success');
+      showAdminResult('<i class=\"fas fa-circle-check\"></i> Subscription record deleted for ' + email + '.', 'success');
       loadProUsers();
+      fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/bachs-webhook', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'admin_downgrade', email: email, plan:'free' }) }).catch(function(){});
     } catch(e2) {
       showAdminResult('Error: ' + e2.message, 'error');
     }
@@ -1120,8 +1122,10 @@ async function quickRemovePro(email) {
   if (!(await showConfirm('Remove Subscription', 'Remove Pro/Growth from ' + email + '?', 'Remove', '🗑'))) return;
   try {
     await sb.from('subscriptions').update({ plan:'free', status:'inactive', updated_at: new Date().toISOString() }).eq('email', email);
-    toast(`Pro removed for ${email}`, 'info');
+    toast('Pro removed for ' + email, 'info');
     loadProUsers();
+    // Notify webhook to send email
+    fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/bachs-webhook', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type:'admin_downgrade', email: email, plan:'free' }) }).catch(function(){});
   } catch(e) { toast('Error: '+e.message, 'error'); }
 }
 
