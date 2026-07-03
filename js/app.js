@@ -128,11 +128,11 @@ function getDebtExtra() {
 }
 function updateDebtDisplay() {
   var sv = document.getElementById('debtExtraVal');
-  if (sv) sv.textContent = fmtAmt(getDebtExtra());
+  if (sv) sv.textContent = curSym() + Math.round(getDebtExtra()).toLocaleString();
   var mn = document.getElementById('debtMinLabel');
   var mx = document.getElementById('debtMaxLabel');
   if (mn) mn.textContent = curSym() + '0';
-  if (mx) mx.textContent = fmtAmt(100000 * _debtMul);
+  if (mx) mx.textContent = curSym() + Math.round(100000 * _debtMul).toLocaleString();
 }
 
 const sb = createSupabaseClient();
@@ -1199,7 +1199,7 @@ function runDebt() {
   }
 
   try {
-  var extraPmt = getDebtExtra();
+  var extraPmt = toNativeAmount(getDebtExtra());
   var aval = Calculators.debtPaydown(debts, extraPmt, 'avalanche');
   var snow = Calculators.debtPaydown(debts, extraPmt, 'snowball');
 
