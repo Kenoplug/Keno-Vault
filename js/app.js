@@ -628,11 +628,21 @@ async function snapHistory() {
 
 // ══ FORM HELPERS ═════════════════════════════════════════════════
 function handleCatChange() {
-  const cat = document.getElementById('fCategory').value;
-  const investWrap  = document.getElementById('investToggleWrap');
-  const deprecWrap  = document.getElementById('deprecToggleWrap');
+  var cat = document.getElementById('fCategory').value;
+  var investWrap  = document.getElementById('investToggleWrap');
+  var deprecWrap  = document.getElementById('deprecToggleWrap');
   if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
   if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
+  // Collapse panels when category changes away
+  if (cat !== 'investment') {
+    var p = document.getElementById('investPanel'); if (p) p.classList.remove('open');
+    var c = document.getElementById('investToggle'); if (c) c.classList.remove('active');
+    var prev = document.getElementById('fPreview'); if (prev) prev.style.display = 'none';
+  }
+  if (cat !== 'physical') {
+    var dp = document.getElementById('deprecPanel'); if (dp) dp.classList.remove('open');
+    var dc = document.getElementById('deprecToggle'); if (dc) dc.classList.remove('active');
+  }
 }
 
 function calcPreview() {
