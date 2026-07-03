@@ -1175,7 +1175,7 @@ function runDebt() {
   var debts = assets.filter(function(a) { return a.cat === 'liability'; }).map(function(a) {
     return {
       name: a.name, balance: a.value,
-      minPayment: Math.max(a.value * 0.02, 5000),
+      minPayment: Math.max(a.value * 0.02, 1),
       interestRate: a.rate || 18
     };
   });
