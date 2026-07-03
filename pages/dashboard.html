@@ -531,7 +531,7 @@
               </div>
               <div class="slider-group">
                 <label class="slider-label">Monthly Savings <span id="savingsVal" class="slider-val">$500</span></label>
-                <input type="range" id="fireSavings" min="50" max="10000" step="50" value="500" oninput="document.getElementById('savingsVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireSavings" min="0" max="1000000" step="500" value="500" oninput="document.getElementById('savingsVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Return % <span id="returnVal" class="slider-val">10%</span></label>
@@ -543,7 +543,7 @@
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Expenses <span id="expensesVal" class="slider-val">$30,000</span></label>
-                <input type="range" id="fireExpenses" min="6000" max="240000" step="1000" value="30000" oninput="document.getElementById('expensesVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireExpenses" min="0" max="50000000" step="10000" value="30000" oninput="document.getElementById('expensesVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
               </div>
             </div>
             <div>
