@@ -1136,13 +1136,13 @@ function renderInvestmentPage() {
 // ══ PRO ENGINES ═══════════════════════════════════════════════════
 function runFire() {
   if (!isPro()) return;
-  // Refresh slider displays with current currency symbol
+  // Refresh slider displays — use display currency (no native conversion)
   var sSl = document.getElementById('fireSavings');
   var sSv = document.getElementById('savingsVal');
-  if (sSl && sSv) sSv.textContent = fmtAmt(parseInt(sSl.value) || 500);
+  if (sSl && sSv) sSv.textContent = curSym() + Math.round(parseInt(sSl.value) || 500).toLocaleString();
   var eSl = document.getElementById('fireExpenses');
   var eSv = document.getElementById('expensesVal');
-  if (eSl && eSv) eSv.textContent = fmtAmt(parseInt(eSl.value) || 30000);
+  if (eSl && eSv) eSv.textContent = curSym() + Math.round(parseInt(eSl.value) || 30000).toLocaleString();
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
   var monthlySavings = parseInt(document.getElementById('fireSavings').value) || 500;
   var annualExpenses = parseInt(document.getElementById('fireExpenses').value) || 30000;
