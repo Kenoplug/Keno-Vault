@@ -49,7 +49,7 @@ function applyTheme(t) {
   localStorage.setItem('kv-theme', t);
   // Update theme toggle button text if it exists
   var btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = t === 'dark' ? 'Dark' : 'Light';
+  if (btn) btn.innerHTML = t === 'dark' ? '<i class=\"fas fa-moon\"></i> Dark' : '<i class=\"fas fa-sun\"></i> Light';
 }
 
 function toggleTheme() {
