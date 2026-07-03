@@ -1144,14 +1144,16 @@ function runFire() {
   var eSv = document.getElementById('expensesVal');
   if (eSl && eSv) eSv.textContent = fmtAmt(parseInt(eSl.value) || 30000);
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
-  const res = Calculators.fireSimulation({
+  var monthlySavings = parseInt(document.getElementById('fireSavings').value) || 500;
+  var annualExpenses = parseInt(document.getElementById('fireExpenses').value) || 30000;
+  var res = Calculators.fireSimulation({
     currentAge:       parseInt(document.getElementById('fireAge').value),
     retirementAge:    parseInt(document.getElementById('fireRetire').value),
     currentNetWorth:  nw,
-    monthlySavings:   parseInt(document.getElementById('fireSavings').value),
+    monthlySavings:   toNativeAmount(monthlySavings),
     annualReturnRate: parseInt(document.getElementById('fireReturn').value),
     inflationRate:    parseInt(document.getElementById('fireInflation').value),
-    annualExpenses:   parseInt(document.getElementById('fireExpenses').value),
+    annualExpenses:   toNativeAmount(annualExpenses),
   });
   const fiEl = document.getElementById('fireFINum'); if (fiEl) fiEl.textContent = fmtShort(res.fiNumber);
   const pwEl = document.getElementById('fireProjNW'); if (pwEl) pwEl.textContent = fmtShort(res.projectedNW);
