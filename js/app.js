@@ -909,15 +909,21 @@ async function confirmClear() {
 // ══ CSV EXPORT ═══════════════════════════════════════════════════
 function exportCSV() {
   if (!assets.length) { UI.toast('No data to export', 'info'); return; }
-  const h = ['Name','Category','Notes','Value (NGN)','Principal','Rate (%)','Years','FV (NGN)','Interest (NGN)'];
-  const rows = assets.map(a => [
-    `"${a.name}"`, CAT[a.cat].l, `"${a.notes||''}"`,
-    a.value, a.principal||'', a.rate||'', a.years||'',
-    a.fv ? a.fv.toFixed(2) : '', a.interest ? a.interest.toFixed(2) : '',
-  ].join(','));
-  const url = URL.createObjectURL(new Blob([[h.join(','), ...rows].join('\n')], { type: 'text/csv' }));
-  const lnk = document.createElement('a');
-  lnk.href = url; lnk.download = `keno-vault-${new Date().toISOString().slice(0,10)}.csv`;
+  var sym = curSym();
+  var base = Calculators.getBaseCurrency();
+  function d(v) { return v ? Calculators.convertCurrency ? Math.abs(Calculators.convertCurrency(Math.abs(v), Calculators.getNativeCurrency(), base)).toFixed(2) : parseFloat(v).toFixed(2) : ''; }
+  var h = ['Name','Category','Notes','Value ('+base+')','Principal','Rate (%)','Years','FV ('+base+')','Interest ('+base+')'];
+  var rows = assets.map(function(a) {
+    var catObj = CAT[a.cat] || { l: a.cat || 'Unknown' };
+    return [
+      '"' + a.name + '"', catObj.l, '"' + (a.notes||'') + '"',
+      d(a.value), a.principal ? d(a.principal) : '', a.rate||'', a.years||'',
+      a.fv ? d(a.fv) : '', a.interest ? d(a.interest) : '',
+    ].join(',');
+  });
+  var url = URL.createObjectURL(new Blob([[h.join(','), ...rows].join('\n')], { type: 'text/csv' }));
+  var lnk = document.createElement('a');
+  lnk.href = url; lnk.download = 'keno-vault-' + new Date().toISOString().slice(0,10) + '.csv';
   lnk.click(); URL.revokeObjectURL(url);
   UI.toast('CSV exported', 'success');
 }
