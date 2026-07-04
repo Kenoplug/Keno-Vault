@@ -533,27 +533,27 @@
               <div style="font-weight:600;font-size:14px;margin-bottom:16px;">Simulation Variables</div>
               <div class="slider-group">
                 <label class="slider-label">Current Age <span id="ageVal" class="slider-val">30</span></label>
-                <input type="range" id="fireAge" min="18" max="70" value="30" oninput="document.getElementById('ageVal').textContent=this.value;runFire()">
+                <input type="range" id="fireAge" min="18" max="70" value="30" oninput="fillSliderTrack(this);document.getElementById('ageVal').textContent=this.value;runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Retirement Age <span id="retireVal" class="slider-val">55</span></label>
-                <input type="range" id="fireRetire" min="30" max="80" value="55" oninput="document.getElementById('retireVal').textContent=this.value;runFire()">
+                <input type="range" id="fireRetire" min="30" max="80" value="55" oninput="fillSliderTrack(this);document.getElementById('retireVal').textContent=this.value;runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Monthly Savings <span id="savingsVal" class="slider-val">$500</span></label>
-                <input type="range" id="fireSavings" min="0" max="1000000" step="500" value="500" oninput="document.getElementById('savingsVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireSavings" min="0" max="1000000" step="500" value="500" oninput="fillSliderTrack(this);document.getElementById('savingsVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Return % <span id="returnVal" class="slider-val">10%</span></label>
-                <input type="range" id="fireReturn" min="1" max="30" value="10" oninput="document.getElementById('returnVal').textContent=this.value+'%';runFire()">
+                <input type="range" id="fireReturn" min="1" max="30" value="10" oninput="fillSliderTrack(this);document.getElementById('returnVal').textContent=this.value+'%';runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Inflation Rate % <span id="inflationVal" class="slider-val">18%</span></label>
-                <input type="range" id="fireInflation" min="1" max="30" value="18" oninput="document.getElementById('inflationVal').textContent=this.value+'%';runFire()">
+                <input type="range" id="fireInflation" min="1" max="30" value="18" oninput="fillSliderTrack(this);document.getElementById('inflationVal').textContent=this.value+'%';runFire()">
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Expenses <span id="expensesVal" class="slider-val">$30,000</span></label>
-                <input type="range" id="fireExpenses" min="0" max="50000000" step="10000" value="30000" oninput="document.getElementById('expensesVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireExpenses" min="0" max="50000000" step="10000" value="30000" oninput="fillSliderTrack(this);document.getElementById('expensesVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
               </div>
             </div>
             <div>
@@ -647,7 +647,7 @@
               </div>
             </div>
             <input type="range" id="debtExtraSlider" min="0" max="100000" step="500" value="500"
-              oninput="updateDebtDisplay();runDebt()"
+              oninput="fillSliderTrack(this);updateDebtDisplay();runDebt()"
               style="width:100%;margin-top:12px;"/>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;">
               <div style="display:flex;gap:4px;" id="debtMulChips">

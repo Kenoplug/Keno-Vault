@@ -149,6 +149,18 @@ async function sendSecurityAlert(changeDescription) {
   await sendNotification('security_alert', info);
 }
 
+// ══ SLIDER TRACK FILL ═════════════════════════════════════════════
+function fillSliderTrack(slider) {
+  var pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+  var accent = '#f97316';
+  var track = document.documentElement.getAttribute('data-theme') === 'light' ? '#e2e2e6' : '#1A1A1E';
+  slider.style.background = 'linear-gradient(to right, ' + accent + ' 0%, ' + accent + ' ' + pct + '%, ' + track + ' ' + pct + '%, ' + track + ' 100%)';
+}
+
+function initAllSliderTracks() {
+  document.querySelectorAll('input[type=range]').forEach(function(s) { fillSliderTrack(s); });
+}
+
 // ══ BACHS UPGRADE ════════════════════════════════════════════════
 var EDGE_URL = 'https://soxqotattmhahzpehycz.supabase.co/functions/v1/create-checkout';
 
@@ -197,6 +209,8 @@ function updateDebtDisplay() {
   var mx = document.getElementById('debtMaxLabel');
   if (mn) mn.textContent = curSym() + '0';
   if (mx) mx.textContent = curSym() + Math.round(100000 * _debtMul).toLocaleString();
+  var debtSlider = document.getElementById('debtExtraSlider');
+  if (debtSlider) fillSliderTrack(debtSlider);
 }
 
 const sb = createSupabaseClient();
@@ -378,8 +392,8 @@ function switchProPage(name) {
     if (contentEl) contentEl.style.display = unlocked ? 'block' : 'none';
     if (!unlocked) { openModal('upgradeModal'); return; }
   }
-  if (name === 'fire')      { runFire();        return; }
-  if (name === 'debt')      { runDebt();        return; }
+  if (name === 'fire')      { runFire();        initAllSliderTracks(); return; }
+  if (name === 'debt')      { runDebt();        initAllSliderTracks(); return; }
   if (name === 'tax')       { runTax();         return; }
   if (name === 'optimizer') { runOptimizer();   return; }
   if (name === 'score')     { renderScore();    return; }
@@ -1388,6 +1402,10 @@ function runFire() {
       }
     }
   );
+  // Refresh slider track fills
+  ['fireAge','fireRetire','fireSavings','fireReturn','fireInflation','fireExpenses'].forEach(function(id) {
+    var s = document.getElementById(id); if (s) fillSliderTrack(s);
+  });
 }
 
 function runDebt() {
@@ -2381,6 +2399,7 @@ async function doBootWithSession(session, source) {
     Security.init(isPro());
     renderAll();
     showApp();
+    initAllSliderTracks();
     updateCurrencyLabels();
     checkAppVersion();
     if (source === 'SIGNED_IN') {
@@ -2465,3 +2484,12 @@ setInterval(() => {
     sb.auth.getSession().catch(() => {});
   }
 }, 8 * 60 * 1000);
+
+// Step 6 — Refresh slider tracks on theme change
+(function() {
+  var _orig = applyTheme;
+  applyTheme = function(t) {
+    _orig(t);
+    setTimeout(function() { initAllSliderTracks(); }, 80);
+  };
+})();
