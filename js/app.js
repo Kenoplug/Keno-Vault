@@ -10,13 +10,7 @@ const FREE_LIMIT = 10;
 // ══ GLOBAL HELPERS (used by inline HTML oninput handlers) ═══════
 function curSym()  { return (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(Calculators.getBaseCurrency()) : '$'; }
 function fmtAmt(v) {
-  var native = Calculators.getNativeCurrency();
-  var base   = Calculators.getBaseCurrency();
-  var amt    = Math.abs(v || 0);
-  if (native && native !== base) {
-    amt = Math.abs(Calculators.convertCurrency(amt, native, base));
-  }
-  return curSym() + Math.round(amt).toLocaleString();
+  return curSym() + Math.round(Math.abs(v || 0)).toLocaleString();
 }
 
 // ══ STYLED CONFIRM DIALOG ═════════════════════════════════════════
@@ -188,12 +182,6 @@ const fmtSigned  = n  => (n < 0 ? '-' : '') + fmt(n);
 const fmtShort   = n  => {
   var a = Math.abs(n);
   var s = curSym();
-  // Auto-convert from native currency
-  var native = Calculators.getNativeCurrency();
-  var base   = Calculators.getBaseCurrency();
-  if (native && native !== base) {
-    a = Math.abs(Calculators.convertCurrency(a, native, base));
-  }
   if (a >= 1e9) return s + (a / 1e9).toFixed(1) + 'B';
   if (a >= 1e6) return s + (a / 1e6).toFixed(1) + 'M';
   if (a >= 1e3) return s + (a / 1e3).toFixed(0) + 'k';
@@ -682,8 +670,7 @@ async function addAsset() {
 
   const name  = document.getElementById('fName').value.trim();
   const cat   = document.getElementById('fCategory').value;
-  var value = parseFloat(document.getElementById('fValue').value);
-  if (!isNaN(value) && value > 0) value = toNativeAmount(value);
+  const value = parseFloat(document.getElementById('fValue').value);
   const notes = document.getElementById('fNotes').value.trim();
   const errEl = document.getElementById('formError');
   if (errEl) errEl.textContent = '';
@@ -774,12 +761,7 @@ function openEditModal(id) {
   editId = id;
   document.getElementById('eName').value  = a.name;
   document.getElementById('eCat').value   = a.cat;
-  // Show value in display currency (convert from native)
-  var displayVal = a.value;
-  var native = Calculators.getNativeCurrency();
-  var base   = Calculators.getBaseCurrency();
-  if (native !== base) displayVal = Calculators.convertCurrency(a.value, native, base);
-  document.getElementById('eValue').value = parseFloat(displayVal).toFixed(2);
+  document.getElementById('eValue').value = a.value;
   document.getElementById('eNotes').value = a.notes || '';
   document.getElementById('ePrincipal').value = a.principal || '';
   document.getElementById('eRate').value     = a.rate  || '';
@@ -835,9 +817,8 @@ async function saveEdit() {
   if (!a) return;
   const name  = document.getElementById('eName').value.trim();
   const cat   = document.getElementById('eCat').value;
-  var value = parseFloat(document.getElementById('eValue').value);
+  const value = parseFloat(document.getElementById('eValue').value);
   if (!name || isNaN(value) || value < 0) { UI.toast('Fill required fields', 'error'); return; }
-  value = toNativeAmount(value);
   const notes     = document.getElementById('eNotes').value.trim();
   const principal = parseFloat(document.getElementById('ePrincipal').value) || null;
   const rate      = parseFloat(document.getElementById('eRate').value)      || null;
@@ -1173,10 +1154,10 @@ function runFire() {
     currentAge:       parseInt(document.getElementById('fireAge').value),
     retirementAge:    parseInt(document.getElementById('fireRetire').value),
     currentNetWorth:  nw,
-    monthlySavings:   toNativeAmount(monthlySavings),
+    monthlySavings:   monthlySavings,
     annualReturnRate: parseInt(document.getElementById('fireReturn').value),
     inflationRate:    parseInt(document.getElementById('fireInflation').value),
-    annualExpenses:   toNativeAmount(annualExpenses),
+    annualExpenses:   annualExpenses,
   });
   const fiEl = document.getElementById('fireFINum'); if (fiEl) fiEl.textContent = fmtShort(res.fiNumber);
   const pwEl = document.getElementById('fireProjNW'); if (pwEl) pwEl.textContent = fmtShort(res.projectedNW);
@@ -1222,7 +1203,7 @@ function runDebt() {
   }
 
   try {
-  var extraPmt = toNativeAmount(getDebtExtra());
+  var extraPmt = getDebtExtra();
   var aval = Calculators.debtPaydown(debts, extraPmt, 'avalanche');
   var snow = Calculators.debtPaydown(debts, extraPmt, 'snowball');
 

@@ -421,13 +421,6 @@ const Calculators = (() => {
   function formatCurrency(amount, currency) {
     var cur = currency || getBaseCurrency();
     var displayAmount = Math.abs(amount);
-    // Auto-convert from native to display currency when using base currency
-    if (!currency) {
-      var nativeCur = getNativeCurrency();
-      if (nativeCur && nativeCur !== cur) {
-        displayAmount = Math.abs(convertCurrency(Math.abs(amount), nativeCur, cur));
-      }
-    }
     return getCurrencySymbol(cur) + displayAmount.toLocaleString('en', {
       minimumFractionDigits: 2, maximumFractionDigits: 2
     });
