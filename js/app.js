@@ -1118,9 +1118,12 @@ function renderBar() {
 }
 
 function rerenderCharts() {
-  [donutChart, barChart, historyChart, fireChart, debtChart, investChart2].forEach(c => { if (c) { c.destroy(); } });
+  [donutChart, barChart, historyChart, fireChart, debtChart, investChart2].forEach(function(c) { if (c) { c.destroy(); } });
   donutChart = barChart = historyChart = fireChart = debtChart = investChart2 = null;
   renderAll();
+  // Re-run active gated page renders
+  if (document.getElementById('page-debt')?.classList.contains('active')) runDebt();
+  if (document.getElementById('page-fire')?.classList.contains('active')) runFire();
 }
 
 // ══ INVESTMENTS PAGE ══════════════════════════════════════════════
