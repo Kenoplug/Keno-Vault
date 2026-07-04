@@ -1297,22 +1297,38 @@ async function exportCSVFromSettings() {
 
 // ══ CSV IMPORT ══
 async function importCSV(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const text = await file.text();
-  const lines = text.split('\n').slice(1).filter(l => l.trim());
-  let imported = 0;
-  for (const line of lines) {
-    const [name,cat,notes,value] = line.split(',').map(c => c.replace(/^"|"$/g,'').trim());
-    if (!name || !value) continue;
-    await sb.from('assets').insert({
-      user_id: currentUser.id, name, cat: cat||'cash',
-      value: parseFloat(value)||0, notes: notes||null, fv:0, interest:0,
-    });
-    imported++;
+  var file = event.target.files[0]; if (!file) return;
+  var text = await file.text();
+  var lines = text.split(/[\r\n]+/).filter(function(l) { return l.trim(); });
+  // Skip header line
+  if (lines.length > 0) lines = lines.slice(1);
+  var imported = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || line.split(',');
+    var name  = (cols[0] || '').replace(/^"|"$/g, '').trim();
+    var cat   = (cols[1] || 'cash').replace(/^"|"$/g, '').trim();
+    var notes = (cols[2] || '').replace(/^"|"$/g, '').trim();
+    var value = (cols[3] || '0').replace(/^"|"$/g, '').trim();
+    if (!name || !parseFloat(value)) continue;
+    try {
+      await sb.from('assets').insert({
+        user_id: currentUser.id, name: name, cat: cat || 'cash',
+        value: parseFloat(value) || 0, notes: notes || null, fv: 0, interest: 0,
+      });
+      imported++;
+    } catch(e) { console.warn('[CSV] Skipping row:', e.message); }
   }
-  const res = document.getElementById('importResult');
-  if (res) { res.style.color='var(--green)'; res.textContent=`<i class="fas fa-circle-check"></i> Imported ${imported} entries.`; }
-  toast(`Imported ${imported} entries`, 'success');
+  var res = document.getElementById('importResult');
+  if (res) { res.style.color = 'var(--green)'; res.innerHTML = '<i class=\"fas fa-circle-check\"></i> Imported ' + imported + ' entries.'; }
+  if (res && imported === 0) { res.style.color = 'var(--gold)'; res.innerHTML = '<i class=\"fas fa-triangle-exclamation\"></i> No valid rows found. Check CSV format: name,cat,notes,value'; }
+  toast('Imported ' + imported + ' entries', imported > 0 ? 'success' : 'info');
+  event.target.value = '';
+
+  // Reload assets if we imported from the dashboard context
+  if (typeof loadAssets === 'function') { loadAssets().then(function() { renderAll(); }); }
+}
 }
 
 // ══ ENCRYPTED BACKUP ══
