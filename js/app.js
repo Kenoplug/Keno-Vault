@@ -269,7 +269,7 @@ function toggleBlur() {
   _blurred = !_blurred;
   document.body.classList.toggle('privacy-blur', _blurred);
   const btn = document.getElementById('blurToggleBtn');
-  if (btn) { btn.textContent = _blurred ? '👁 Reveal' : '🛡 Shield'; btn.classList.toggle('active', _blurred); }
+  if (btn) { btn.innerHTML = _blurred ? '<i class="fas fa-eye"></i> Reveal' : '<i class="fas fa-shield-halved"></i> Shield'; btn.classList.toggle('active', _blurred); }
 }
 document.addEventListener('keydown', e => {
   if ((e.key === 'b' || e.key === 'B') && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
@@ -935,7 +935,7 @@ function renderActivity() {
   const feed = document.getElementById('activityFeed');
   if (!feed) return;
   if (!activity.length) {
-    feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;">📋</div>No activity yet</div>';
+    feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;"><i class="fas fa-clipboard-list"></i></div>No activity yet</div>';
     return;
   }
   feed.innerHTML = activity.map(a => `
@@ -959,7 +959,7 @@ async function showActivityTab(tab) {
   feed.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-dim);"><div class="spinner" style="margin:0 auto 8px;width:20px;height:20px;border-width:2px;"></div>Loading audit log…</div>';
   try {
     var { data } = await sb.from('audit_log').select('*').order('created_at', { ascending: false }).limit(50);
-    if (!data || !data.length) { feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;">📋</div>No audit entries yet</div>'; return; }
+    if (!data || !data.length) { feed.innerHTML = '<div class="empty"><div class="empty-icon" style="font-size:24px;"><i class="fas fa-clipboard-list"></i></div>No audit entries yet</div>'; return; }
     var icons = { created:'➕', updated:'✎', deleted:'🗑', login:'🔑' };
     feed.innerHTML = data.map(function(e) {
       var dt = new Date(e.created_at);
@@ -1015,7 +1015,7 @@ function renderTable() {
   const tfoot = document.getElementById('tableFoot');
   if (!tbody) return;
   if (!assets.length) {
-    tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-icon">🪙</div>No entries yet. Add your first asset above.</div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-icon"><i class="fas fa-coins"></i></div>No entries yet. Add your first asset above.</div></td></tr>';
     if (tfoot) tfoot.style.display = 'none';
     return;
   }
@@ -1208,7 +1208,7 @@ function runDebt() {
     var cnt = document.getElementById('debtCount'); if (cnt) cnt.textContent = 'No debts yet';
     var grid = document.getElementById('debtStrategyGrid'); if (grid) grid.innerHTML =
       '<div class="chart-card wide" style="text-align:center;padding:40px;">' +
-        '<div class="empty-icon" style="font-size:28px;">📋</div>' +
+        '<div class="empty-icon" style="font-size:28px;"><i class="fas fa-clipboard-list"></i></div>' +
         '<div style="font-size:14px;font-weight:600;color:var(--text-dim);margin-top:8px;">No liabilities logged yet</div>' +
         '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Add a liability entry (e.g. GTBank loan, car finance) from the Assets page to unlock the Debt Optimizer.</div>' +
       '</div>';
@@ -1528,7 +1528,7 @@ function runOptimizer() {
   // ── Ideal target allocation guide ────────────────────────────
   html +=
     '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;">' +
-      '<div style="font-size:13px;font-weight:600;margin-bottom:14px;">📋 Ideal Target Allocation (by wealth stage)</div>' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:14px;"><i class="fas fa-clipboard-list"></i> Ideal Target Allocation (by wealth stage)</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">' +
         buildTargetCard('Early Stage', 'Net Worth < $50K', ['50% Cash (emergency buffer) 💰', '30% Investments (start early) 📈', '20% Physical (essentials) 🏡']) +
         buildTargetCard('Building Stage', 'Net Worth $50K–$300K', ['30% Cash (build flexibility) 💰', '50% Investments (compound momentum) 📈', '20% Physical (entry assets) 🏡']) +
