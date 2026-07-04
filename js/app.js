@@ -1387,7 +1387,7 @@ function runFire() {
         }
       }
     }
-  });
+  );
 }
 
 function runDebt() {
