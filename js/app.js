@@ -1611,7 +1611,7 @@ function buildMiniDonut(segments, size) {
     offset += dash + gapSize;
   }
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" ' +
-    'style="transform:rotate(-90deg);flex-shrink:0;">' + paths + '</svg>';
+    'style="display:block;overflow:visible;transform:rotate(-90deg);flex-shrink:0;" xmlns="http://www.w3.org/2000/svg">' + paths + '</svg>';
 }
 
 
