@@ -1087,9 +1087,9 @@ function renderDonut() {
   const bgs = isL ? ['rgba(249,115,22,0.8)', 'rgba(22,163,74,0.8)', 'rgba(217,119,6,0.8)', 'rgba(220,38,38,0.8)'] : ['rgba(79,142,247,0.85)', 'rgba(52,211,153,0.85)', 'rgba(244,197,83,0.85)', 'rgba(248,113,113,0.85)'];
   const bds = isL ? ['#f97316', '#16a34a', '#d97706', '#dc2626'] : ['#4f8ef7', '#34d399', '#f4c553', '#f87171'];
   const cc = getCC(); Chart.defaults.color = cc.text;
-  const data = { labels: ['Cash', 'Physical', 'Investments', 'Liabilities'], datasets: [{ data: vals, backgroundColor: bgs, borderColor: bds, borderWidth: 2, hoverOffset: 6 }] };
+  var data = { labels: ['Cash', 'Physical', 'Investments', 'Liabilities'], datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 0, hoverOffset: 4 }] };
   if (donutChart) { donutChart.data = data; donutChart.update(); return; }
-  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '68%', responsive: true, maintainAspectRatio: false, borderWidth: 2, borderColor: getTheme() === 'light' ? '#f4f4f2' : '#0a0a0a', plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'rectRounded', pointStyleWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + fmt(c.parsed) + ' (' + ((c.parsed / total) * 100).toFixed(1) + '%)'; } } } } } });
+  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '42%', responsive: true, maintainAspectRatio: false, borderWidth: 0, borderRadius: { outerStart: 6, outerEnd: 6, innerStart: 3, innerEnd: 3 }, spacing: 4, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'rectRounded', pointStyleWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + fmt(c.parsed) + ' (' + ((c.parsed / total) * 100).toFixed(1) + '%)'; } } } } } });
 }
 
 function renderHistory() {
