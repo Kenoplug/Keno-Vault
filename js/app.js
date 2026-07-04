@@ -1088,7 +1088,7 @@ function renderDonut() {
   const cc = getCC(); Chart.defaults.color = cc.text;
   const data = { labels: ['Cash', 'Physical', 'Investments', 'Liabilities'], datasets: [{ data: vals, backgroundColor: bgs, borderColor: bds, borderWidth: 2, hoverOffset: 6 }] };
   if (donutChart) { donutChart.data = data; donutChart.update(); return; }
-  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '65%', responsive: true, maintainAspectRatio: false, spacing: 2, borderWidth: 0, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + fmt(c.parsed) + ' (' + ((c.parsed / total) * 100).toFixed(1) + '%)'; } } } } } });
+  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '68%', responsive: true, maintainAspectRatio: false, borderWidth: 2, borderColor: getTheme() === 'light' ? '#f4f4f2' : '#0a0a0a', plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + fmt(c.parsed) + ' (' + ((c.parsed / total) * 100).toFixed(1) + '%)'; } } } } } });
 }
 
 function renderHistory() {
