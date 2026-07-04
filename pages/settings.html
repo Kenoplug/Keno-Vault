@@ -957,6 +957,7 @@ function initSettingsUI() {
     if (pinSec) pinSec.style.display = alEl.checked ? 'block' : 'none';
   }
   buildCurrencyGrid();
+  updateProToggles();
   if (isPro()) {
     const legLock = document.getElementById('legacyLock');
     const legCont = document.getElementById('legacyContent');
@@ -1131,13 +1132,26 @@ async function quickRemovePro(email) {
 
 // ══ PRIVACY SHIELD ══
 function savePrivacySettings() {
-  const enabled = document.getElementById('blurEnabled')?.checked;
+  var enabled = document.getElementById('blurEnabled')?.checked;
   if (enabled && !isPro()) {
-    const el = document.getElementById('blurEnabled'); if(el) el.checked = false;
+    var el = document.getElementById('blurEnabled'); if(el) el.checked = false;
     toast('Privacy Shield is a Pro feature', 'info'); return;
   }
   localStorage.setItem('kv-blur', enabled ? '1' : '0');
   toast(enabled ? 'Privacy Shield enabled' : 'Privacy Shield disabled', 'success');
+}
+
+function updateProToggles() {
+  var pro = isPro();
+  ['blurEnabled','autoLockEnabled'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.disabled = !pro;
+      el.parentElement.style.opacity = pro ? '1' : '0.4';
+      el.parentElement.style.pointerEvents = pro ? 'auto' : 'none';
+    }
+  });
+  var pin = document.getElementById('proOnlyPin'); if (pin) pin.style.display = pro ? 'none' : 'inline-flex';
 }
 
 // ══ PIN ══
