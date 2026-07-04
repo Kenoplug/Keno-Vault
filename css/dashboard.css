@@ -653,6 +653,7 @@ canvas {
   .app-layout    { display: flex !important; flex-direction: column !important; }
   .sidebar       { display: none !important; }
   .main-content  { flex: 1; min-width: 0; }
+  .auth-brand-panel { display: none !important; }
 
   /* Debt Optimizer — stack strategy cards on mobile */
   #debtStrategyGrid { grid-template-columns: 1fr !important; }

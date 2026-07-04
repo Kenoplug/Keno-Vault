@@ -324,20 +324,20 @@ function togglePanel(panelId, chipId) {
 // ══ AUTH ═════════════════════════════════════════════════════════
 // ── Email/Password Auth ───────────────────────────────────────
 function switchAuthTab(tab) {
-  const isSignIn = tab === 'signin';
-  const isForgot = tab === 'forgot';
+  var isSignIn = tab === 'signin';
+  var isForgot = tab === 'forgot';
   document.getElementById('signInForm').style.display  = isSignIn ? 'block' : 'none';
   document.getElementById('signUpForm').style.display  = tab === 'signup' ? 'block' : 'none';
   document.getElementById('forgotForm').style.display  = isForgot ? 'block' : 'none';
-  const tabSI = document.getElementById('tabSignIn');
-  const tabSU = document.getElementById('tabSignUp');
+  var tabSI = document.getElementById('tabSignIn');
+  var tabSU = document.getElementById('tabSignUp');
   if (tabSI) {
-    tabSI.style.background = isSignIn ? 'var(--accent)' : 'transparent';
-    tabSI.style.color      = isSignIn ? '#fff' : 'var(--text-dim)';
+    tabSI.style.color = isSignIn ? 'var(--text)' : 'var(--text-dim)';
+    tabSI.style.borderBottomColor = isSignIn ? 'var(--accent)' : 'transparent';
   }
   if (tabSU) {
-    tabSU.style.background = tab === 'signup' ? 'var(--accent)' : 'transparent';
-    tabSU.style.color      = tab === 'signup' ? '#fff' : 'var(--text-dim)';
+    tabSU.style.color = tab === 'signup' ? 'var(--text)' : 'var(--text-dim)';
+    tabSU.style.borderBottomColor = tab === 'signup' ? 'var(--accent)' : 'transparent';
   }
   clearAuthMessages();
 }

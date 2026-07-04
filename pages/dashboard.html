@@ -28,82 +28,92 @@
 
 <!-- AUTH -->
 <div id="authScreen">
-  <div class="auth-card" style="width:min(420px,95vw);padding:40px 36px;">
-    <div class="auth-logo">&#x2B21;</div>
-    <h1 class="serif" style="font-size:28px;margin-bottom:4px;">Keno Vault</h1>
-    <p style="color:var(--text-dim);font-size:13px;margin-bottom:24px;">Personal Net Worth Tracker</p>
-
-    <!-- TAB SWITCHER -->
-    <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:22px;border:1px solid var(--border);">
-      <button id="tabSignIn" onclick="switchAuthTab('signin')"
-        style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;background:var(--accent);color:#fff;">
-        Sign In
-      </button>
-      <button id="tabSignUp" onclick="switchAuthTab('signup')"
-        style="flex:1;padding:8px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;background:transparent;color:var(--text-dim);">
-        Sign Up
-      </button>
+  <!-- AUTH SPLIT LAYOUT -->
+  <div style="display:flex;min-height:100dvh;">
+    <!-- LEFT: Brand panel (hidden on mobile) -->
+    <div class="auth-brand-panel" style="flex:0 0 48%;background:linear-gradient(160deg, #0a0a0a 0%, #12100e 40%, #16120c 100%);display:flex;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden;border-right:1px solid rgba(255,255,255,0.04);">
+      <div style="position:absolute;top:-40%;right:-30%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%);pointer-events:none;"></div>
+      <div style="position:relative;z-index:1;max-width:360px;">
+        <div class="auth-logo" style="font-size:48px;">&#x2B21;</div>
+        <h1 class="serif" style="font-size:clamp(36px,5vw,52px);line-height:1.06;letter-spacing:-0.03em;margin:20px 0 12px;">Track your wealth.<br>Own your future.</h1>
+        <p style="color:var(--text-dim);font-size:15px;line-height:1.7;max-width:340px;">The premium net worth tracker for builders, investors, and planners. 160+ currencies. Zero AI slop.</p>
+        <div style="display:flex;gap:24px;margin-top:32px;font-size:12px;color:var(--text-muted);">
+          <div><span style="color:var(--accent);font-weight:700;">$100M+</span><br>tracked</div>
+          <div><span style="color:var(--accent);font-weight:700;">15k+</span><br>users</div>
+          <div><span style="color:var(--accent);font-weight:700;">160+</span><br>currencies</div>
+        </div>
+      </div>
     </div>
+    <!-- RIGHT: Auth form -->
+    <div style="flex:0 0 52%;display:flex;align-items:center;justify-content:center;padding:48px;">
+      <div style="width:min(380px,90vw);">
+        <!-- TAB SWITCHER -->
+        <div style="display:flex;gap:24px;margin-bottom:32px;">
+          <button id="tabSignIn" onclick="switchAuthTab('signin')" style="background:none;border:none;padding:0 0 8px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;color:var(--text);border-bottom:2px solid var(--accent);transition:all .2s;">Sign In</button>
+          <button id="tabSignUp" onclick="switchAuthTab('signup')" style="background:none;border:none;padding:0 0 8px;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;cursor:pointer;color:var(--text-dim);border-bottom:2px solid transparent;transition:all .2s;">Sign Up</button>
+        </div>
 
-    <!-- SIGN IN -->
-    <div id="signInForm">
-      <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Email</label>
-        <input type="email" id="siEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')signInEmail()" class="auth-input"/>
+        <!-- SIGN IN -->
+        <div id="signInForm">
+          <div style="margin-bottom:18px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Email</label>
+            <input type="email" id="siEmail" placeholder="you@example.com" onkeydown="if(event.key==='Enter')signInEmail()" class="auth-input"/>
+          </div>
+          <div style="margin-bottom:8px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Password</label>
+            <input type="password" id="siPassword" placeholder="Your password" onkeydown="if(event.key==='Enter')signInEmail()" class="auth-input"/>
+          </div>
+          <div style="text-align:right;margin-bottom:22px;">
+            <a href="#" onclick="showForgotPassword();return false;" style="font-size:12px;color:var(--text-dim);text-decoration:none;">Forgot password?</a>
+          </div>
+          <button id="signInBtn" onclick="signInEmail()" class="auth-btn-primary">Sign In</button>
+          <div class="auth-divider"><span>or</span></div>
+          <button id="googleSignInBtn" onclick="signInWithGoogle()" class="auth-btn-google">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Continue with Google
+          </button>
+        </div>
+
+        <!-- SIGN UP -->
+        <div id="signUpForm" style="display:none;">
+          <div style="margin-bottom:18px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Full Name</label>
+            <input type="text" id="suName" placeholder="Your name" class="auth-input"/>
+          </div>
+          <div style="margin-bottom:18px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Email</label>
+            <input type="email" id="suEmail" placeholder="you@example.com" class="auth-input"/>
+          </div>
+          <div style="margin-bottom:22px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Password</label>
+            <input type="password" id="suPassword" placeholder="Min. 8 characters" onkeydown="if(event.key==='Enter')signUpEmail()" class="auth-input"/>
+          </div>
+          <button id="signUpBtn" onclick="signUpEmail()" class="auth-btn-primary">Create Account</button>
+          <div class="auth-divider"><span>or</span></div>
+          <button onclick="signInWithGoogle()" class="auth-btn-google">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Sign up with Google
+          </button>
+        </div>
+
+        <!-- FORGOT PASSWORD -->
+        <div id="forgotForm" style="display:none;">
+          <p style="font-size:14px;color:var(--text-dim);margin-bottom:20px;line-height:1.6;">Enter your email and we will send you a reset link.</p>
+          <div style="margin-bottom:18px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">Email</label>
+            <input type="email" id="forgotEmail" placeholder="you@example.com" class="auth-input"/>
+          </div>
+          <button onclick="sendPasswordReset()" class="auth-btn-primary">Send Reset Link</button>
+          <button onclick="switchAuthTab('signin')" class="auth-btn-secondary" style="margin-top:12px;">Back to Sign In</button>
+        </div>
+
+        <div id="authError" style="margin-top:14px;font-size:12px;color:var(--red);min-height:16px;"></div>
+        <div id="authSuccess" style="margin-top:8px;font-size:12px;color:var(--green);min-height:16px;"></div>
+        <p style="margin-top:24px;font-size:11px;color:var(--text-muted);line-height:1.6;">
+          By continuing you agree to our Terms of Service and Privacy Policy.
+        </p>
       </div>
-      <div style="margin-bottom:6px;">
-        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Password</label>
-        <input type="password" id="siPassword" placeholder="Your password" onkeydown="if(event.key==='Enter')signInEmail()" class="auth-input"/>
-      </div>
-      <div style="text-align:right;margin-bottom:18px;">
-        <a href="#" onclick="showForgotPassword();return false;" style="font-size:12px;color:var(--text-dim);text-decoration:none;">Forgot password?</a>
-      </div>
-      <button id="signInBtn" onclick="signInEmail()" class="auth-btn-primary">Sign In &rarr;</button>
-      <div class="auth-divider"><span>or</span></div>
-      <button id="googleSignInBtn" onclick="signInWithGoogle()" class="auth-btn-google">
-        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        Continue with Google
-      </button>
     </div>
-
-    <!-- SIGN UP -->
-    <div id="signUpForm" style="display:none;">
-      <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Full Name</label>
-        <input type="text" id="suName" placeholder="Your name" class="auth-input"/>
-      </div>
-      <div style="margin-bottom:14px;">
-        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Email</label>
-        <input type="email" id="suEmail" placeholder="you@example.com" class="auth-input"/>
-      </div>
-      <div style="margin-bottom:20px;">
-        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Password</label>
-        <input type="password" id="suPassword" placeholder="Min. 8 characters" onkeydown="if(event.key==='Enter')signUpEmail()" class="auth-input"/>
-      </div>
-      <button id="signUpBtn" onclick="signUpEmail()" class="auth-btn-primary">Create Account &rarr;</button>
-      <div class="auth-divider"><span>or</span></div>
-      <button onclick="signInWithGoogle()" class="auth-btn-google">
-        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        Sign up with Google
-      </button>
-    </div>
-
-    <!-- FORGOT PASSWORD -->
-    <div id="forgotForm" style="display:none;">
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;">Enter your email and we will send you a reset link.</p>
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Email</label>
-        <input type="email" id="forgotEmail" placeholder="you@example.com" class="auth-input"/>
-      </div>
-      <button onclick="sendPasswordReset()" class="auth-btn-primary">Send Reset Link</button>
-      <button onclick="switchAuthTab('signin')" class="auth-btn-secondary" style="margin-top:10px;">&#8592; Back to Sign In</button>
-    </div>
-
-    <div id="authError" style="margin-top:12px;font-size:12px;color:var(--red);min-height:16px;text-align:center;"></div>
-    <div id="authSuccess" style="margin-top:8px;font-size:12px;color:var(--green);min-height:16px;text-align:center;"></div>
-    <p style="margin-top:18px;font-size:11px;color:var(--text-muted);text-align:center;line-height:1.6;">
-      By continuing you agree to our Terms of Service and Privacy Policy.
-    </p>
   </div>
 </div>
 
