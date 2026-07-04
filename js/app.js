@@ -137,6 +137,21 @@ function updateDebtDisplay() {
 
 const sb = createSupabaseClient();
 
+// ══ CHART GLOBAL DEFAULTS ══════════════════════════════════════════
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.plugins.tooltip.titleFont = { family: "'DM Sans', sans-serif", weight: '600', size: 12 };
+  Chart.defaults.plugins.tooltip.bodyFont = { family: "'JetBrains Mono', monospace", size: 11 };
+  Chart.defaults.plugins.tooltip.displayColors = false;
+  Chart.defaults.plugins.tooltip.padding = 12;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
+  Chart.defaults.plugins.legend.labels.padding = 16;
+  Chart.defaults.plugins.legend.labels.font = { size: 11 };
+  Chart.defaults.scales.xy = { grid: { drawBorder: false }, border: { display: false } };
+}
+
 // ══ STATE ════════════════════════════════════════════════════════
 let assets = [], nwHistory = [], currentUser = null, userPlan = 'free', bootDone = false;
 let editId = null, activity = [];
@@ -1038,18 +1053,19 @@ function renderTable() {
 Chart.defaults.font.family = "'DM Sans', sans-serif";
 
 function getCC() {
-  const l = getTheme() === 'light';
+  var l = getTheme() === 'light';
   return {
-    grid: l ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.04)',
-    text: l ? '#404040' : '#888',
+    grid:  l ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.04)',
+    text:  l ? '#525252' : '#777',
+    muted: l ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.02)',
     tt: {
       backgroundColor: l ? '#ffffff' : '#1a1a1a',
-      borderColor:     l ? '#d4d4d2' : '#2a2a2a',
+      borderColor:     l ? '#e5e5e2' : '#2a2a2a',
       borderWidth: 1,
-      titleColor:  l ? '#0a0a0a' : '#f0f0f0',
-      bodyColor:   l ? '#0a0a0a' : '#f0f0f0',
-      padding: 10,
-      cornerRadius: 8,
+      titleColor:  l ? '#171717' : '#f0f0f0',
+      bodyColor:   l ? '#404040' : '#a0a0a0',
+      padding: 12,
+      cornerRadius: 6,
       titleFont: { weight: '600' },
       bodyFont:  { weight: '500' },
     },
@@ -1072,7 +1088,7 @@ function renderDonut() {
   const cc = getCC(); Chart.defaults.color = cc.text;
   const data = { labels: ['Cash', 'Physical', 'Investments', 'Liabilities'], datasets: [{ data: vals, backgroundColor: bgs, borderColor: bds, borderWidth: 2, hoverOffset: 6 }] };
   if (donutChart) { donutChart.data = data; donutChart.update(); return; }
-  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '68%', responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${fmt(c.parsed)} (${((c.parsed / total) * 100).toFixed(1)}%)` } } } } });
+  donutChart = new Chart(ctx, { type: 'doughnut', data, options: { cutout: '65%', responsive: true, maintainAspectRatio: false, spacing: 2, borderWidth: 0, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + fmt(c.parsed) + ' (' + ((c.parsed / total) * 100).toFixed(1) + '%)'; } } } } } });
 }
 
 function renderHistory() {
@@ -1082,9 +1098,9 @@ function renderHistory() {
   if (nwHistory.length < 2) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (historyChart) { historyChart.destroy(); historyChart = null; } return; }
   ctx.style.display = ''; if (emp) emp.style.display = 'none';
   const cc = getCC();
-  const data = { labels: nwHistory.map(h => h.ts), datasets: [{ label: 'Net Worth', data: nwHistory.map(h => h.nw), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.06)', borderWidth: 2, pointBackgroundColor: '#f97316', pointRadius: 3, pointHoverRadius: 5, fill: true, tension: 0.4 }] };
+  var data = { labels: nwHistory.map(function(h) { return h.ts; }), datasets: [{ label: 'Net Worth', data: nwHistory.map(function(h) { return h.nw; }), borderColor: '#f97316', backgroundColor: function(ctx) { var g = ctx.chart.ctx.createLinearGradient(0,0,0,ctx.chart.height); g.addColorStop(0,'rgba(249,115,22,0.12)'); g.addColorStop(1,'rgba(249,115,22,0.0)'); return g; }, borderWidth: 1.5, pointBackgroundColor: '#f97316', pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#f97316', fill: true, tension: 0.4 }] };
   if (historyChart) { historyChart.data = data; historyChart.update(); return; }
-  historyChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${fmtSigned(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v), font: { size: 10 } } } } } });
+  historyChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { display: false }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + fmtSigned(c.parsed.y); } } } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 10 }, color: cc.text } }, y: { grid: { color: cc.grid }, border: { display: false }, ticks: { callback: function(v) { return fmtShort(v); }, font: { size: 10 }, color: cc.text } } } } });
 }
 
 function renderBar() {
@@ -1097,7 +1113,7 @@ function renderBar() {
   const cc = getCC();
   const data = { labels: inv.map(a => a.name.length > 14 ? a.name.slice(0, 13) + '…' : a.name), datasets: [{ label: 'Current Value', data: inv.map(a => a.value), backgroundColor: 'rgba(249,115,22,0.7)', borderColor: '#f97316', borderWidth: 2, borderRadius: 6 }, { label: 'Projected FV', data: inv.map(a => a.fv), backgroundColor: 'rgba(244,197,83,0.7)', borderColor: '#f4c553', borderWidth: 2, borderRadius: 6 }] };
   if (barChart) { barChart.data = data; barChart.update(); return; }
-  barChart = new Chart(ctx, { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v), font: { size: 10 } } } } } });
+  barChart = new Chart(ctx, { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, borderRadius: 4, borderSkipped: false, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmt(c.parsed.y); } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: cc.text } }, y: { grid: { color: cc.grid }, border: { display: false }, ticks: { callback: function(v) { return fmtShort(v); }, font: { size: 10 }, color: cc.text } } } } });
 }
 
 function rerenderCharts() {
@@ -1164,9 +1180,9 @@ function runFire() {
   }
   const ctx = document.getElementById('fireChart'); if (!ctx) return;
   const cc = getCC();
-  const data = { labels: res.trajectory.map(t => '' + t.age), datasets: [{ label: 'Projected NW', data: res.trajectory.map(t => t.netWorth), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.06)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0 }, { label: 'FI Number', data: res.trajectory.map(t => t.fiNumber), borderColor: '#34d399', borderDash: [6, 3], tension: 0, borderWidth: 1.5, pointRadius: 0, fill: false }] };
+  var data = { labels: res.trajectory.map(function(t) { return '' + t.age; }), datasets: [{ label: 'Projected NW', data: res.trajectory.map(function(t) { return t.netWorth; }), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#f97316' }, { label: 'FI Number', data: res.trajectory.map(function(t) { return t.fiNumber; }), borderColor: '#34d399', borderDash: [6, 4], tension: 0, borderWidth: 2, pointRadius: 0, fill: false }] };
   if (fireChart) { fireChart.data = data; fireChart.update(); return; }
-  fireChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmtShort(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v), font: { size: 10 } } } } } });
+  fireChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: cc.text } }, y: { grid: { color: cc.grid }, border: { display: false }, ticks: { callback: function(v) { return fmtShort(v); }, font: { size: 10 }, color: cc.text } } } } });
 }
 
 function runDebt() {
@@ -1267,7 +1283,7 @@ function runDebt() {
       parent.replaceChild(fresh, ctx);
       ctx = fresh;
     }
-    debtChart = new Chart(ctx, { type: 'line', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, boxWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { title: { display: true, text: 'Month', font: { size: 10 } }, grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: function(v) { return fmtShort(v); } } } } } });
+    debtChart = new Chart(ctx, { type: 'line', data: data, options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: cc.text }, title: { display: true, text: 'Month', font: { size: 10 }, color: cc.text } }, y: { grid: { color: cc.grid }, border: { display: false }, ticks: { callback: function(v) { return fmtShort(v); }, font: { size: 10 }, color: cc.text } } } } });
   }
 
   // ══ Per-Debt Breakdown Table ══
