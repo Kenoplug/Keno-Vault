@@ -1237,20 +1237,15 @@ function buildCurrencyGrid() {
 }
 
 function setCurrency(cur) {
-  // Track native currency (what data is actually stored in)
   var native = Calculators.getNativeCurrency();
-  if (!native || native === Calculators.getBaseCurrency()) {
-    // First currency switch — lock in the old currency as native
-    Calculators.setNativeCurrency(Calculators.getBaseCurrency());
+  // First switch: lock selected currency as native (data is in this currency)
+  if (!native || native === cur) {
+    Calculators.setNativeCurrency(cur);
   }
   localStorage.setItem('kv-base-currency', cur);
   Calculators.setBaseCurrency(cur);
   buildCurrencyGrid();
-  var msg = 'Base currency: ' + cur;
-  if (Calculators.getNativeCurrency() !== cur) {
-    msg += ' (values auto-converted from ' + Calculators.getNativeCurrency() + ')';
-  }
-  toast(msg, 'success');
+  toast('Base currency set to ' + cur, 'success');
 }
 
 // ══ BACHS UPGRADE ══
