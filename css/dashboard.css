@@ -802,67 +802,62 @@ input[type=range] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: #1A1A1E;
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+  height: 36px;                        /* large touch target for mobile */
+  border-radius: 18px;
+  background: #1A1A1E center/100% 6px no-repeat;  /* thin visual track */
+  border: none;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.2s ease;
-  /* background will be overwritten by JS linear-gradient for track fill */;
+  transition: opacity 0.2s ease;
+  /* background is overridden by JS linear-gradient for track fill */;
 }
 [data-theme="light"] input[type=range] {
-  background: #e2e2e6;
-  border-color: rgba(0,0,0,0.08);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+  background: #e2e2e6 center/100% 6px no-repeat;
 }
 
 /* ── WebKit Thumb ──────────────────────────────────────────── */
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #f97316;
   border: 2px solid #f97316;
   box-shadow:
-    0 0 0 4px rgba(249,115,22,0.0),
-    0 1px 3px rgba(0,0,0,0.3);
+    0 0 0 0px rgba(249,115,22,0.0),
+    0 1px 4px rgba(0,0,0,0.35);
   cursor: pointer;
   transition:
     box-shadow 0.2s ease,
     transform 0.15s ease,
     background 0.2s ease;
-  margin-top: -6px; /* centres thumb on 6px track: (18 - 6) / 2 = 6 */
+  margin-top: 8px;    /* (36 - 20) / 2 = 8 — centres on 36px input */;
 }
 
 input[type=range]:hover::-webkit-slider-thumb {
   box-shadow:
     0 0 0 6px rgba(249,115,22,0.18),
-    0 1px 4px rgba(0,0,0,0.4);
+    0 2px 6px rgba(0,0,0,0.45);
   transform: scale(1.08);
 }
 
 input[type=range]:active::-webkit-slider-thumb {
   box-shadow:
     0 0 0 8px rgba(249,115,22,0.25),
-    0 1px 4px rgba(0,0,0,0.5);
+    0 2px 6px rgba(0,0,0,0.5);
   transform: scale(1.06);
   background: #fb923c;
 }
 
 /* ── Firefox Thumb ─────────────────────────────────────────── */
 input[type=range]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #f97316;
   border: 2px solid #f97316;
-  box-shadow:
-    0 0 0 4px rgba(249,115,22,0.0),
-    0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
   cursor: pointer;
   transition:
     box-shadow 0.2s ease,
@@ -873,13 +868,13 @@ input[type=range]::-moz-range-thumb {
 input[type=range]:hover::-moz-range-thumb {
   box-shadow:
     0 0 0 6px rgba(249,115,22,0.18),
-    0 1px 4px rgba(0,0,0,0.4);
+    0 2px 6px rgba(0,0,0,0.45);
 }
 
 input[type=range]:active::-moz-range-thumb {
   box-shadow:
     0 0 0 8px rgba(249,115,22,0.25),
-    0 1px 4px rgba(0,0,0,0.5);
+    0 2px 6px rgba(0,0,0,0.5);
   background: #fb923c;
 }
 
@@ -899,13 +894,13 @@ input[type=range]::-moz-range-track {
 
 /* ── Focus ring (accessibility) ────────────────────────────── */
 input[type=range]:focus-visible {
-  border-color: rgba(249,115,22,0.4);
+  outline: 2px solid rgba(249,115,22,0.5);
+  outline-offset: 4px;
 }
 input[type=range]:focus-visible::-webkit-slider-thumb {
   box-shadow:
-    0 0 0 0px #f97316,
     0 0 0 4px rgba(249,115,22,0.3),
-    0 1px 3px rgba(0,0,0,0.3);
+    0 1px 4px rgba(0,0,0,0.3);
 }
 
 /* ══ SCORE LAYOUT ════════════════════════════════════════════════ */

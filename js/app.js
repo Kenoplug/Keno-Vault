@@ -154,7 +154,7 @@ function fillSliderTrack(slider) {
   var pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
   var accent = '#f97316';
   var track = document.documentElement.getAttribute('data-theme') === 'light' ? '#e2e2e6' : '#1A1A1E';
-  slider.style.background = 'linear-gradient(to right, ' + accent + ' 0%, ' + accent + ' ' + pct + '%, ' + track + ' ' + pct + '%, ' + track + ' 100%)';
+  slider.style.background = 'linear-gradient(to right, ' + accent + ' 0%, ' + accent + ' ' + pct + '%, ' + track + ' ' + pct + '%, ' + track + ' 100%) center/100% 6px no-repeat';
 }
 
 function initAllSliderTracks() {
