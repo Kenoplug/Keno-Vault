@@ -1030,7 +1030,7 @@ function renderTable() {
     const ratec  = a.rate && a.years ? `<span class="mono" style="color:var(--text-dim);font-size:11px;">${a.rate}%/${a.years}yr</span>` : '<span style="color:var(--muted);">—</span>';
     return `<tr class="animate-in">
       <td style="font-weight:500;">${a.name} ${depStr}</td>
-      <td><span class="badge" style="${BADGE[a.cat]}">${CAT[a.cat].i} ${CAT[a.cat].l}</span></td>
+      <td><span class="badge" style="${(BADGE[a.cat] || '')}">${(CAT[a.cat] || {i:'📦',l:a.cat}).i} ${(CAT[a.cat] || {l:a.cat}).l}</span></td>
       <td style="color:var(--text-dim);font-size:12px;">${a.notes || '—'}</td>
       <td><span class="mono sensitive" style="color:${isLiab ? 'var(--red)' : 'var(--text)'};">${isLiab ? '-' : ''}${fmt(a.value)}</span></td>
       <td>${proj}</td><td>${intc}</td><td>${ratec}</td>
