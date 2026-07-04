@@ -1325,10 +1325,6 @@ async function importCSV(event) {
   if (res && imported === 0) { res.style.color = 'var(--gold)'; res.innerHTML = '<i class=\"fas fa-triangle-exclamation\"></i> No valid rows found. Check CSV format: name,cat,notes,value'; }
   toast('Imported ' + imported + ' entries', imported > 0 ? 'success' : 'info');
   event.target.value = '';
-
-  // Reload assets if we imported from the dashboard context
-  if (typeof loadAssets === 'function') { loadAssets().then(function() { renderAll(); }); }
-}
 }
 
 // ══ ENCRYPTED BACKUP ══
