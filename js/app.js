@@ -145,8 +145,10 @@ if (typeof Chart !== 'undefined') {
   Chart.defaults.plugins.tooltip.bodyFont = { family: "'JetBrains Mono', monospace", size: 11 };
   Chart.defaults.plugins.tooltip.displayColors = false;
   Chart.defaults.plugins.tooltip.padding = 12;
-  Chart.defaults.plugins.legend.labels.usePointStyle = true;
-  Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
+  Chart.defaults.plugins.legend.labels.usePointStyle = false;
+  Chart.defaults.plugins.legend.labels.boxWidth = 10;
+  Chart.defaults.plugins.legend.labels.boxHeight = 10;
+  Chart.defaults.plugins.legend.labels.borderRadius = 3;
   Chart.defaults.plugins.legend.labels.padding = 16;
   Chart.defaults.plugins.legend.labels.font = { size: 11 };
   Chart.defaults.scales.xy = { grid: { drawBorder: false }, border: { display: false } };
