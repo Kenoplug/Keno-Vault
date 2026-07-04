@@ -246,6 +246,273 @@ body {
 }
 .kpi-card:hover .pro-lock-overlay { opacity: 1; pointer-events: all; }
 
+/* ══ FIRE SIMULATOR — Premium Apple/Linear Cards ══════════════════ */
+.fire-results-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+/* ── Hero Card (Projected Wealth) ──────────────────────────── */
+.fire-hero-card {
+  background: linear-gradient(145deg, var(--surface) 0%, color-mix(in srgb, var(--accent) 4%, var(--surface)) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.04),
+    0 4px 12px rgba(0,0,0,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.02);
+  transition: all 0.25s ease;
+}
+.fire-hero-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.06),
+    0 8px 24px rgba(0,0,0,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  transform: translateY(-1px);
+}
+.fire-hero-card::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.fire-hero-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.fire-hero-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(28px, 3.5vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Progress Bar ──────────────────────────────────────────── */
+.fire-progress-section {
+  position: relative;
+  z-index: 1;
+}
+.fire-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.fire-progress-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.fire-progress-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.fire-progress-track {
+  height: 6px;
+  background: color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.fire-progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f97316, #fb923c, #f97316);
+  background-size: 200% 100%;
+  animation: fireProgressShimmer 3s ease infinite;
+  box-shadow: 0 0 10px rgba(249,115,22,0.25), 0 0 2px rgba(249,115,22,0.4);
+  transition: width 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+  position: relative;
+}
+.fire-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 20px; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3));
+  border-radius: 0 10px 10px 0;
+}
+@keyframes fireProgressShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+.fire-progress-fill.over-100 {
+  background: linear-gradient(90deg, #22c55e, #4ade80, #22c55e);
+  background-size: 200% 100%;
+  box-shadow: 0 0 10px rgba(34,197,94,0.25), 0 0 2px rgba(34,197,94,0.4);
+}
+.fire-progress-footnote {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Anchor Card (FI Target) ───────────────────────────────── */
+.fire-anchor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.03),
+    0 2px 8px rgba(0,0,0,0.02),
+    inset 0 1px 0 rgba(255,255,255,0.01);
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.fire-anchor-card:hover {
+  border-color: color-mix(in srgb, var(--border) 80%, var(--text-dim));
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.05),
+    0 6px 18px rgba(0,0,0,0.04);
+  transform: translateY(-1px);
+}
+.fire-anchor-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(34,197,94,0.08);
+  border: 1px solid rgba(34,197,94,0.2);
+  color: #22c55e;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: -0.01em;
+  animation: badgePulseIn 0.5s ease;
+}
+@keyframes badgePulseIn {
+  0%   { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.fire-anchor-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.fire-anchor-value {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(22px, 2.5vw, 30px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.fire-anchor-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.fire-anchor-rule {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.fire-anchor-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ── Insight Banners ───────────────────────────────────────── */
+.fire-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.fire-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid;
+  animation: bannerSlideIn 0.4s ease;
+}
+@keyframes bannerSlideIn {
+  0%   { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.fire-banner-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.fire-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+}
+.fire-banner-text {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+/* Milestone variant */
+.fire-banner-milestone {
+  background: linear-gradient(135deg, rgba(34,197,94,0.05) 0%, rgba(34,197,94,0.02) 100%);
+  border-color: rgba(34,197,94,0.15);
+  color: #22c55e;
+}
+.fire-banner-milestone .fire-banner-title { color: #22c55e; }
+/* Warning variant */
+.fire-banner-warning {
+  background: linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(245,158,11,0.02) 100%);
+  border-color: rgba(245,158,11,0.2);
+  color: #f59e0b;
+}
+.fire-banner-warning .fire-banner-title { color: #f59e0b; }
+
+/* ── Responsive: Mobile stacking ────────────────────────────── */
+@media (max-width: 768px) {
+  .fire-results-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .fire-hero-card { padding: 20px; }
+  .fire-hero-value { font-size: clamp(24px, 6vw, 36px); }
+  .fire-anchor-card { padding: 20px; }
+  .fire-anchor-value { font-size: clamp(20px, 5vw, 28px); }
+}
+
 /* ══ CHARTS ══════════════════════════════════════════════════════ */
 .charts-grid {
   display: grid;

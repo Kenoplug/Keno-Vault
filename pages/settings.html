@@ -580,33 +580,44 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
           </div>
         </div>
 
-        <!-- Notifications -->
+        <!-- Email Notifications -->
         <div class="settings-section">
           <div class="section-header">
-            <div><div class="section-header-title"><i class="fas fa-bell"></i> Milestones & Alerts</div><div class="section-header-sub">Net worth milestone notifications</div></div>
-            <span class="pro-badge">Pro</span>
+            <div><div class="section-header-title"><i class="fas fa-envelope"></i> Email Notifications</div><div class="section-header-sub">Control which emails Keno Vault sends you</div></div>
           </div>
           <div class="section-body" style="padding:0;">
             <div class="setting-row" style="padding:14px 20px;">
               <div>
-                <div class="setting-label">Milestone Alerts</div>
-                <div class="setting-desc">Get notified when your net worth crosses ₦1M, ₦5M, ₦10M, ₦50M, ₦100M thresholds.</div>
+                <div class="setting-label">Login Alerts</div>
+                <div class="setting-desc">Email when a new sign-in is detected on your account, with browser and location details.</div>
               </div>
               <div class="setting-action">
                 <label class="toggle-switch">
-                  <input type="checkbox" id="milestonesEnabled" onchange="savePreferences()"/>
+                  <input type="checkbox" id="loginAlertsEnabled" onchange="saveNotifPrefs()" checked/>
                   <span class="toggle-slider"></span>
                 </label>
               </div>
             </div>
             <div class="setting-row" style="padding:14px 20px;">
               <div>
-                <div class="setting-label">Monthly Check-in Reminder</div>
-                <div class="setting-desc">Email reminder on the 1st of each month to update your asset values.</div>
+                <div class="setting-label">Security Alerts</div>
+                <div class="setting-desc">Email when security settings change — PIN set, password reset, or suspicious activity.</div>
               </div>
               <div class="setting-action">
                 <label class="toggle-switch">
-                  <input type="checkbox" id="reminderEnabled" onchange="savePreferences()"/>
+                  <input type="checkbox" id="securityAlertsEnabled" onchange="saveNotifPrefs()" checked/>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="setting-row" style="padding:14px 20px;">
+              <div>
+                <div class="setting-label">Welcome Emails</div>
+                <div class="setting-desc">Send a welcome email to new users when they create an account.</div>
+              </div>
+              <div class="setting-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="welcomeEmailsEnabled" onchange="saveNotifPrefs()" checked/>
                   <span class="toggle-slider"></span>
                 </label>
               </div>
@@ -976,8 +987,7 @@ function initSettingsUI() {
   }
   const prefs = JSON.parse(localStorage.getItem('kv-prefs') || '{}');
   const de = document.getElementById('deprecEnabled');    if (de) de.checked = prefs.autoDeprec || false;
-  const me = document.getElementById('milestonesEnabled');if (me) me.checked = prefs.milestones || false;
-  const re = document.getElementById('reminderEnabled');  if (re) re.checked = prefs.reminder || false;
+  loadNotifPrefs();
   if (!isPro()) {
     const si = document.getElementById('proOnlyShield'); if (si) si.style.display = 'inline-flex';
     const pi = document.getElementById('proOnlyPin');    if (pi) pi.style.display = 'inline-flex';
@@ -1267,11 +1277,27 @@ async function upgradeTo(plan) {
 function savePreferences() {
   const prefs = {
     autoDeprec: document.getElementById('deprecEnabled')?.checked || false,
-    milestones: document.getElementById('milestonesEnabled')?.checked || false,
-    reminder:   document.getElementById('reminderEnabled')?.checked || false,
   };
   localStorage.setItem('kv-prefs', JSON.stringify(prefs));
   toast('Preferences saved', 'success');
+}
+
+// ══ EMAIL NOTIFICATION PREFS ══
+function saveNotifPrefs() {
+  var p = {
+    login_alerts:    document.getElementById('loginAlertsEnabled')?.checked ?? true,
+    security_alerts: document.getElementById('securityAlertsEnabled')?.checked ?? true,
+    welcome_emails:  document.getElementById('welcomeEmailsEnabled')?.checked ?? true,
+  };
+  localStorage.setItem('kv-notif-prefs', JSON.stringify(p));
+  toast('Notification preferences saved', 'success');
+}
+
+function loadNotifPrefs() {
+  var p = JSON.parse(localStorage.getItem('kv-notif-prefs') || '{}');
+  var la = document.getElementById('loginAlertsEnabled');    if (la) la.checked = p.login_alerts !== undefined ? p.login_alerts : true;
+  var sa = document.getElementById('securityAlertsEnabled'); if (sa) sa.checked = p.security_alerts !== undefined ? p.security_alerts : true;
+  var we = document.getElementById('welcomeEmailsEnabled');  if (we) we.checked = p.welcome_emails !== undefined ? p.welcome_emails : true;
 }
 
 // ══ CSV EXPORT ══

@@ -79,6 +79,76 @@ function updateCurrencyLabels() {
   });
 }
 
+// ══ EMAIL NOTIFICATIONS ═══════════════════════════════════════════
+var NOTIFY_URL = 'https://soxqotattmhahzpehycz.supabase.co/functions/v1/send-notification';
+
+function getNotifPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem('kv-notif-prefs') || '{}');
+  } catch(e) { return {}; }
+}
+
+function notifEnabled(key) {
+  var p = getNotifPrefs();
+  // Defaults: login_alerts=true, security_alerts=true, welcome_emails=true, digests=false
+  if (p[key] === undefined) return key !== 'weekly_digest' && key !== 'monthly_digest';
+  return !!p[key];
+}
+
+function getDeviceInfo() {
+  var ua = navigator.userAgent || '';
+  var browser = 'Unknown', os = 'Unknown';
+  if (ua.includes('Firefox/'))    { browser = 'Firefox '    + (ua.match(/Firefox\/(\d+)/)    || [])[1]; }
+  else if (ua.includes('Edg/'))   { browser = 'Edge '       + (ua.match(/Edg\/(\d+)/)       || [])[1]; }
+  else if (ua.includes('Chrome/')){ browser = 'Chrome '     + (ua.match(/Chrome\/(\d+)/)    || [])[1]; }
+  else if (ua.includes('Safari/')){ browser = 'Safari '     + (ua.match(/Version\/(\d+)/)   || [])[1]; }
+  if (ua.includes('Windows'))     { os = 'Windows'; }
+  else if (ua.includes('Mac OS')) { os = 'macOS'; }
+  else if (ua.includes('Linux'))  { os = 'Linux'; }
+  else if (ua.includes('Android')){ os = 'Android'; }
+  else if (ua.includes('iPhone') || ua.includes('iPad')) { os = 'iOS'; }
+  return {
+    browser: browser,
+    os: os,
+    timestamp: new Date().toLocaleString(),
+    ip: '(not collected)',
+    country: '(not collected)'
+  };
+}
+
+async function sendNotification(type, data) {
+  if (!currentUser || !currentUser.email) return;
+  var key = type === 'login_alert' ? 'login_alerts' :
+            type === 'security_alert' ? 'security_alerts' :
+            type === 'welcome' ? 'welcome_emails' :
+            type === 'digest' ? (data && data.period === 'Monthly' ? 'monthly_digest' : 'weekly_digest') : null;
+  if (key && !notifEnabled(key)) return;
+  try {
+    await fetch(NOTIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: type, email: currentUser.email, data: data || {} }),
+    });
+  } catch(e) { /* fire-and-forget — don't block UI */ }
+}
+
+async function sendLoginAlert() {
+  if (!notifEnabled('login_alerts')) return;
+  await sendNotification('login_alert', getDeviceInfo());
+}
+
+async function sendWelcomeEmail(name) {
+  if (!notifEnabled('welcome_emails')) return;
+  await sendNotification('welcome', { name: name || currentUser.email.split('@')[0] });
+}
+
+async function sendSecurityAlert(changeDescription) {
+  if (!notifEnabled('security_alerts')) return;
+  var info = getDeviceInfo();
+  info.change_description = changeDescription;
+  await sendNotification('security_alert', info);
+}
+
 // ══ BACHS UPGRADE ════════════════════════════════════════════════
 var EDGE_URL = 'https://soxqotattmhahzpehycz.supabase.co/functions/v1/create-checkout';
 
@@ -408,6 +478,14 @@ async function signUpEmail() {
     setAuthSuccess('Account created! Check your email to confirm your account, then sign in.');
     if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
     setTimeout(() => switchAuthTab('signin'), 3000);
+    // Send welcome email — fire and forget
+    if (data.user.email) {
+      fetch(NOTIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'welcome', email: data.user.email, data: { name: name } }),
+      }).catch(function(){});
+    }
   }
   // If no confirmation needed, onAuthStateChange handles login
   if (btn) { btn.disabled = false; btn.textContent = 'Create Account →'; }
@@ -1147,30 +1225,169 @@ function runFire() {
   var eSl = document.getElementById('fireExpenses');
   var eSv = document.getElementById('expensesVal');
   if (eSl && eSv) eSv.textContent = curSym() + Math.round(parseInt(eSl.value) || 30000).toLocaleString();
+
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
   var monthlySavings = parseInt(document.getElementById('fireSavings').value) || 500;
   var annualExpenses = parseInt(document.getElementById('fireExpenses').value) || 30000;
+  var retirementAge = parseInt(document.getElementById('fireRetire').value) || 55;
+  var inflationRate = parseInt(document.getElementById('fireInflation').value) || 18;
+  var returnRate   = parseInt(document.getElementById('fireReturn').value) || 10;
+
   var res = Calculators.fireSimulation({
     currentAge:       parseInt(document.getElementById('fireAge').value),
-    retirementAge:    parseInt(document.getElementById('fireRetire').value),
+    retirementAge:    retirementAge,
     currentNetWorth:  nw,
     monthlySavings:   monthlySavings,
-    annualReturnRate: parseInt(document.getElementById('fireReturn').value),
-    inflationRate:    parseInt(document.getElementById('fireInflation').value),
+    annualReturnRate: returnRate,
+    inflationRate:    inflationRate,
     annualExpenses:   annualExpenses,
   });
-  const fiEl = document.getElementById('fireFINum'); if (fiEl) fiEl.textContent = fmtShort(res.fiNumber);
-  const pwEl = document.getElementById('fireProjNW'); if (pwEl) pwEl.textContent = fmtShort(res.projectedNW);
-  const stEl = document.getElementById('fireStatus');
-  if (stEl) {
-    stEl.textContent = res.isFIReady ? '🎉 FIRE Ready! Surplus: ' + fmtShort(res.surplus) : 'Shortfall: ' + fmtShort(res.shortfall);
-    stEl.style.color = res.isFIReady ? 'var(--green)' : 'var(--red)';
+
+  // ═══════════════════════════════════════════════════════════
+  // Hero Card — Projected Wealth
+  // ═══════════════════════════════════════════════════════════
+  var heroAge = document.getElementById('fireHeroAge');
+  if (heroAge) heroAge.textContent = retirementAge;
+
+  var pwEl = document.getElementById('fireProjNW');
+  if (pwEl) pwEl.textContent = fmtShort(res.projectedNW);
+
+  // Progress bar (% of FI target)
+  var pct = res.fiNumber > 0 ? Math.round((res.projectedNW / res.fiNumber) * 100) : 0;
+  var pctEl = document.getElementById('fireProgressPct');
+  var barEl = document.getElementById('fireProgressBar');
+  var noteEl = document.getElementById('fireProgressNote');
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (barEl) {
+    barEl.style.width = Math.min(pct, 100) + '%';
+    if (pct >= 100) {
+      barEl.classList.add('over-100');
+      barEl.style.width = '100%';
+    } else {
+      barEl.classList.remove('over-100');
+    }
   }
-  const ctx = document.getElementById('fireChart'); if (!ctx) return;
-  const cc = getCC();
-  var data = { labels: res.trajectory.map(function(t) { return '' + t.age; }), datasets: [{ label: 'Projected NW', data: res.trajectory.map(function(t) { return t.netWorth; }), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: '#f97316' }, { label: 'FI Number', data: res.trajectory.map(function(t) { return t.fiNumber; }), borderColor: '#34d399', borderDash: [6, 4], tension: 0, borderWidth: 2, pointRadius: 0, fill: false }] };
+  if (noteEl) {
+    noteEl.textContent = pct >= 100 ? 'FI target achieved — you\'re financially independent!' : 'of your FI target';
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Anchor Card — FI Target
+  // ═══════════════════════════════════════════════════════════
+  var fiEl = document.getElementById('fireFINum');
+  if (fiEl) {
+    fiEl.textContent = fmtShort(res.fiNumber);
+    fiEl.style.color = res.isFIReady ? 'var(--green)' : 'var(--text-dim)';
+  }
+
+  // Surplus badge
+  var badge = document.getElementById('fireSurplusBadge');
+  var badgeText = document.getElementById('fireSurplusText');
+  if (badge && badgeText) {
+    if (res.isFIReady && res.surplus > 0) {
+      badge.style.display = 'inline-flex';
+      badgeText.textContent = '+' + fmtShort(res.surplus) + ' Surplus';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // Years to retire
+  var yrEl = document.getElementById('fireYearsToRetire');
+  if (yrEl) yrEl.textContent = res.yearsToRetirement + ' years to retirement';
+
+  // ═══════════════════════════════════════════════════════════
+  // Insight Banners
+  // ═══════════════════════════════════════════════════════════
+  var milestoneBanner = document.getElementById('fireMilestoneBanner');
+  var milestoneText  = document.getElementById('fireMilestoneText');
+  if (milestoneBanner && milestoneText) {
+    // Scan trajectory for crossing point
+    var crossAge = null;
+    for (var i = 0; i < res.trajectory.length; i++) {
+      if (res.trajectory[i].netWorth >= res.trajectory[i].fiNumber) {
+        crossAge = res.trajectory[i].age;
+        break;
+      }
+    }
+    if (crossAge !== null && crossAge <= retirementAge) {
+      var yearsEarly = retirementAge - crossAge;
+      milestoneBanner.style.display = 'flex';
+      milestoneText.textContent = 'You will cross your financial independence threshold at Age ' + crossAge + ' — allowing you to retire ' + yearsEarly + ' years earlier than planned.';
+    } else {
+      milestoneBanner.style.display = 'none';
+    }
+  }
+
+  // Inflation warning
+  var inflBanner = document.getElementById('fireInflationBanner');
+  if (inflBanner) {
+    if (inflationRate >= returnRate) {
+      inflBanner.style.display = 'flex';
+    } else {
+      inflBanner.style.display = 'none';
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // Chart
+  // ═══════════════════════════════════════════════════════════
+  var ctx = document.getElementById('fireChart'); if (!ctx) return;
+  var cc = getCC();
+  var data = {
+    labels: res.trajectory.map(function(t) { return '' + t.age; }),
+    datasets: [
+      {
+        label: 'Projected NW',
+        data: res.trajectory.map(function(t) { return t.netWorth; }),
+        borderColor: '#f97316',
+        backgroundColor: 'rgba(249,115,22,0.08)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: '#f97316'
+      },
+      {
+        label: 'FI Number',
+        data: res.trajectory.map(function(t) { return t.fiNumber; }),
+        borderColor: '#34d399',
+        borderDash: [6, 4],
+        tension: 0,
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false
+      }
+    ]
+  };
   if (fireChart) { fireChart.data = data; fireChart.update(); return; }
-  fireChart = new Chart(ctx, { type: 'line', data, options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyle: 'rectRounded', pointStyleWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 10 }, color: cc.text } }, y: { grid: { color: cc.grid }, border: { display: false }, ticks: { callback: function(v) { return fmtShort(v); }, font: { size: 10 }, color: cc.text } } } } });
+  fireChart = new Chart(ctx, {
+    type: 'line', data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { padding: 14, usePointStyle: true, pointStyle: 'rectRounded', pointStyleWidth: 10, font: { size: 11 } }
+        },
+        tooltip: {
+          ...cc.tt,
+          callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + fmtShort(c.parsed.y); } }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: cc.text } },
+        y: {
+          grid: { color: cc.grid },
+          border: { display: false },
+          ticks: { callback: function(v) { return fmtShort(v); }, font: { size: 10 }, color: cc.text } }
+        }
+      }
+    }
+  });
 }
 
 function runDebt() {
@@ -2172,6 +2389,7 @@ async function doBootWithSession(session, source) {
                    currentUser.email?.split('@')[0] || 'there';
       UI.toast('Welcome back, ' + name + '! \uD83D\uDC4B', 'success');
       logAudit('login', 'session', currentUser.email, '');
+      sendLoginAlert();
     }
   } catch (err) {
     console.error('[Boot] Error:', err);

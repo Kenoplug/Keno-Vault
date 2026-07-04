@@ -60,6 +60,10 @@ const Security = (() => {
       _pin = stored;
       localStorage.setItem('kv-autolock', '1');
       resetLockTimer();
+      // Fire security notification (defined in app.js)
+      if (typeof sendSecurityAlert === 'function') {
+        sendSecurityAlert('Vault PIN was set or changed');
+      }
       return true;
     } catch (e) {
       console.warn('[Security] setPin failed:', e.message);

@@ -557,10 +557,56 @@
               </div>
             </div>
             <div>
-              <div class="kpi-grid" style="margin-bottom:16px;">
-                <div class="kpi-card"><div class="kpi-label">FI Number</div><div class="kpi-value sensitive" id="fireFINum" style="color:var(--accent);">—</div><div class="kpi-change">Target net worth</div></div>
-                <div class="kpi-card"><div class="kpi-label">Projected at Retirement</div><div class="kpi-value sensitive" id="fireProjNW" style="color:var(--green);">—</div><div class="kpi-change" id="fireStatus">—</div></div>
+              <!-- ═══ FIRE Results: Asymmetrical Premium Cards ═══ -->
+              <div class="fire-results-grid">
+                <!-- Hero Card — Projected Wealth (60% width on desktop) -->
+                <div class="fire-hero-card">
+                  <div class="fire-hero-eyebrow">Projected Wealth at <span id="fireHeroAge">55</span></div>
+                  <div class="fire-hero-value sensitive" id="fireProjNW">—</div>
+                  <div class="fire-progress-section">
+                    <div class="fire-progress-header">
+                      <span class="fire-progress-label">FI Progress</span>
+                      <span class="fire-progress-pct" id="fireProgressPct">0%</span>
+                    </div>
+                    <div class="fire-progress-track">
+                      <div class="fire-progress-fill" id="fireProgressBar" style="width:0%"></div>
+                    </div>
+                    <div class="fire-progress-footnote" id="fireProgressNote">of your FI target</div>
+                  </div>
+                </div>
+                <!-- Anchor Card — FI Target (40% width on desktop) -->
+                <div class="fire-anchor-card">
+                  <div class="fire-anchor-badge" id="fireSurplusBadge" style="display:none;">
+                    <i class="fas fa-circle-check"></i> <span id="fireSurplusText"></span>
+                  </div>
+                  <div class="fire-anchor-eyebrow">FI Target Number</div>
+                  <div class="fire-anchor-value sensitive" id="fireFINum">—</div>
+                  <div class="fire-anchor-detail">
+                    <span class="fire-anchor-rule">25× Annual Expenses</span>
+                    <span class="fire-anchor-meta" id="fireYearsToRetire"></span>
+                  </div>
+                </div>
               </div>
+
+              <!-- ═══ Insight Banners ═══ -->
+              <div class="fire-banners" id="fireBanners">
+                <div class="fire-banner fire-banner-milestone" id="fireMilestoneBanner" style="display:none;">
+                  <div class="fire-banner-icon"><i class="fas fa-flag-checkered"></i></div>
+                  <div class="fire-banner-body">
+                    <div class="fire-banner-title">FI Milestone Ahead</div>
+                    <div class="fire-banner-text" id="fireMilestoneText"></div>
+                  </div>
+                </div>
+                <div class="fire-banner fire-banner-warning" id="fireInflationBanner" style="display:none;">
+                  <div class="fire-banner-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                  <div class="fire-banner-body">
+                    <div class="fire-banner-title">Inflation Alert</div>
+                    <div class="fire-banner-text">High inflation is outpacing your investment returns. Your real purchasing power may decrease over time.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ═══ Chart ═══ -->
               <div class="chart-card wide">
                 <div class="chart-title">Trajectory</div><div class="chart-heading">Projected NW vs FI Number</div>
                 <div style="height:240px;margin-top:12px;"><canvas id="fireChart"></canvas></div>

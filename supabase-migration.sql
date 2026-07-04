@@ -172,6 +172,47 @@ create index if not exists audit_log_created_idx on audit_log(created_at);
 -- ── CUSTOM CATEGORIES (Growth tier) ───────────────────────────
 alter table assets add column if not exists custom_cat text;
 
+-- ── NOTIFICATION PREFERENCES ─────────────────────────────────
+create table if not exists notification_prefs (
+  id               uuid default gen_random_uuid() primary key,
+  user_id          uuid references auth.users(id) on delete cascade not null,
+  login_alerts     boolean default true,
+  security_alerts  boolean default true,
+  welcome_emails   boolean default true,
+  weekly_digest    boolean default false,
+  monthly_digest   boolean default false,
+  created_at       timestamptz default now(),
+  updated_at       timestamptz default now(),
+  unique(user_id)
+);
+
+-- ── EMAIL LOG (audit trail for sent emails) ───────────────────
+create table if not exists email_log (
+  id          uuid default gen_random_uuid() primary key,
+  user_id     uuid references auth.users(id) on delete cascade,
+  email_to    text not null,
+  type        text not null,
+  sent_at     timestamptz default now()
+);
+
+-- RLS
+alter table notification_prefs enable row level security;
+alter table email_log enable row level security;
+
+create policy "notification_prefs_own" on notification_prefs
+  for all using (auth.uid() = user_id);
+
+create policy "email_log_own" on email_log
+  for select using (auth.uid() = user_id);
+
+create policy "email_log_insert" on email_log
+  for insert with check (auth.uid() = user_id);
+
+-- Indexes
+create index if not exists notification_prefs_user_idx on notification_prefs(user_id);
+create index if not exists email_log_user_idx    on email_log(user_id);
+create index if not exists email_log_sent_idx    on email_log(sent_at);
+
 -- ── VERIFY ───────────────────────────────────────────────────
 -- After running, you should see these tables:
 select table_name from information_schema.tables
@@ -181,6 +222,8 @@ order by table_name;
 -- Expected output:
 -- assets
 -- audit_log
+-- email_log
 -- goals
+-- notification_prefs
 -- nw_history
 -- subscriptions
