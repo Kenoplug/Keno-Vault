@@ -406,10 +406,16 @@ const Calculators = (() => {
 
   // Native currency — what the user's data is actually stored in
   function getNativeCurrency() {
-    return localStorage.getItem('kv-native-currency') || getBaseCurrency();
+    var nc = localStorage.getItem('kv-native-currency');
+    var v  = localStorage.getItem('kv-currency-version');
+    // Auto-heal: if we migrated versions, native = base (no stale conversion)
+    if (!v || v !== '2') { setNativeCurrency(getBaseCurrency()); localStorage.setItem('kv-currency-version','2'); return getBaseCurrency(); }
+    if (!nc) return getBaseCurrency();
+    return nc;
   }
   function setNativeCurrency(c) {
     localStorage.setItem('kv-native-currency', c);
+    localStorage.setItem('kv-currency-version', '2');
   }
 
   function formatCurrency(amount, currency) {
