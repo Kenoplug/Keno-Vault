@@ -195,27 +195,42 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 48px;height:64px;
   background:radial-gradient(circle,rgba(249,115,22,0.08) 0%,transparent 70%);
   top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
 
-/* FOOTER */
-footer{padding:64px 48px 40px;border-top:1px solid var(--border);}
-.footer-inner{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:28px;}
-.footer-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;}
-.footer-links{display:flex;gap:28px;flex-wrap:wrap;}
+/* FOOTER — Flickering */
+footer{position:relative;padding:120px 48px 40px;overflow:hidden;border-top:1px solid rgba(255,255,255,0.03);}
+footer::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(249,115,22,0.04) 0%,transparent 70%);pointer-events:none;}
+footer::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1;opacity:0.4;}
+.footer-inner{position:relative;z-index:2;max-width:960px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:48px;}
+.footer-brand{text-align:center;}
+.footer-brand-name{font-family:'DM Serif Display',serif;font-size:clamp(48px,8vw,100px);line-height:1;letter-spacing:-0.03em;color:var(--text);margin:0;}
+.footer-brand-tag{font-size:14px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;margin-top:8px;}
+.footer-links{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;}
 .footer-links a{font-size:13px;color:var(--text-dim);text-decoration:none;transition:color .2s;}
 .footer-links a:hover{color:var(--orange);}
-.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:24px;border-top:1px solid var(--border);}
-.footer-disclaimer{font-size:12px;color:var(--text-muted);line-height:1.6;max-width:500px;}
-.footer-legal{display:flex;gap:20px;flex-wrap:wrap;}
-.footer-links a:hover{color:var(--text-dim);}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;width:100%;padding-top:24px;border-top:1px solid rgba(255,255,255,0.04);}
+.footer-disclaimer{font-size:11px;color:var(--text-muted);line-height:1.6;max-width:480px;}
+.footer-legal{display:flex;gap:16px;flex-wrap:wrap;}
 
-/* ANIMATIONS */
+/* CRT flicker keyframes */
+@keyframes crtFlicker{0%,100%{opacity:1}92%{opacity:1}92.5%{opacity:0.82}93%{opacity:1}96%{opacity:0.94}96.5%{opacity:1}98%{opacity:0.97}98.5%{opacity:1}}
+@keyframes crtFlickerSlow{0%,100%{opacity:1}95%{opacity:0.96}96%{opacity:1}99%{opacity:0.98}99.5%{opacity:1}}
+@keyframes textFlicker{0%,100%{color:var(--text)}3%{color:var(--orange)}3.5%{color:var(--text)}7%{color:var(--orange)}7.2%{color:var(--text)}}
+@keyframes glowPulse{0%,100%{opacity:0.4}50%{opacity:0.8}}
+.flicker-crt{animation:crtFlicker 8s infinite}
+.flicker-slow{animation:crtFlickerSlow 5s infinite}
+.flicker-text{animation:textFlicker 6s infinite}
+.flicker-glow{animation:glowPulse 3s ease-in-out infinite}
+.flicker-delay-1{animation-delay:0.5s}
+.flicker-delay-2{animation-delay:1.2s}
+.flicker-delay-3{animation-delay:2.1s}
+
+/* Animations */
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-.fade-up{animation:fadeUp .6s ease both;}
-.fade-up-delay-1{animation-delay:.1s;}
-.fade-up-delay-2{animation-delay:.2s;}
-.fade-up-delay-3{animation-delay:.3s;}
-
+.fade-up{animation:fadeUp .6s ease both}
+.fade-up-delay-1{animation-delay:.1s}
+.fade-up-delay-2{animation-delay:.2s}
+.fade-up-delay-3{animation-delay:.3s}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.float{animation:float 4s ease-in-out infinite;}
+.float{animation:float 4s ease-in-out infinite}
 
 @media(max-width:768px){
   nav{padding:0 20px;}
@@ -551,23 +566,26 @@ footer{padding:64px 48px 40px;border-top:1px solid var(--border);}
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-top">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="nav-logo-icon" style="width:32px;height:32px;font-size:16px;">⬡</div>
-        <div>
-          <div style="font-weight:700;font-size:16px;">Keno Vault</div>
-          <div style="font-size:12px;color:var(--text-muted);">Own Your Wealth</div>
-        </div>
+    <!-- Brand anchor — large centered name with flicker -->
+    <div class="footer-brand">
+      <div style="position:relative;display:inline-block;">
+        <div style="position:absolute;inset:-20px -40px;background:radial-gradient(ellipse at center,rgba(249,115,22,0.12) 0%,transparent 70%);border-radius:50%;pointer-events:none;" class="flicker-glow"></div>
+        <h2 class="footer-brand-name flicker-text" style="position:relative;">KENO VAULT</h2>
       </div>
-      <div class="footer-links">
-        <a href="#features">Features</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#security">Security</a>
-        <a href="pages/dashboard.html">Dashboard</a>
-        <a href="pages/settings.html">Settings</a>
-      </div>
+      <p class="footer-brand-tag flicker-slow">Own Your Wealth</p>
     </div>
-    <div class="footer-bottom">
+
+    <!-- Links row -->
+    <div class="footer-links flicker-slow flicker-delay-1">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#security">Security</a>
+      <a href="pages/dashboard.html">Dashboard</a>
+      <a href="pages/settings.html">Settings</a>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="footer-bottom flicker-slow flicker-delay-2">
       <div class="footer-disclaimer">Keno Vault is not a licensed financial advisor, broker, or investment service. All figures are for personal tracking and informational purposes only.</div>
       <div class="footer-legal">
         <a href="#" onclick="openLegal('terms');return false;" class="legal-footer-link">Terms of Service</a>
@@ -575,7 +593,8 @@ footer{padding:64px 48px 40px;border-top:1px solid var(--border);}
         <a href="#" onclick="openLegal('refund');return false;" class="legal-footer-link">Refund Policy</a>
       </div>
     </div>
-    <div style="text-align:center;font-size:12px;color:var(--text-muted);padding-top:8px;">© 2026 Keno Vault</div>
+
+    <div style="text-align:center;font-size:11px;color:var(--text-muted);" class="flicker-crt flicker-delay-3">© 2026 Keno Vault</div>
   </div>
 </footer>
 
