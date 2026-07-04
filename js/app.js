@@ -1592,21 +1592,23 @@ function buildTargetCard(stage, range, items) {
 }
 
 function buildMiniDonut(segments, size) {
-  var r = size/2 - 8;
+  var strokeW = 10;
+  var r = size/2 - strokeW;
   var cx = size/2; var cy = size/2;
   var circ = 2 * Math.PI * r;
+  var gapSize = 1.5; // gap between segments in px
   var offset = 0;
   var paths = '';
   var total = segments.reduce(function(s,seg){ return s + seg.pct; }, 0) || 1;
   for (var i=0; i<segments.length; i++) {
     var seg = segments[i];
-    var dash = (seg.pct / total) * circ;
+    var dash = (seg.pct / total) * circ - gapSize;
     var gap  = circ - dash;
     paths += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" ' +
-      'stroke="' + seg.color + '" stroke-width="14" ' +
+      'stroke="' + seg.color + '" stroke-width="' + strokeW + '" stroke-linecap="round" ' +
       'stroke-dasharray="' + dash.toFixed(1) + ' ' + gap.toFixed(1) + '" ' +
       'stroke-dashoffset="' + (-offset).toFixed(1) + '" />';
-    offset += dash;
+    offset += dash + gapSize;
   }
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" ' +
     'style="transform:rotate(-90deg);flex-shrink:0;">' + paths + '</svg>';
