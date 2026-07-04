@@ -1452,14 +1452,11 @@ function runOptimizer() {
   html +=
     '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;">' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:16px;">📊 Portfolio Allocation</div>' +
-      '<div style="display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;">' +
-        '<div>' + donutSVG + '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:10px;">' +
-          buildAllocBar('💵 Liquid Cash',    cashPct, '#60a5fa', bycat.cash,       '10–30%') +
-          buildAllocBar('📦 Physical Assets',physPct, '#34d399', bycat.physical,   '<60%') +
-          buildAllocBar('📈 Investments',    invPct,  '#f97316', bycat.investment, '>30%') +
-          (bycat.liability > 0 ? buildAllocBar('⚠️ Liabilities', debtRatio, '#f87171', bycat.liability, '<30%') : '') +
-        '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;">' +
+        buildAllocBar('💵 Liquid Cash',    cashPct, '#60a5fa', bycat.cash,       '10–30%') +
+        buildAllocBar('📦 Physical Assets',physPct, '#34d399', bycat.physical,   '<60%') +
+        buildAllocBar('📈 Investments',    invPct,  '#f97316', bycat.investment, '>30%') +
+        (bycat.liability > 0 ? buildAllocBar('⚠️ Liabilities', debtRatio, '#f87171', bycat.liability, '<30%') : '') +
       '</div>' +
     '</div>';
 
