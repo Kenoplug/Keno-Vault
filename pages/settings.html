@@ -529,11 +529,15 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
         <!-- Currency -->
         <div class="settings-section">
           <div class="section-header">
-            <div><div class="section-header-title"><i class="fas fa-globe"></i> Base Currency</div><div class="section-header-sub">Default currency for all displays</div></div>
+            <div><div class="section-header-title"><i class="fas fa-globe"></i> Display Currency</div><div class="section-header-sub">What you see — switch freely, values convert automatically</div></div>
           </div>
           <div class="section-body">
-            <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Select your primary currency. All values display in this currency.</p>
+            <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Select your display currency. Stored values are converted to this currency when shown.</p>
             <div class="currency-grid" id="currencyGrid"></div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:var(--text-muted);" id="nativeCurrencyLabel">Your data is stored in: —</span>
+              <button onclick="var cur=prompt('Enter the 3-letter currency code your data is stored in (e.g. NGN, USD, GHS):');if(cur&&cur.length===3)setNativeCurrencyExplicit(cur.toUpperCase())" style="font-size:11px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;">Change</button>
+            </div>
           </div>
         </div>
 
@@ -968,6 +972,7 @@ function initSettingsUI() {
     if (pinSec) pinSec.style.display = alEl.checked ? 'block' : 'none';
   }
   buildCurrencyGrid();
+  updateNativeLabel();
   updateProToggles();
   if (isPro()) {
     const legLock = document.getElementById('legacyLock');
@@ -1247,15 +1252,26 @@ function buildCurrencyGrid() {
 }
 
 function setCurrency(cur) {
-  var native = Calculators.getNativeCurrency();
-  // First switch: lock selected currency as native (data is in this currency)
-  if (!native || native === cur) {
-    Calculators.setNativeCurrency(cur);
-  }
   localStorage.setItem('kv-base-currency', cur);
   Calculators.setBaseCurrency(cur);
   buildCurrencyGrid();
-  toast('Base currency set to ' + cur, 'success');
+  updateNativeLabel();
+  toast('Display currency set to ' + cur, 'success');
+}
+
+function setNativeCurrencyExplicit(cur) {
+  var confirmed = confirm('Change data currency to ' + cur + '?\n\nThis tells Keno Vault what currency your stored numbers are actually in. It does NOT convert existing values — only changes how they are interpreted.\n\nOnly change this if your data is truly stored in ' + cur + '.');
+  if (!confirmed) return;
+  Calculators.setNativeCurrency(cur);
+  localStorage.setItem('kv-native-currency', cur);
+  localStorage.setItem('kv-currency-version', '3');
+  updateNativeLabel();
+  toast('Data currency set to ' + cur, 'success');
+}
+
+function updateNativeLabel() {
+  var el = document.getElementById('nativeCurrencyLabel');
+  if (el) el.textContent = 'Your data is stored in: ' + Calculators.getNativeCurrency();
 }
 
 // ══ BACHS UPGRADE ══

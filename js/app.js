@@ -9,8 +9,22 @@ const FREE_LIMIT = 10;
 
 // ══ GLOBAL HELPERS (used by inline HTML oninput handlers) ═══════
 function curSym()  { return (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(Calculators.getBaseCurrency()) : '$'; }
+function toDisplay(v) {
+  // Convert a stored (native) value to the display (base) currency
+  var native = Calculators.getNativeCurrency();
+  var base   = Calculators.getBaseCurrency();
+  if (native !== base) return Calculators.convertCurrency(v || 0, native, base);
+  return v || 0;
+}
+function toStored(v) {
+  // Convert a display (base) value to the storage (native) currency
+  var native = Calculators.getNativeCurrency();
+  var base   = Calculators.getBaseCurrency();
+  if (native !== base) return Calculators.convertCurrency(v || 0, base, native);
+  return v || 0;
+}
 function fmtAmt(v) {
-  return curSym() + Math.round(Math.abs(v || 0)).toLocaleString();
+  return curSym() + Math.round(Math.abs(toDisplay(v))).toLocaleString();
 }
 
 // ══ STYLED CONFIRM DIALOG ═════════════════════════════════════════
@@ -200,15 +214,17 @@ function setDebtMul(mul, btn) {
 }
 function getDebtExtra() {
   var sl = document.getElementById('debtExtraSlider');
-  return (parseInt(sl ? sl.value : 500) || 0) * _debtMul;
+  var displayVal = (parseInt(sl ? sl.value : 500) || 0) * _debtMul;
+  // Convert display currency → native for consistent simulation with asset values
+  return Math.round(toStored(displayVal));
 }
 function updateDebtDisplay() {
   var sv = document.getElementById('debtExtraVal');
-  if (sv) sv.textContent = curSym() + Math.round(getDebtExtra()).toLocaleString();
+  if (sv) sv.textContent = curSym() + Math.round(toDisplay(getDebtExtra())).toLocaleString();
   var mn = document.getElementById('debtMinLabel');
   var mx = document.getElementById('debtMaxLabel');
   if (mn) mn.textContent = curSym() + '0';
-  if (mx) mx.textContent = curSym() + Math.round(100000 * _debtMul).toLocaleString();
+  if (mx) mx.textContent = curSym() + Math.round(toDisplay(100000 * _debtMul)).toLocaleString();
   var debtSlider = document.getElementById('debtExtraSlider');
   if (debtSlider) fillSliderTrack(debtSlider);
 }
@@ -261,10 +277,10 @@ const BADGE_LIGHT = {
 const isGrowth   = () => userPlan === 'growth' || userPlan === 'pro';
 const isPro      = () => userPlan === 'pro';
 const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
-const fmt        = n  => Calculators.formatCurrency(Math.abs(n));
+const fmt        = n  => Calculators.formatCurrency(Math.abs(toDisplay(n)));
 const fmtSigned  = n  => (n < 0 ? '-' : '') + fmt(n);
 const fmtShort   = n  => {
-  var a = Math.abs(n);
+  var a = Math.abs(toDisplay(n));
   var s = curSym();
   if (a >= 1e9) return s + (a / 1e9).toFixed(1) + 'B';
   if (a >= 1e6) return s + (a / 1e6).toFixed(1) + 'M';
@@ -770,13 +786,17 @@ async function addAsset() {
   if (!name)                { if (errEl) errEl.textContent = '⚠ Please enter a name.'; return; }
   if (isNaN(value)||value<0){ if (errEl) errEl.textContent = '⚠ Enter a valid value.'; return; }
 
+  // Convert display currency → native (storage) currency
+  var storedValue = Math.round(toStored(value));
+
   let principal = null, rate = null, years = null, fv = 0, interest = 0;
   if (cat === 'investment') {
     principal = parseFloat(document.getElementById('fPrincipal').value) || null;
     rate      = parseFloat(document.getElementById('fRate').value)      || null;
     years     = parseFloat(document.getElementById('fYears').value)     || null;
     if (principal && rate && years) {
-      const p = Calculators.compoundInterest(principal, rate, years);
+      var storedPrincipal = Math.round(toStored(principal));
+      const p = Calculators.compoundInterest(storedPrincipal, rate, years);
       fv = p.fv; interest = p.interest;
     }
   }
@@ -799,8 +819,9 @@ async function addAsset() {
   setSyncState('syncing', 'Saving…');
 
   try {
-    const asset = { name, cat, value, notes, principal, rate, years, fv, interest,
-      depreciationType, depreciationRate, usefulLife, salvageValue, originalCost, depreciationStart };
+    var savedPrincipal = (principal && rate && years) ? storedPrincipal : null;
+    const asset = { name, cat, value: storedValue, notes, principal: savedPrincipal, rate, years, fv, interest,
+      depreciationType, depreciationRate, usefulLife, salvageValue: Math.round(toStored(salvageValue || 0)), originalCost: storedValue, depreciationStart };
     const newId = await dbInsert(asset);
     asset.id = newId;
     assets.push(asset);
@@ -853,9 +874,9 @@ function openEditModal(id) {
   editId = id;
   document.getElementById('eName').value  = a.name;
   document.getElementById('eCat').value   = a.cat;
-  document.getElementById('eValue').value = a.value;
+  document.getElementById('eValue').value = Math.round(toDisplay(a.value));
   document.getElementById('eNotes').value = a.notes || '';
-  document.getElementById('ePrincipal').value = a.principal || '';
+  document.getElementById('ePrincipal').value = a.principal ? Math.round(toDisplay(a.principal)) : '';
   document.getElementById('eRate').value     = a.rate  || '';
   document.getElementById('eYears').value    = a.years || '';
   // Depreciation fields
@@ -865,7 +886,7 @@ function openEditModal(id) {
   var depRate = document.getElementById('eDeprecRate');
   if (depType) depType.value = a.depreciationType || '';
   if (depLife) depLife.value = a.usefulLife || '';
-  if (depSalv) depSalv.value = a.salvageValue || '';
+  if (depSalv) depSalv.value = a.salvageValue ? Math.round(toDisplay(a.salvageValue)) : '';
   if (depRate) depRate.value = a.depreciationRate || '';
   // Collapse depreciation panel unless it has a type set
   var depPanel = document.getElementById('editDeprecPanel');
@@ -911,12 +932,18 @@ async function saveEdit() {
   const cat   = document.getElementById('eCat').value;
   const value = parseFloat(document.getElementById('eValue').value);
   if (!name || isNaN(value) || value < 0) { UI.toast('Fill required fields', 'error'); return; }
+
+  // Convert display currency → native (storage) currency
+  var storedValue = Math.round(toStored(value));
+
   const notes     = document.getElementById('eNotes').value.trim();
-  const principal = parseFloat(document.getElementById('ePrincipal').value) || null;
+  var rawPrincipal = parseFloat(document.getElementById('ePrincipal').value) || null;
   const rate      = parseFloat(document.getElementById('eRate').value)      || null;
   const years     = parseFloat(document.getElementById('eYears').value)     || null;
+  var principal = null;
   let fv = 0, interest = 0;
-  if (cat === 'investment' && principal && rate && years) {
+  if (cat === 'investment' && rawPrincipal && rate && years) {
+    principal = Math.round(toStored(rawPrincipal));
     const p = Calculators.compoundInterest(principal, rate, years);
     fv = p.fv; interest = p.interest;
   }
@@ -928,9 +955,9 @@ async function saveEdit() {
     depreciationType = document.getElementById('eDeprecType')?.value || null;
     if (depreciationType) {
       usefulLife       = parseFloat(document.getElementById('eUsefulLife')?.value) || 5;
-      salvageValue     = parseFloat(document.getElementById('eSalvage')?.value)    || 0;
+      salvageValue     = Math.round(toStored(parseFloat(document.getElementById('eSalvage')?.value) || 0));
       depreciationRate = parseFloat(document.getElementById('eDeprecRate')?.value) || 20;
-      originalCost     = a.originalCost || value; // preserve original cost if already set
+      originalCost     = a.originalCost || storedValue; // preserve original cost if already set
       if (!a.depreciationStart) depreciationStart = new Date().toISOString();
       else depreciationStart = a.depreciationStart;
     }
@@ -941,13 +968,13 @@ async function saveEdit() {
   setSyncState('syncing', 'Saving…');
   try {
     Object.assign(a, {
-      name, cat, value, notes, principal, rate, years, fv, interest,
+      name, cat, value: storedValue, notes, principal, rate, years, fv, interest,
       depreciationType, depreciationRate, usefulLife, salvageValue,
       originalCost, depreciationStart
     });
     await dbUpdate(a);
     addActivity(`Updated "${name}"`, cat, 'blue');
-    logAudit('updated', 'asset', name, 'New value: ' + fmt(value));
+    logAudit('updated', 'asset', name, 'New value: ' + fmt(storedValue));
     await snapHistory();
     renderAll();
     closeModal('editModal');
@@ -1241,8 +1268,9 @@ function runFire() {
   if (eSl && eSv) eSv.textContent = curSym() + Math.round(parseInt(eSl.value) || 30000).toLocaleString();
 
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
-  var monthlySavings = parseInt(document.getElementById('fireSavings').value) || 500;
-  var annualExpenses = parseInt(document.getElementById('fireExpenses').value) || 30000;
+  // Convert slider (display currency) values to native for simulation
+  var monthlySavings = Math.round(toStored(parseInt(document.getElementById('fireSavings').value) || 500));
+  var annualExpenses = Math.round(toStored(parseInt(document.getElementById('fireExpenses').value) || 30000));
   var retirementAge = parseInt(document.getElementById('fireRetire').value) || 55;
   var inflationRate = parseInt(document.getElementById('fireInflation').value) || 18;
   var returnRate   = parseInt(document.getElementById('fireReturn').value) || 10;

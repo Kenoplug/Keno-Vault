@@ -404,18 +404,23 @@ const Calculators = (() => {
     return localStorage.getItem('kv-base-currency') || 'USD';
   }
 
-  // Native currency — what the user's data is actually stored in
+  // Native currency — what the user's data is actually stored in (rarely changes)
   function getNativeCurrency() {
     var nc = localStorage.getItem('kv-native-currency');
     var v  = localStorage.getItem('kv-currency-version');
-    // Auto-heal: if we migrated versions, native = base (no stale conversion)
-    if (!v || v !== '2') { setNativeCurrency(getBaseCurrency()); localStorage.setItem('kv-currency-version','2'); return getBaseCurrency(); }
+    // v3+: native currency is independent of display currency — preserve whatever is set
+    if (!v || v !== '3') {
+      if (nc) { localStorage.setItem('kv-currency-version','3'); return nc; }
+      setNativeCurrency(getBaseCurrency());
+      localStorage.setItem('kv-currency-version','3');
+      return getBaseCurrency();
+    }
     if (!nc) return getBaseCurrency();
     return nc;
   }
   function setNativeCurrency(c) {
     localStorage.setItem('kv-native-currency', c);
-    localStorage.setItem('kv-currency-version', '2');
+    localStorage.setItem('kv-currency-version', '3');
   }
 
   function formatCurrency(amount, currency) {
