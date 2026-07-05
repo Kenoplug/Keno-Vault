@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 const APP_VERSION = '1.1.0';
-const SITE_URL    = 'https://keno-vault.vercel.app';
+const SITE_URL    = (typeof window !== 'undefined' && window.location.hostname === 'localhost') ? window.location.origin : 'https://keno-vault.vercel.app';
 const SUPA_URL    = 'https://soxqotattmhahzpehycz.supabase.co';
 const SUPA_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNveHFvdGF0dG1oYWh6cGVoeWN6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMjU0NDIsImV4cCI6MjA5NTcwMTQ0Mn0.0jjwmGu5W1EIMq18Popq9Dh_SPEyDVOOBmPx9BuMPNw';
 const ADMIN_EMAIL = 'kenovault@gmail.com';
