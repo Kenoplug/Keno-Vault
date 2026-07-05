@@ -1039,21 +1039,32 @@
 
 <!-- ═══ MOBILE MORE MENU ═══ -->
 <div id="mobileMenu" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);" onclick="closeMobileMenu()">
-  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px calc(80px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);" onclick="event.stopPropagation()">
+  <div style="position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-radius:20px 20px 0 0;padding:20px 20px calc(80px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);max-height:85vh;overflow-y:auto;" onclick="event.stopPropagation()">
+    <!-- handle -->
     <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;"></div>
-    <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Pro Intelligence</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
+
+    <!-- section: PRO INTELLIGENCE -->
+    <div class="mob-section-label">Pro Intelligence</div>
+    <div class="mob-grid">
       <button class="mob-menu-item" onclick="switchProPage('fire');closeMobileMenu()"><i class="fas fa-fire"></i> FIRE Simulator</button>
       <button class="mob-menu-item" onclick="switchProPage('debt');closeMobileMenu()"><i class="fas fa-scale-balanced"></i> Debt Optimizer</button>
       <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()"><i class="fas fa-receipt"></i> Tax Simulator</button>
-      <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()"><i class="fas fa-bullseye"></i> Optimizer</button>
-      <button class="mob-menu-item" onclick="switchProPage('score');closeMobileMenu()"><i class="fas fa-bolt"></i> NW Score</button>
-      <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()"><i class="fas fa-globe"></i> Currency</button>
+      <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()"><i class="fas fa-bullseye"></i> Asset Optimizer</button>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="mob-menu-item" style="flex:1;" onclick="window.location.href='settings.html'"><i class="fas fa-gear"></i> Settings</button>
-      <button class="mob-menu-item" style="flex:1;color:var(--red);" onclick="closeMobileMenu();signOut()">Sign Out</button>
+
+    <!-- section: ANALYTICS & ACCOUNT -->
+    <div class="mob-section-label">Analytics &amp; Account</div>
+    <div class="mob-grid">
+      <button class="mob-menu-item" onclick="switchProPage('goals');closeMobileMenu()"><i class="fas fa-bullseye"></i> Goal Tracker</button>
+      <button class="mob-menu-item" onclick="switchProPage('score');closeMobileMenu()"><i class="fas fa-bolt"></i> Net Worth Score</button>
+      <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()"><i class="fas fa-globe"></i> Multi-Currency</button>
+      <button class="mob-menu-item" onclick="window.location.href='settings.html'"><i class="fas fa-gear"></i> Settings</button>
     </div>
+
+    <!-- standalone: Sign Out -->
+    <button class="mob-signout-btn" onclick="closeMobileMenu();signOut()">
+      <i class="fas fa-right-from-bracket"></i> Sign Out
+    </button>
   </div>
 </div>
 
@@ -1078,6 +1089,29 @@
   transition:all .15s;
 }
 .mob-menu-item:hover { border-color:var(--accent);color:var(--accent); }
+
+.mob-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 10px; margin-top: 4px;
+}
+.mob-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; margin-bottom: 20px;
+}
+.mob-signout-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; width: 100%; margin-top: 4px;
+  background: var(--surface2); border: 1px solid rgba(239,68,68,0.15);
+  border-radius: 12px; padding: 14px;
+  font-size: 14px; font-weight: 600; color: var(--red);
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.mob-signout-btn:hover {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.3);
+}
 
 /* ── Mobile topbar back button ── */
 #mobileBackBtn {
