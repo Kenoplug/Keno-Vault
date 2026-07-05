@@ -1191,3 +1191,198 @@ canvas {
 @media (min-width: 641px) {
   .invest-cards { display: none !important; }
 }
+
+/* ══ GOAL CARDS ═══════════════════════════════════════════════ */
+.goal-card { padding: 20px; }
+.goal-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.goal-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.goal-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.goal-pct {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+.goal-card-body {
+  margin-bottom: 10px;
+}
+.goal-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.goal-card-amounts {
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.goal-bar-track {
+  height: 8px;
+  background: var(--surface3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.goal-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+.goal-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.goal-remaining {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.goal-pacing {
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+/* Mobile: compact header */
+@media (max-width: 480px) {
+  .goal-pct { font-size: 15px; }
+  .goal-badge { width: 28px; height: 28px; font-size: 14px; border-radius: 6px; }
+}
+
+/* ══ GOALS EMPTY STATE ══════════════════════════════════════ */
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 24px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.empty-state-icon {
+  position: relative;
+  width: 80px; height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  font-size: 32px;
+  color: var(--accent);
+}
+.empty-state-glow {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(249,115,22,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.empty-state-heading {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.empty-state-desc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  max-width: 400px;
+  margin-bottom: 24px;
+}
+.empty-state-cta {
+  margin-bottom: 32px;
+}
+
+/* ── Quick-Start Templates ───────────────────────────── */
+.empty-state-templates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+.template-card {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+.template-card:hover {
+  border-color: var(--accent);
+  border-style: solid;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  transform: translateY(-1px);
+}
+.template-emoji {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+.template-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.template-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Responsive: stack templates on mobile ───────────── */
+@media (max-width: 520px) {
+  .empty-state-templates {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .empty-state-container {
+    padding: 32px 16px;
+  }
+  .empty-state-heading { font-size: 19px; }
+}
+
+/* ══ SCORE METRIC CARDS — Desktop Layout ═════════════════════ */
+.score-metric-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+.score-metric-top {
+  flex-shrink: 0;
+}
+
+/* Card footnote — desktop only */
+.score-micro {
+  display: none;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+@media (min-width: 1024px) {
+  .score-micro { display: block; }
+}

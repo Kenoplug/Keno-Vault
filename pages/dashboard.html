@@ -832,10 +832,44 @@
         </div>
         <div id="goalsContent" style="display:none;">
           <div id="goalsList" style="display:flex;flex-direction:column;gap:14px;"></div>
-          <div id="goalsEmpty" class="empty" style="padding:60px 20px;">
-            <div class="empty-icon"><i class="fas fa-bullseye"></i></div>
-            <div style="font-size:14px;font-weight:500;color:var(--text-dim);margin-top:8px;">No goals yet</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Set your first wealth milestone to start tracking.</div>
+
+          <!-- Premium Empty State -->
+          <div id="goalsEmptyState" style="display:none;">
+            <div class="empty-state-container">
+              <!-- Icon -->
+              <div class="empty-state-icon">
+                <div class="empty-state-glow"></div>
+                <i class="fas fa-bullseye"></i>
+              </div>
+
+              <!-- Copy -->
+              <h2 class="serif empty-state-heading">Define Your Wealth Milestones</h2>
+              <p class="empty-state-desc">Set specific financial targets, map out deadlines, and track your pacing dynamically. Every great portfolio starts with a clear goal.</p>
+
+              <!-- Primary CTA -->
+              <button class="btn btn-primary empty-state-cta" onclick="openGoalModal()">
+                <i class="fas fa-plus"></i> Create Your First Goal
+              </button>
+
+              <!-- Quick-Start Templates -->
+              <div class="empty-state-templates">
+                <div class="template-card" onclick="quickStartGoal('🛡️ Emergency Fund', 1000000, '🛡️')">
+                  <div class="template-emoji">🛡️</div>
+                  <div class="template-title">Emergency Fund</div>
+                  <div class="template-sub">Save 3–6 months of living expenses</div>
+                </div>
+                <div class="template-card" onclick="quickStartGoal('🚀 Financial Independence', 100000000, '🚀')">
+                  <div class="template-emoji">🚀</div>
+                  <div class="template-title">Financial Independence</div>
+                  <div class="template-sub">Track your target portfolio milestone</div>
+                </div>
+                <div class="template-card" onclick="quickStartGoal('🏠 Home Purchase', 25000000, '🏠')">
+                  <div class="template-emoji">🏠</div>
+                  <div class="template-title">Home Purchase</div>
+                  <div class="template-sub">Save for a down payment or full purchase</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -849,8 +883,9 @@
           </div>
           <div class="form-grid-2" style="margin-bottom:12px;">
             <div class="field span-2"><label>Goal Name</label><input type="text" id="gName" placeholder="e.g. Reach $100k net worth"/></div>
+            <div class="field"><label>Icon</label><input type="text" id="gEmoji" placeholder="🎯" maxlength="2" style="font-size:20px;text-align:center;"/></div>
             <div class="field"><label>Target Amount</label><input type="number" id="gTarget" min="0" step="0.01" placeholder="100000"/></div>
-            <div class="field"><label>Deadline (optional)</label><input type="date" id="gDeadline"/></div>
+            <div class="field span-2"><label>Deadline (optional)</label><input type="date" id="gDeadline"/></div>
           </div>
           <input type="hidden" id="gEditId"/>
           <div class="modal-footer">
@@ -907,23 +942,32 @@
 
             <!-- 3 metric cards -->
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-              <div class="kpi-card">
-                <div class="kpi-label" style="color:var(--red);"><i class="fas fa-triangle-exclamation"></i> Debt Ratio</div>
-                <div class="kpi-value" id="scoreDebt" style="color:var(--red);">—</div>
-                <div id="debtBar" style="margin-top:10px;"></div>
-                <div class="kpi-change" style="margin-top:6px;">of assets are debt-financed</div>
+              <div class="kpi-card score-metric-card">
+                <div class="score-metric-top">
+                  <div class="kpi-label" style="color:var(--red);"><i class="fas fa-triangle-exclamation"></i> Debt Ratio</div>
+                  <div class="kpi-value" id="scoreDebt" style="color:var(--red);">—</div>
+                  <div id="debtBar" style="margin-top:10px;"></div>
+                  <div class="kpi-change" style="margin-top:6px;">of assets are debt-financed</div>
+                </div>
+                <div class="score-micro" id="scoreMicroDebt"></div>
               </div>
-              <div class="kpi-card">
-                <div class="kpi-label" style="color:var(--blue);"><i class="fas fa-droplet"></i> Liquid Buffer</div>
-                <div class="kpi-value" id="scoreLiquid" style="color:var(--blue);">—</div>
-                <div id="liquidBar" style="margin-top:10px;"></div>
-                <div class="kpi-change" style="margin-top:6px;">of wealth is liquid/accessible</div>
+              <div class="kpi-card score-metric-card">
+                <div class="score-metric-top">
+                  <div class="kpi-label" style="color:var(--blue);"><i class="fas fa-droplet"></i> Liquid Buffer</div>
+                  <div class="kpi-value" id="scoreLiquid" style="color:var(--blue);">—</div>
+                  <div id="liquidBar" style="margin-top:10px;"></div>
+                  <div class="kpi-change" style="margin-top:6px;">of wealth is liquid/accessible</div>
+                </div>
+                <div class="score-micro" id="scoreMicroLiquid"></div>
               </div>
-              <div class="kpi-card">
-                <div class="kpi-label" style="color:var(--green);"><i class="fas fa-arrow-trend-up"></i> Investment %</div>
-                <div class="kpi-value" id="scoreInvest" style="color:var(--green);">—</div>
-                <div id="investBar" style="margin-top:10px;"></div>
-                <div class="kpi-change" style="margin-top:6px;">of wealth is actively invested</div>
+              <div class="kpi-card score-metric-card">
+                <div class="score-metric-top">
+                  <div class="kpi-label" style="color:var(--green);"><i class="fas fa-arrow-trend-up"></i> Investment %</div>
+                  <div class="kpi-value" id="scoreInvest" style="color:var(--green);">—</div>
+                  <div id="investBar" style="margin-top:10px;"></div>
+                  <div class="kpi-change" style="margin-top:6px;">of wealth is actively invested</div>
+                </div>
+                <div class="score-micro" id="scoreMicroInvest"></div>
               </div>
             </div>
           </div>

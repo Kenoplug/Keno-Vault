@@ -172,6 +172,9 @@ create index if not exists audit_log_created_idx on audit_log(created_at);
 -- ── CUSTOM CATEGORIES (Growth tier) ───────────────────────────
 alter table assets add column if not exists custom_cat text;
 
+-- ── GOAL EMOJI (Growth tier) ─────────────────────────────────
+alter table goals add column if not exists emoji text default '🎯';
+
 -- ── NOTIFICATION PREFERENCES ─────────────────────────────────
 create table if not exists notification_prefs (
   id               uuid default gen_random_uuid() primary key,

@@ -2009,6 +2009,18 @@ function renderScore() {
   renderScoreBar('liquidBar', parseFloat(s.liquidRatio), 100, '#60a5fa', s.liquidRatio + '% liquid cash');
   renderScoreBar('investBar', parseFloat(s.investRatio), 100, '#34d399', s.investRatio + '% invested');
 
+  // ── Card footnotes (desktop) ─────────────────────────────
+  var totalLiab = assets.filter(function(a){return a.cat==='liability';}).reduce(function(sum,a){return sum+a.value;},0);
+  var totalCash = assets.filter(function(a){return a.cat==='cash';}).reduce(function(sum,a){return sum+a.value;},0);
+  var totalInv  = assets.filter(function(a){return a.cat==='investment';}).reduce(function(sum,a){return sum+a.value;},0);
+  var invCount  = assets.filter(function(a){return a.cat==='investment';}).length;
+  var liabCount = assets.filter(function(a){return a.cat==='liability';}).length;
+  var investGains = assets.filter(function(a){return a.cat==='investment';}).reduce(function(sum,a){return sum+(a.interest||0);},0);
+
+  document.getElementById('scoreMicroDebt').innerHTML   = liabCount ? '<div class="kpi-change">' + fmt(totalLiab) + ' across ' + liabCount + ' debt' + (liabCount!==1?'s':'') + '</div>' : '';
+  document.getElementById('scoreMicroLiquid').innerHTML  = '<div class="kpi-change">' + fmt(totalCash) + ' in cash &amp; equivalents</div>';
+  document.getElementById('scoreMicroInvest').innerHTML  = invCount ? '<div class="kpi-change">' + fmt(totalInv) + ' across ' + invCount + ' position' + (invCount!==1?'s':'') + (investGains>0?' · +'+fmt(investGains)+' projected':'') + '</div>' : '';
+
   renderScoreBreakdown(s);
   renderScoreHistory();
   renderScoreRecommendations(s, opt);
@@ -2301,7 +2313,7 @@ async function loadGoals() {
   if (!isGrowth()) return;
   try {
     var { data } = await sb.from('goals').select('*').order('created_at', { ascending: true });
-    _goals = (data || []).map(function(g) { return { id: g.id, name: g.name, target: parseFloat(g.target_amount)||0, current: parseFloat(g.current_amount)||0, deadline: g.deadline, createdAt: g.created_at }; });
+    _goals = (data || []).map(function(g) { return { id: g.id, name: g.name, target: parseFloat(g.target_amount)||0, current: parseFloat(g.current_amount)||0, deadline: g.deadline, emoji: g.emoji, createdAt: g.created_at }; });
   } catch(e) { console.warn('[Goals] Load error:', e.message); }
 }
 
@@ -2310,21 +2322,50 @@ async function saveGoal() {
   var name   = document.getElementById('gName').value.trim();
   var target = parseFloat(document.getElementById('gTarget').value) || 0;
   var deadline = document.getElementById('gDeadline').value || null;
+  var emoji  = (document.getElementById('gEmoji').value || '').trim() || '🎯';
   if (!name || target <= 0) { UI.toast('Enter a name and target amount', 'error'); return; }
   try {
+    var payload = { name: name, target_amount: target, deadline: deadline || null };
+    // Only include emoji if the column exists (won't break on pre-migration DB)
+    payload.emoji = emoji;
     if (editId) {
-      await sb.from('goals').update({ name: name, target_amount: target, deadline: deadline || null, updated_at: new Date().toISOString() }).eq('id', editId);
+      payload.updated_at = new Date().toISOString();
+      await sb.from('goals').update(payload).eq('id', editId);
       UI.toast('Goal updated', 'success');
     } else {
       var nw = assets.filter(function(a) { return a.cat !== 'liability'; }).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
-      await sb.from('goals').insert({ user_id: currentUser.id, name: name, target_amount: target, current_amount: nw, deadline: deadline || null });
+      payload.user_id = currentUser.id;
+      payload.current_amount = nw;
+      await sb.from('goals').insert(payload);
       UI.toast('Goal created', 'success');
       logAudit('created', 'goal', name, 'Target: ' + fmt(target));
     }
     closeModal('goalModal');
     await loadGoals();
     renderGoals();
-  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+  } catch(e) {
+    // If emoji column doesn't exist yet, retry without it
+    if (e.message && e.message.indexOf('emoji') > -1) {
+      try {
+        var fallback = { name: name, target_amount: target, deadline: deadline || null };
+        if (editId) {
+          fallback.updated_at = new Date().toISOString();
+          await sb.from('goals').update(fallback).eq('id', editId);
+        } else {
+          var nw2 = assets.filter(function(a) { return a.cat !== 'liability'; }).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+          fallback.user_id = currentUser.id;
+          fallback.current_amount = nw2;
+          await sb.from('goals').insert(fallback);
+        }
+        closeModal('goalModal');
+        await loadGoals();
+        renderGoals();
+        UI.toast(editId ? 'Goal updated' : 'Goal created', 'success');
+        return;
+      } catch(e2) { UI.toast('Error: ' + e2.message, 'error'); return; }
+    }
+    UI.toast('Error: ' + e.message, 'error');
+  }
 }
 
 async function deleteGoal(id) {
@@ -2343,6 +2384,7 @@ function openGoalModal(id) {
   document.getElementById('gName').value = '';
   document.getElementById('gTarget').value = '';
   document.getElementById('gDeadline').value = '';
+  document.getElementById('gEmoji').value = '';
   if (id) {
     var g = _goals.find(function(x) { return x.id === id; });
     if (g) {
@@ -2351,8 +2393,19 @@ function openGoalModal(id) {
       document.getElementById('gName').value = g.name;
       document.getElementById('gTarget').value = g.target;
       document.getElementById('gDeadline').value = g.deadline ? g.deadline.slice(0,10) : '';
+      document.getElementById('gEmoji').value = g.emoji || '';
     }
   }
+  openModal('goalModal');
+}
+
+function quickStartGoal(title, target, emoji) {
+  document.getElementById('gName').value = title;
+  document.getElementById('gTarget').value = target;
+  document.getElementById('gEmoji').value = emoji;
+  document.getElementById('gDeadline').value = '';
+  document.getElementById('gEditId').value = '';
+  document.getElementById('goalModalTitle').textContent = 'New Goal';
   openModal('goalModal');
 }
 
@@ -2360,47 +2413,88 @@ async function renderGoals() {
   if (!isGrowth()) return;
   await loadGoals();
   var listEl = document.getElementById('goalsList');
-  var emptyEl = document.getElementById('goalsEmpty');
+  var emptyState = document.getElementById('goalsEmptyState');
   if (!listEl) return;
   if (!_goals.length) {
     listEl.style.display = 'none';
-    if (emptyEl) emptyEl.style.display = 'block';
+    if (emptyState) emptyState.style.display = 'block';
     return;
   }
   listEl.style.display = 'flex';
-  if (emptyEl) emptyEl.style.display = 'none';
+  if (emptyState) emptyState.style.display = 'none';
   // Auto-update current from latest net worth
   var nw = assets.filter(function(a){return a.cat!=='liability';}).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+  var now = new Date();
+
   listEl.innerHTML = _goals.map(function(g) {
     var pct = g.target > 0 ? Math.min(Math.round((g.current / g.target) * 100), 100) : 0;
     var barColor = pct >= 100 ? '#34d399' : pct >= 50 ? '#f4c553' : pct >= 25 ? '#f97316' : '#f87171';
     var remaining = Math.max(0, g.target - g.current);
-    var deadlineText = g.deadline ? ' · Due ' + new Date(g.deadline).toLocaleDateString('en', { month:'short', day:'numeric', year:'numeric' }) : '';
-    return '<div class="kpi-card" style="padding:20px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
-        '<div><div style="font-size:14px;font-weight:600;">' + g.name + '</div><div style="font-size:11px;color:var(--text-dim);">' + fmt(g.current) + ' of ' + fmt(g.target) + deadlineText + '</div></div>' +
-        '<div style="display:flex;align-items:center;gap:6px;">' +
-          '<span class="mono" style="font-size:18px;font-weight:700;color:' + barColor + ';">' + pct + '%</span>' +
-          '<button class="icon-btn edit" onclick="openGoalModal(\'' + g.id + '\')" style="font-size:11px;">✎</button>' +
-          '<button class="icon-btn del" onclick="deleteGoal(\'' + g.id + '\')" style="font-size:11px;">✕</button>' +
+
+    // ── Time countdown ──────────────────────────────────
+    var deadlineText = '';
+    var pacingHTML = '';
+    if (g.deadline) {
+      var dl = new Date(g.deadline);
+      var diffMs = dl - now;
+      var totalDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      var totalMonths = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24 * 30.44)));
+      var countdownStr = totalMonths > 0
+        ? totalMonths + ' month' + (totalMonths !== 1 ? 's' : '') + ' left'
+        : totalDays > 0
+          ? totalDays + ' day' + (totalDays !== 1 ? 's' : '') + ' left'
+          : 'Overdue';
+      deadlineText = ' · Due ' + dl.toLocaleDateString('en', { month:'short', day:'numeric', year:'numeric' }) + ' <span style="color:var(--text-muted);">· ' + countdownStr + '</span>';
+
+      // ── Pacing insight ──────────────────────────────────
+      if (remaining > 0 && totalMonths > 0) {
+        var monthlyPace = Math.round(remaining / totalMonths);
+        pacingHTML = '<div class="goal-pacing"><i class="fas fa-gauge-high"></i> Target Pace: Save ' + fmtAmt(monthlyPace) + '/month to stay on track.</div>';
+      } else if (remaining > 0 && totalDays > 0) {
+        var dailyPace = Math.round(remaining / totalDays);
+        pacingHTML = '<div class="goal-pacing"><i class="fas fa-gauge-high"></i> Target Pace: Save ' + fmtAmt(dailyPace) + '/day to stay on track.</div>';
+      }
+    }
+
+    // ── Emoji badge ──────────────────────────────────────
+    var emoji = g.emoji || '🎯';
+
+    return '<div class="kpi-card goal-card">' +
+      // Emoji badge + actions (top-right cluster)
+      '<div class="goal-card-header">' +
+        '<span class="goal-badge">' + emoji + '</span>' +
+        '<div class="goal-card-actions">' +
+          '<span class="mono goal-pct" style="color:' + barColor + ';">' + pct + '%</span>' +
+          '<button class="icon-btn edit" onclick="openGoalModal(\'' + g.id + '\')"><i class="fas fa-pen-to-square"></i></button>' +
+          '<button class="icon-btn del" onclick="deleteGoal(\'' + g.id + '\')"><i class="fas fa-trash"></i></button>' +
         '</div>' +
       '</div>' +
-      '<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;">' +
-        '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;transition:width .6s ease;"></div>' +
+      // Title + amounts
+      '<div class="goal-card-body">' +
+        '<div class="goal-card-name">' + g.name + '</div>' +
+        '<div class="goal-card-amounts">' + fmt(g.current) + ' of ' + fmt(g.target) + deadlineText + '</div>' +
       '</div>' +
-      (remaining > 0 ? '<div style="font-size:10px;color:var(--text-muted);margin-top:6px;">' + fmt(remaining) + ' remaining to reach goal</div>' : '<div style="font-size:10px;color:#34d399;margin-top:6px;">🎉 Goal reached!</div>') +
+      // Progress bar
+      '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%;background:' + barColor + ';"></div></div>' +
+      // Remaining + pacing
+      '<div class="goal-card-footer">' +
+        (remaining > 0
+          ? '<div class="goal-remaining">' + fmt(remaining) + ' remaining to reach goal</div>'
+          : '<div class="goal-remaining" style="color:#34d399;"><i class="fas fa-circle-check"></i> Goal reached!</div>') +
+        pacingHTML +
+      '</div>' +
     '</div>';
   }).join('');
 }
 
 // ══ AUDIT LOG ══════════════════════════════════════════════════════
-var _lastLoginAudit = 0;
 async function logAudit(action, entityType, entityName, details) {
   if (!isGrowth()) return;
-  // Debounce login audit: only log once per 30 minutes
+  // Debounce login audit: only log once per 30 minutes (persists across page loads)
   if (action === 'login') {
-    if (Date.now() - _lastLoginAudit < 30 * 60 * 1000) return;
-    _lastLoginAudit = Date.now();
+    var last = parseInt(localStorage.getItem('kv-last-login-audit') || '0');
+    if (Date.now() - last < 30 * 60 * 1000) return;
+    localStorage.setItem('kv-last-login-audit', Date.now().toString());
   }
   try {
     await sb.from('audit_log').insert({ user_id: currentUser.id, action: action, entity_type: entityType, entity_name: entityName, details: details || null });
