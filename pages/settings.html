@@ -1417,13 +1417,26 @@ async function nuclearOption() {
     await sb.from('audit_log').delete().eq('user_id', currentUser.id);
     await sb.from('subscriptions').delete().eq('user_id', currentUser.id);
     // 2. Delete the auth user via Edge Function (service_role)
+    var authDeleted = false;
     try {
-      await fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/delete-account', {
+      var resp = await fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/delete-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: currentUser.id }),
       });
-    } catch(e) { console.warn('Auth delete error (non-fatal):', e.message); }
+      var result = await resp.json();
+      if (result.deleted) {
+        authDeleted = true;
+        console.log('[Nuclear] Auth user deleted');
+      } else {
+        console.error('[Nuclear] Auth delete failed:', result.error);
+      }
+    } catch(e) {
+      console.error('[Nuclear] Auth delete error:', e.message);
+    }
+    if (!authDeleted) {
+      toast('Account deleted from database, but auth removal may have failed. Contact kenovault@gmail.com if you cannot re-register.', 'info');
+    }
     // 3. Clear local state and sign out
     localStorage.clear();
     await sb.auth.signOut();

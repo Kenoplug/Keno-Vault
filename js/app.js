@@ -2394,8 +2394,14 @@ async function renderGoals() {
 }
 
 // ══ AUDIT LOG ══════════════════════════════════════════════════════
+var _lastLoginAudit = 0;
 async function logAudit(action, entityType, entityName, details) {
   if (!isGrowth()) return;
+  // Debounce login audit: only log once per 30 minutes
+  if (action === 'login') {
+    if (Date.now() - _lastLoginAudit < 30 * 60 * 1000) return;
+    _lastLoginAudit = Date.now();
+  }
   try {
     await sb.from('audit_log').insert({ user_id: currentUser.id, action: action, entity_type: entityType, entity_name: entityName, details: details || null });
   } catch(e) { /* silent */ }
