@@ -86,7 +86,7 @@ function toNativeAmount(amount) {
 }
 function updateCurrencyLabels() {
   var sym = curSym();
-  var labels = { lblEValue: 'Value ('+sym+')', lblESalvage: 'Salvage Value ('+sym+')', lblFValue: 'Current Value ('+sym+')', lblFSalvage: 'Salvage Value ('+sym+')' };
+  var labels = { lblEValue: 'Value ('+sym+')', lblESalvage: 'Salvage Value ('+sym+')', lblEPrincipal: 'Principal ('+sym+')', lblFValue: 'Current Value ('+sym+')', lblFSalvage: 'Salvage Value ('+sym+')', lblFPrincipal: 'Principal ('+sym+')' };
   Object.keys(labels).forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.textContent = labels[id];
@@ -1225,35 +1225,132 @@ function rerenderCharts() {
   donutChart = barChart = historyChart = fireChart = debtChart = investChart2 = null;
   renderAll();
   // Re-run active gated page renders
+  if (document.getElementById('page-investments')?.classList.contains('active')) renderInvestmentPage();
   if (document.getElementById('page-debt')?.classList.contains('active')) runDebt();
   if (document.getElementById('page-fire')?.classList.contains('active')) runFire();
 }
 
 // ══ INVESTMENTS PAGE ══════════════════════════════════════════════
+var _investActivePill = 'all'; // 'all' or asset index
+
 function renderInvestmentPage() {
   const inv = assets.filter(a => a.cat === 'investment');
   const ctx = document.getElementById('investChart2');
   const emp = document.getElementById('investEmpty');
+  const isMobile = window.innerWidth < 768;
   if (!ctx) return;
-  if (!inv.length) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (investChart2) { investChart2.destroy(); investChart2 = null; } return; }
+
+  if (!inv.length) {
+    ctx.style.display = 'none';
+    if (emp) emp.style.display = '';
+    if (investChart2) { investChart2.destroy(); investChart2 = null; }
+    document.getElementById('investPills').innerHTML = '';
+    document.getElementById('investTableBody').innerHTML = '<tr><td colspan="8"><div class="empty">No investments logged</div></td></tr>';
+    document.getElementById('investCards').innerHTML = '<div class="empty">No investments logged</div>';
+    return;
+  }
+
   ctx.style.display = ''; if (emp) emp.style.display = 'none';
+
+  // ── Build chart data ──────────────────────────────────
+  var chartLabels, chartValues, chartFV, chartInt;
+  var heading = document.getElementById('investChartHeading');
+
+  var totalVal = inv.reduce((s, a) => s + a.value, 0);
+  var totalFV  = inv.reduce((s, a) => s + (a.fv || 0), 0);
+  var totalInt = inv.reduce((s, a) => s + (a.interest || 0), 0);
+
+  if (isMobile && _investActivePill === 'all') {
+    // Aggregated view
+    chartLabels = ['Total'];
+    chartValues = [totalVal];
+    chartFV     = [totalFV];
+    chartInt    = [totalInt];
+    if (heading) heading.textContent = 'Aggregated: Current vs FV vs Interest';
+  } else if (isMobile && _investActivePill !== 'all') {
+    // Single asset view
+    var idx = parseInt(_investActivePill);
+    var a = inv[idx];
+    var name = a.name.length > 14 ? a.name.slice(0, 13) + '…' : a.name;
+    chartLabels = [name];
+    chartValues = [a.value];
+    chartFV     = [a.fv || 0];
+    chartInt    = [a.interest || 0];
+    if (heading) heading.textContent = a.name;
+  } else {
+    // Desktop — all assets side by side
+    chartLabels = inv.map(a => a.name.length > 10 ? a.name.slice(0, 9) + '…' : a.name);
+    chartValues = inv.map(a => a.value);
+    chartFV     = inv.map(a => a.fv || 0);
+    chartInt    = inv.map(a => a.interest || 0);
+    if (heading) heading.textContent = 'Current vs Future Value vs Interest';
+  }
+
   const cc = getCC();
-  const data = { labels: inv.map(a => a.name.length > 14 ? a.name.slice(0, 13) + '…' : a.name), datasets: [{ label: 'Current', data: inv.map(a => a.value), backgroundColor: 'rgba(249,115,22,0.65)', borderColor: '#f97316', borderWidth: 2, borderRadius: 8 }, { label: 'FV', data: inv.map(a => a.fv || 0), backgroundColor: 'rgba(244,197,83,0.65)', borderColor: '#f4c553', borderWidth: 2, borderRadius: 8 }, { label: 'Interest', data: inv.map(a => a.interest || 0), backgroundColor: 'rgba(52,211,153,0.65)', borderColor: '#34d399', borderWidth: 2, borderRadius: 8 }] };
+  const data = {
+    labels: chartLabels,
+    datasets: [
+      { label: 'Current', data: chartValues, backgroundColor: 'rgba(249,115,22,0.65)', borderColor: '#f97316', borderWidth: 2, borderRadius: 8, maxBarThickness: 48 },
+      { label: 'FV', data: chartFV, backgroundColor: 'rgba(244,197,83,0.65)', borderColor: '#f4c553', borderWidth: 2, borderRadius: 8, maxBarThickness: 48 },
+      { label: 'Interest', data: chartInt, backgroundColor: 'rgba(52,211,153,0.65)', borderColor: '#34d399', borderWidth: 2, borderRadius: 8, maxBarThickness: 48 }
+    ]
+  };
   if (investChart2) { investChart2.data = data; investChart2.update(); }
-  else investChart2 = new Chart(ctx, { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'rectRounded', pointStyleWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } } }, scales: { x: { grid: { color: cc.grid } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v) } } } } });
-  const tbody = document.getElementById('investTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = inv.length ? inv.map(a => `
-    <tr>
-      <td style="font-weight:500;">${a.name}</td>
-      <td class="mono sensitive">${a.principal ? fmt(a.principal) : '—'}</td>
-      <td class="mono">${a.rate ? a.rate + '%' : '—'}</td>
-      <td class="mono">${a.years ? a.years + 'yr' : '—'}</td>
-      <td class="mono sensitive">${fmt(a.value)}</td>
-      <td class="mono sensitive" style="color:var(--gold);">${a.fv > 0 ? fmt(a.fv) : '—'}</td>
-      <td>${a.interest > 0 ? `<span class="gain-pill">+${fmt(a.interest)}</span>` : '—'}</td>
-      <td class="mono">${a.principal && a.fv ? (a.fv / a.principal).toFixed(2) + 'x' : '—'}</td>
-    </tr>`).join('') : '<tr><td colspan="8"><div class="empty">No investments logged</div></td></tr>';
+  else investChart2 = new Chart(ctx, { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'rectRounded', pointStyleWidth: 10, font: { size: 11 } } }, tooltip: { ...cc.tt, callbacks: { label: c => ' ' + c.dataset.label + ': ' + fmt(c.parsed.y) } } }, scales: { x: { grid: { color: cc.grid }, ticks: { font: { size: 10 } } }, y: { grid: { color: cc.grid }, ticks: { callback: v => fmtShort(v) } } } } });
+
+  // ── Pill tabs (mobile) ────────────────────────────────
+  var pillsEl = document.getElementById('investPills');
+  if (pillsEl) {
+    pillsEl.style.display = isMobile ? 'flex' : 'none';
+    var pillsHTML = '<button class="invest-pill' + (_investActivePill === 'all' ? ' active' : '') + '" data-idx="all">All Assets</button>';
+    inv.forEach(function(a, i) {
+      var label = a.name.length > 10 ? a.name.slice(0, 9) + '…' : a.name;
+      pillsHTML += '<button class="invest-pill' + (_investActivePill === '' + i ? ' active' : '') + '" data-idx="' + i + '">' + label + '</button>';
+    });
+    pillsEl.innerHTML = pillsHTML;
+    // Wire click handlers
+    pillsEl.querySelectorAll('.invest-pill').forEach(function(btn) {
+      btn.onclick = function() {
+        _investActivePill = btn.getAttribute('data-idx');
+        renderInvestmentPage();
+      };
+    });
+  }
+
+  // ── Desktop Table ─────────────────────────────────────
+  var tbody = document.getElementById('investTableBody');
+  if (tbody) {
+    tbody.innerHTML = inv.map(a => '<tr>' +
+      '<td style="font-weight:500;">' + a.name + '</td>' +
+      '<td class="mono sensitive">' + (a.principal ? fmt(a.principal) : '—') + '</td>' +
+      '<td class="mono">' + (a.rate ? a.rate + '%' : '—') + '</td>' +
+      '<td class="mono">' + (a.years ? a.years + 'yr' : '—') + '</td>' +
+      '<td class="mono sensitive">' + fmt(a.value) + '</td>' +
+      '<td class="mono sensitive" style="color:var(--gold);">' + (a.fv > 0 ? fmt(a.fv) : '—') + '</td>' +
+      '<td>' + (a.interest > 0 ? '<span class="gain-pill">+' + fmt(a.interest) + '</span>' : '—') + '</td>' +
+      '<td class="mono">' + (a.principal && a.fv ? (a.fv / a.principal).toFixed(2) + 'x' : '—') + '</td>' +
+    '</tr>').join('');
+  }
+
+  // ── Mobile Cards ──────────────────────────────────────
+  var cardsEl = document.getElementById('investCards');
+  if (cardsEl) {
+    cardsEl.innerHTML = inv.map(function(a) {
+      return '<div class="invest-card">' +
+        '<div class="invest-card-top">' +
+          '<span class="invest-card-name">' + a.name + '</span>' +
+          '<span class="invest-card-rate">' + (a.rate ? a.rate + '%' : '—') + '</span>' +
+        '</div>' +
+        '<div class="invest-card-grid">' +
+          '<div class="invest-card-item"><span class="invest-card-label">Principal</span><span class="invest-card-val">' + (a.principal ? fmt(a.principal) : '—') + '</span></div>' +
+          '<div class="invest-card-item"><span class="invest-card-label">Term</span><span class="invest-card-val mono">' + (a.years ? a.years + 'yr' : '—') + '</span></div>' +
+          '<div class="invest-card-item"><span class="invest-card-label">Current Value</span><span class="invest-card-val">' + fmt(a.value) + '</span></div>' +
+          '<div class="invest-card-item"><span class="invest-card-label">Projected FV</span><span class="invest-card-val" style="color:var(--gold);">' + (a.fv > 0 ? fmt(a.fv) : '—') + '</span></div>' +
+        '</div>' +
+        (a.interest > 0 ? '<div class="invest-card-gain"><span class="gain-pill">+' + fmt(a.interest) + ' interest</span></div>' : '') +
+      '</div>';
+    }).join('');
+  }
 }
 
 // ══ PRO ENGINES ═══════════════════════════════════════════════════
@@ -2521,3 +2618,16 @@ setInterval(() => {
     setTimeout(function() { initAllSliderTracks(); }, 80);
   };
 })();
+
+// Step 7 — Re-render investments page on resize (mobile/desktop switch)
+var _investResizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(_investResizeTimer);
+  _investResizeTimer = setTimeout(function() {
+    var invPage = document.getElementById('page-investments');
+    if (invPage && invPage.classList.contains('active')) {
+      _investActivePill = 'all'; // reset to aggregated when crossing breakpoint
+      renderInvestmentPage();
+    }
+  }, 250);
+});

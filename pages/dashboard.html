@@ -136,7 +136,7 @@
     <div id="eInvestWrap" style="display:none;" class="invest-panel-inner">
       <div class="panel-label">Investment Details</div>
       <div class="form-grid-3">
-        <div class="field"><label>Principal</label><input type="number" id="ePrincipal" min="0" oninput="calcEditProj()"/></div>
+        <div class="field"><label id="lblEPrincipal">Principal ($)</label><input type="number" id="ePrincipal" min="0" oninput="calcEditProj()"/></div>
         <div class="field"><label>Rate (%)</label><input type="number" id="eRate" min="0" step="0.1" oninput="calcEditProj()"/></div>
         <div class="field"><label>Years</label><input type="number" id="eYears" min="0" step="1" oninput="calcEditProj()"/></div>
       </div>
@@ -432,7 +432,7 @@
             <div class="invest-panel-inner">
               <div class="panel-label">Compound Interest Calculator</div>
               <div class="form-grid-3" style="margin-bottom:10px;">
-                <div class="field"><label>Principal ($)</label><input type="number" id="fPrincipal" placeholder="Invested" min="0" oninput="calcPreview()"/></div>
+                <div class="field"><label id="lblFPrincipal">Principal ($)</label><input type="number" id="fPrincipal" placeholder="Invested" min="0" oninput="calcPreview()"/></div>
                 <div class="field"><label>Rate (%)</label><input type="number" id="fRate" placeholder="18" min="0" step="0.1" oninput="calcPreview()"/></div>
                 <div class="field"><label>Years</label><input type="number" id="fYears" placeholder="3" min="0" step="1" oninput="calcPreview()"/></div>
               </div>
@@ -502,19 +502,23 @@
       <div class="page" id="page-investments">
         <div class="greeting"><div><h2 class="serif greeting-title">Investment <span class="accent">Overview</span></h2><p class="text-dim" style="font-size:13px;">Your investment positions and projections.</p></div></div>
         <div class="chart-card wide" style="margin-bottom:20px;">
-          <div class="chart-title">Projection</div><div class="chart-heading">Current vs Future Value vs Interest</div>
+          <div class="chart-title">Projection</div><div class="chart-heading" id="investChartHeading">Current vs Future Value vs Interest</div>
+          <!-- Pill tabs — mobile only -->
+          <div class="invest-pills" id="investPills" style="display:none;"></div>
           <div style="height:280px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:12px;">
             <canvas id="investChart2"></canvas>
             <div id="investEmpty" class="empty" style="position:absolute;"><div class="empty-icon"><i class="fas fa-chart-pie"></i></div>No investments logged</div>
           </div>
         </div>
-        <div class="ledger-card">
+        <div class="ledger-card invest-table-wrap">
           <div class="ledger-header"><div class="serif ledger-title">Investment Positions</div></div>
           <div style="overflow-x:auto;"><table>
             <thead><tr><th>Asset</th><th>Principal</th><th>Rate</th><th>Term</th><th>Current Value</th><th>Projected FV</th><th>Interest Gain</th><th>Multiplier</th></tr></thead>
             <tbody id="investTableBody"><tr><td colspan="8"><div class="empty"><div class="empty-icon"><i class="fas fa-arrow-trend-up"></i></div>No investments logged</div></td></tr></tbody>
           </table></div>
         </div>
+        <!-- Cards — mobile only -->
+        <div class="invest-cards" id="investCards"></div>
       </div>
 
       <!-- ═══════ FIRE PAGE ═══════ -->

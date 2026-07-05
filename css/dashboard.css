@@ -1095,3 +1095,99 @@ canvas {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ══ INVESTMENTS — Mobile Cards + Pills ════════════════════════ */
+.invest-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+.invest-pill {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.invest-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.invest-pill:hover:not(.active) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* ── Mobile Cards ─────────────────────────────────── */
+.invest-cards { display: none; flex-direction: column; gap: 10px; }
+.invest-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 6px var(--shadow);
+}
+.invest-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.invest-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.invest-card-rate {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(249,115,22,0.1);
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+.invest-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.invest-card-item {
+  display: flex;
+  flex-direction: column;
+}
+.invest-card-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+.invest-card-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+}
+.invest-card-gain {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive toggles ───────────────────────────── */
+@media (max-width: 640px) {
+  .invest-table-wrap { display: none !important; }
+  .invest-cards { display: flex; }
+}
+@media (min-width: 641px) {
+  .invest-cards { display: none !important; }
+}
