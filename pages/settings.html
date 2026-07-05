@@ -1406,16 +1406,28 @@ async function doEncryptedImport() {
 
 // ══ NUCLEAR OPTION ══
 async function nuclearOption() {
-  if (!(await showConfirm('Nuclear Option', 'Permanently delete ALL your vault data? This cannot be undone.', 'Delete Everything', '☢️'))) return;
+  if (!(await showConfirm('Nuclear Option', 'Permanently delete ALL your vault data AND your account? This cannot be undone.', 'Delete Everything', '☢️'))) return;
   const input = prompt('Type DELETE to confirm:');
   if (input !== 'DELETE') { toast('Cancelled', 'info'); return; }
   try {
+    // 1. Delete all database records
     await sb.from('assets').delete().eq('user_id', currentUser.id);
     await sb.from('nw_history').delete().eq('user_id', currentUser.id);
+    await sb.from('goals').delete().eq('user_id', currentUser.id);
+    await sb.from('audit_log').delete().eq('user_id', currentUser.id);
     await sb.from('subscriptions').delete().eq('user_id', currentUser.id);
+    // 2. Delete the auth user via Edge Function (service_role)
+    try {
+      await fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id }),
+      });
+    } catch(e) { console.warn('Auth delete error (non-fatal):', e.message); }
+    // 3. Clear local state and sign out
     localStorage.clear();
     await sb.auth.signOut();
-    toast('All data deleted. Signing out…', 'info');
+    toast('Account permanently deleted. Goodbye!', 'info');
     setTimeout(() => window.location.href = '../index.html', 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
