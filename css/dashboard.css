@@ -1397,3 +1397,17 @@ canvas {
 @media (min-width: 1024px) {
   .score-micro { display: block; }
 }
+
+/* ══ iOS Mobile Input Zoom Fix ══════════════════════════════════ */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
