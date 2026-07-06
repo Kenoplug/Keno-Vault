@@ -267,7 +267,7 @@ const BADGE_DARK = {
   liability:  'background:rgba(248,113,113,0.15);color:#fca5a5;',
 };
 const BADGE_LIGHT = {
-  cash:       'background:rgba(249,115,22,0.1);color:#ea580c;',
+  cash:       'background:rgba(79,142,247,0.15);color:#2563eb;',
   physical:   'background:rgba(22,163,74,0.1);color:#16a34a;',
   investment: 'background:rgba(217,119,6,0.1);color:#d97706;',
   liability:  'background:rgba(220,38,38,0.1);color:#dc2626;',
@@ -1092,12 +1092,12 @@ function renderKPIs() {
   });
   const nw = ta - tl;
   const nwEl = document.getElementById('kpiNetWorth');
-  if (nwEl) { nwEl.textContent = fmtSigned(nw); nwEl.style.color = nw < 0 ? 'var(--red)' : 'var(--accent)'; }
+  if (nwEl) { nwEl.innerHTML = '<span class="sensitive">' + fmtSigned(nw) + '</span>'; nwEl.style.color = nw < 0 ? 'var(--red)' : 'var(--accent)'; }
   const subEl = document.getElementById('kpiNetSub');
-  if (subEl) { subEl.textContent = `Assets ${fmt(ta)} — Liabilities ${fmt(tl)}`; subEl.className = 'kpi-change ' + (nw >= 0 ? 'up' : 'down'); }
-  const physEl = document.getElementById('kpiPhysical'); if (physEl) physEl.textContent = fmt(tp);
-  const invEl  = document.getElementById('kpiInvest');   if (invEl)  invEl.textContent  = fmt(ti);
-  const intEl  = document.getElementById('kpiInterest'); if (intEl)  intEl.textContent  = fmt(tint);
+  if (subEl) { subEl.innerHTML = 'Assets <span class="sensitive">' + fmt(ta) + '</span> — Liabilities <span class="sensitive">' + fmt(tl) + '</span>'; subEl.className = 'kpi-change ' + (nw >= 0 ? 'up' : 'down'); }
+  const physEl = document.getElementById('kpiPhysical'); if (physEl) physEl.innerHTML = '<span class="sensitive">' + fmt(tp) + '</span>';
+  const invEl  = document.getElementById('kpiInvest');   if (invEl)  invEl.innerHTML  = '<span class="sensitive">' + fmt(ti) + '</span>';
+  const intEl  = document.getElementById('kpiInterest'); if (intEl)  intEl.innerHTML  = '<span class="sensitive">' + fmt(tint) + '</span>';
 
   if (isGrowth()) {
     var s = Calculators.netWorthScore(assets);
@@ -1129,7 +1129,7 @@ function renderTable() {
     const isLiab = a.cat === 'liability';
     const depStr = a.depreciationType ? `<span style="font-size:10px;color:var(--text-muted);">[${a.depreciationType}]</span>` : '';
     const proj   = a.fv > 0 ? `<span class="mono sensitive" style="color:var(--gold);">${fmt(a.fv)}</span>` : '<span style="color:var(--muted);">—</span>';
-    const intc   = a.interest > 0 ? `<span class="gain-pill">+${fmt(a.interest)}</span>` : '<span style="color:var(--muted);">—</span>';
+    const intc   = a.interest > 0 ? `<span class="gain-pill sensitive">+${fmt(a.interest)}</span>` : '<span style="color:var(--muted);">—</span>';
     const ratec  = a.rate && a.years ? `<span class="mono" style="color:var(--text-dim);font-size:11px;">${a.rate}%/${a.years}yr</span>` : '<span style="color:var(--muted);">—</span>';
     return `<tr class="animate-in">
       <td style="font-weight:500;">${a.name} ${depStr}</td>
@@ -1187,8 +1187,8 @@ function renderDonut() {
   if (!total) { ctx.style.display = 'none'; if (emp) emp.style.display = ''; if (donutChart) { donutChart.destroy(); donutChart = null; } return; }
   ctx.style.display = ''; if (emp) emp.style.display = 'none';
   const isL = getTheme() === 'light';
-  const bgs = isL ? ['rgba(249,115,22,0.8)', 'rgba(22,163,74,0.8)', 'rgba(217,119,6,0.8)', 'rgba(220,38,38,0.8)'] : ['rgba(79,142,247,0.85)', 'rgba(52,211,153,0.85)', 'rgba(244,197,83,0.85)', 'rgba(248,113,113,0.85)'];
-  const bds = isL ? ['#f97316', '#16a34a', '#d97706', '#dc2626'] : ['#4f8ef7', '#34d399', '#f4c553', '#f87171'];
+  const bgs = isL ? ['rgba(79,142,247,0.85)', 'rgba(22,163,74,0.8)', 'rgba(217,119,6,0.8)', 'rgba(220,38,38,0.8)'] : ['rgba(79,142,247,0.85)', 'rgba(52,211,153,0.85)', 'rgba(244,197,83,0.85)', 'rgba(248,113,113,0.85)'];
+  const bds = isL ? ['#4f8ef7', '#16a34a', '#d97706', '#dc2626'] : ['#4f8ef7', '#34d399', '#f4c553', '#f87171'];
   const cc = getCC(); Chart.defaults.color = cc.text;
   var data = { labels: ['Cash', 'Physical', 'Investments', 'Liabilities'], datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 0, hoverOffset: 4 }] };
   if (donutChart) { donutChart.data = data; donutChart.update(); return; }
@@ -1354,20 +1354,36 @@ function renderInvestmentPage() {
 }
 
 // ══ PRO ENGINES ═══════════════════════════════════════════════════
+var _fireSaveMul = 1;
+var _fireExpMul  = 1;
+
+function setFireSaveMul(mul, btn) {
+  _fireSaveMul = mul;
+  document.querySelectorAll('#fireSaveMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  runFire();
+}
+function setFireExpMul(mul, btn) {
+  _fireExpMul = mul;
+  document.querySelectorAll('#fireExpMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  runFire();
+}
+
 function runFire() {
   if (!isPro()) return;
   // Refresh slider displays — use display currency (no native conversion)
   var sSl = document.getElementById('fireSavings');
   var sSv = document.getElementById('savingsVal');
-  if (sSl && sSv) sSv.textContent = curSym() + Math.round(parseInt(sSl.value) || 500).toLocaleString();
+  if (sSl && sSv) sSv.textContent = curSym() + (Math.round(parseInt(sSl.value) || 500) * _fireSaveMul).toLocaleString();
   var eSl = document.getElementById('fireExpenses');
   var eSv = document.getElementById('expensesVal');
-  if (eSl && eSv) eSv.textContent = curSym() + Math.round(parseInt(eSl.value) || 30000).toLocaleString();
+  if (eSl && eSv) eSv.textContent = curSym() + (Math.round(parseInt(eSl.value) || 30000) * _fireExpMul).toLocaleString();
 
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
-  // Convert slider (display currency) values to native for simulation
-  var monthlySavings = Math.round(toStored(parseInt(document.getElementById('fireSavings').value) || 500));
-  var annualExpenses = Math.round(toStored(parseInt(document.getElementById('fireExpenses').value) || 30000));
+  // Convert slider (display currency) values to native for simulation — apply multipliers
+  var monthlySavings = Math.round(toStored((parseInt(document.getElementById('fireSavings').value) || 500) * _fireSaveMul));
+  var annualExpenses = Math.round(toStored((parseInt(document.getElementById('fireExpenses').value) || 30000) * _fireExpMul));
   var retirementAge = parseInt(document.getElementById('fireRetire').value) || 55;
   var inflationRate = parseInt(document.getElementById('fireInflation').value) || 18;
   var returnRate   = parseInt(document.getElementById('fireReturn').value) || 10;
@@ -1531,6 +1547,7 @@ function runFire() {
   ['fireAge','fireRetire','fireSavings','fireReturn','fireInflation','fireExpenses'].forEach(function(id) {
     var s = document.getElementById(id); if (s) fillSliderTrack(s);
   });
+
 }
 
 function runDebt() {

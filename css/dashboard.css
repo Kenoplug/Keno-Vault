@@ -796,6 +796,7 @@ tfoot td {
   color: var(--text-dim); margin-bottom: 6px;
 }
 .slider-val { color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.fire-mul-chips { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
 
 /* ══ Premium Slider System ══════════════════════════════════════════ */
 input[type=range] {

@@ -545,7 +545,14 @@
               </div>
               <div class="slider-group">
                 <label class="slider-label">Monthly Savings <span id="savingsVal" class="slider-val">$500</span></label>
-                <input type="range" id="fireSavings" min="0" max="1000000" step="500" value="500" oninput="fillSliderTrack(this);document.getElementById('savingsVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireSavings" min="0" max="100000" step="100" value="500" oninput="fillSliderTrack(this);document.getElementById('savingsVal').textContent=curSym()+(Number(this.value)*_fireSaveMul).toLocaleString();runFire()">
+                <div class="fire-mul-chips" id="fireSaveMulChips">
+                  <button class="toggle-chip active" onclick="setFireSaveMul(1,this)">×1</button>
+                  <button class="toggle-chip" onclick="setFireSaveMul(10,this)">×10</button>
+                  <button class="toggle-chip" onclick="setFireSaveMul(100,this)">×100</button>
+                  <button class="toggle-chip" onclick="setFireSaveMul(1000,this)">×1k</button>
+                  <button class="toggle-chip" onclick="setFireSaveMul(10000,this)">×10k</button>
+                </div>
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Return % <span id="returnVal" class="slider-val">10%</span></label>
@@ -557,7 +564,15 @@
               </div>
               <div class="slider-group">
                 <label class="slider-label">Annual Expenses <span id="expensesVal" class="slider-val">$30,000</span></label>
-                <input type="range" id="fireExpenses" min="0" max="50000000" step="10000" value="30000" oninput="fillSliderTrack(this);document.getElementById('expensesVal').textContent=curSym()+Number(this.value).toLocaleString();runFire()">
+                <input type="range" id="fireExpenses" min="0" max="100000" step="100" value="30000" oninput="fillSliderTrack(this);document.getElementById('expensesVal').textContent=curSym()+(Number(this.value)*_fireExpMul).toLocaleString();runFire()">
+                <div class="fire-mul-chips" id="fireExpMulChips">
+                  <button class="toggle-chip active" onclick="setFireExpMul(1,this)">×1</button>
+                  <button class="toggle-chip" onclick="setFireExpMul(10,this)">×10</button>
+                  <button class="toggle-chip" onclick="setFireExpMul(100,this)">×100</button>
+                  <button class="toggle-chip" onclick="setFireExpMul(1000,this)">×1k</button>
+                  <button class="toggle-chip" onclick="setFireExpMul(10000,this)">×10k</button>
+                  <button class="toggle-chip" onclick="setFireExpMul(100000,this)">×100k</button>
+                </div>
               </div>
             </div>
             <div>
