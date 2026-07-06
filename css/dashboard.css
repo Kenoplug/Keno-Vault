@@ -585,12 +585,14 @@ body {
 
 /* ══ PANELS ══════════════════════════════════════════════════════ */
 .toggle-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 12px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 36px; min-height: 34px;
+  padding: 7px 14px;
   background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 20px; font-size: 12px; font-weight: 500;
+  border-radius: 20px; font-size: 13px; font-weight: 500;
   cursor: pointer; user-select: none; color: var(--text-dim);
   transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
 }
 .toggle-chip.active {
   background: var(--accent-dim);
@@ -796,7 +798,7 @@ tfoot td {
   color: var(--text-dim); margin-bottom: 6px;
 }
 .slider-val { color: var(--text); font-family: 'JetBrains Mono', monospace; }
-.fire-mul-chips { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+.fire-mul-chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 
 /* ══ Premium Slider System ══════════════════════════════════════════ */
 input[type=range] {
