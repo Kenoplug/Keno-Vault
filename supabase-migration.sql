@@ -175,6 +175,9 @@ alter table assets add column if not exists custom_cat text;
 -- ── GOAL EMOJI (Growth tier) ─────────────────────────────────
 alter table goals add column if not exists emoji text default '🎯';
 
+-- ── GOAL FUNDING SOURCE (Growth tier) ─────────────────────────
+alter table goals add column if not exists funding_source text default 'total_nw';
+
 -- ── NOTIFICATION PREFERENCES ─────────────────────────────────
 create table if not exists notification_prefs (
   id               uuid default gen_random_uuid() primary key,

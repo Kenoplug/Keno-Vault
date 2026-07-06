@@ -1887,7 +1887,7 @@ function runOptimizer() {
 function buildStatCard(label, value, color, sub) {
   return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;">' +
     '<div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">' + label + '</div>' +
-    '<div style="font-size:18px;font-weight:700;color:' + color + ';margin-bottom:3px;">' + value + '</div>' +
+    '<div class="sensitive" style="font-size:18px;font-weight:700;color:' + color + ';margin-bottom:3px;">' + value + '</div>' +
     (sub ? '<div style="font-size:11px;color:var(--text-muted);">' + sub + '</div>' : '') +
   '</div>';
 }
@@ -1899,7 +1899,7 @@ function buildAllocBar(label, pct, color, amount, ideal) {
       '<span style="font-weight:500;">' + label + '</span>' +
       '<span style="color:var(--text-dim);">' +
         '<span style="font-weight:700;color:' + color + ';">' + pct + '%</span>' +
-        ' · ' + fmt(amount) +
+        ' · <span class="sensitive">' + fmt(amount) + '</span>' +
         ' <span style="font-size:10px;color:var(--text-muted);">(ideal ' + ideal + ')</span>' +
       '</span>' +
     '</div>' +
@@ -2087,7 +2087,7 @@ function renderScoreBreakdown(s) {
     },
     {
       label: 'Net Worth Position',
-      value: netPositive ? 'Positive (' + fmt(totalAssets - totalLiab) + ')' : 'Negative',
+      value: netPositive ? 'Positive (<span class="sensitive">' + fmt(totalAssets - totalLiab) + '</span>)' : 'Negative',
       target: 'Positive',
       pts: netPositive ? 10 : 0,
       maxPts: 10,
@@ -2313,7 +2313,7 @@ async function loadGoals() {
   if (!isGrowth()) return;
   try {
     var { data } = await sb.from('goals').select('*').order('created_at', { ascending: true });
-    _goals = (data || []).map(function(g) { return { id: g.id, name: g.name, target: parseFloat(g.target_amount)||0, current: parseFloat(g.current_amount)||0, deadline: g.deadline, emoji: g.emoji, createdAt: g.created_at }; });
+    _goals = (data || []).map(function(g) { return { id: g.id, name: g.name, target: parseFloat(g.target_amount)||0, current: parseFloat(g.current_amount)||0, deadline: g.deadline, emoji: g.emoji, fundingSource: g.funding_source || 'total_nw', createdAt: g.created_at }; });
   } catch(e) { console.warn('[Goals] Load error:', e.message); }
 }
 
@@ -2323,11 +2323,12 @@ async function saveGoal() {
   var target = parseFloat(document.getElementById('gTarget').value) || 0;
   var deadline = document.getElementById('gDeadline').value || null;
   var emoji  = (document.getElementById('gEmoji').value || '').trim() || '🎯';
+  var fundingSource = document.getElementById('gFundingSource').value || 'total_nw';
   if (!name || target <= 0) { UI.toast('Enter a name and target amount', 'error'); return; }
   try {
     var payload = { name: name, target_amount: target, deadline: deadline || null };
-    // Only include emoji if the column exists (won't break on pre-migration DB)
     payload.emoji = emoji;
+    payload.funding_source = fundingSource;
     if (editId) {
       payload.updated_at = new Date().toISOString();
       await sb.from('goals').update(payload).eq('id', editId);
@@ -2345,9 +2346,11 @@ async function saveGoal() {
     renderGoals();
   } catch(e) {
     // If emoji column doesn't exist yet, retry without it
-    if (e.message && e.message.indexOf('emoji') > -1) {
+    if (e.message && (e.message.indexOf('emoji') > -1 || e.message.indexOf('funding_source') > -1)) {
       try {
         var fallback = { name: name, target_amount: target, deadline: deadline || null };
+        // Only include columns that exist
+        if (e.message.indexOf('funding_source') === -1) fallback.funding_source = fundingSource;
         if (editId) {
           fallback.updated_at = new Date().toISOString();
           await sb.from('goals').update(fallback).eq('id', editId);
@@ -2385,6 +2388,7 @@ function openGoalModal(id) {
   document.getElementById('gTarget').value = '';
   document.getElementById('gDeadline').value = '';
   document.getElementById('gEmoji').value = '';
+  document.getElementById('gFundingSource').value = 'total_nw';
   if (id) {
     var g = _goals.find(function(x) { return x.id === id; });
     if (g) {
@@ -2394,15 +2398,17 @@ function openGoalModal(id) {
       document.getElementById('gTarget').value = g.target;
       document.getElementById('gDeadline').value = g.deadline ? g.deadline.slice(0,10) : '';
       document.getElementById('gEmoji').value = g.emoji || '';
+      document.getElementById('gFundingSource').value = g.fundingSource || 'total_nw';
     }
   }
   openModal('goalModal');
 }
 
-function quickStartGoal(title, target, emoji) {
+function quickStartGoal(title, target, emoji, fundingSource) {
   document.getElementById('gName').value = title;
   document.getElementById('gTarget').value = target;
   document.getElementById('gEmoji').value = emoji;
+  document.getElementById('gFundingSource').value = fundingSource || 'total_nw';
   document.getElementById('gDeadline').value = '';
   document.getElementById('gEditId').value = '';
   document.getElementById('goalModalTitle').textContent = 'New Goal';
@@ -2422,14 +2428,18 @@ async function renderGoals() {
   }
   listEl.style.display = 'flex';
   if (emptyState) emptyState.style.display = 'none';
-  // Auto-update current from latest net worth
-  var nw = assets.filter(function(a){return a.cat!=='liability';}).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+  // Compute both funding sources
+  var totalNw = assets.filter(function(a){return a.cat!=='liability';}).reduce(function(s,a){return s+a.value;},0) - assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+  var liquidCash = assets.filter(function(a){return a.cat==='cash';}).reduce(function(s,a){return s+a.value;},0);
   var now = new Date();
 
   listEl.innerHTML = _goals.map(function(g) {
-    var pct = g.target > 0 ? Math.min(Math.round((g.current / g.target) * 100), 100) : 0;
+    // Use the appropriate funding source for current progress
+    var currentAmount = g.fundingSource === 'liquid_only' ? liquidCash : totalNw;
+    var pct = g.target > 0 ? Math.min(Math.round((currentAmount / g.target) * 100), 100) : 0;
     var barColor = pct >= 100 ? '#34d399' : pct >= 50 ? '#f4c553' : pct >= 25 ? '#f97316' : '#f87171';
-    var remaining = Math.max(0, g.target - g.current);
+    var remaining = Math.max(0, g.target - currentAmount);
+    var fundingLabel = g.fundingSource === 'liquid_only' ? 'Tracking: Liquid Cash' : 'Tracking: Net Worth';
 
     // ── Time countdown ──────────────────────────────────
     var deadlineText = '';
@@ -2449,10 +2459,10 @@ async function renderGoals() {
       // ── Pacing insight ──────────────────────────────────
       if (remaining > 0 && totalMonths > 0) {
         var monthlyPace = Math.round(remaining / totalMonths);
-        pacingHTML = '<div class="goal-pacing"><i class="fas fa-gauge-high"></i> Target Pace: Save ' + fmtAmt(monthlyPace) + '/month to stay on track.</div>';
+        pacingHTML = '<div class="goal-pacing"><i class="fas fa-gauge-high"></i> Target Pace: Save <span class="sensitive">' + fmtAmt(monthlyPace) + '</span>/month to stay on track.</div>';
       } else if (remaining > 0 && totalDays > 0) {
         var dailyPace = Math.round(remaining / totalDays);
-        pacingHTML = '<div class="goal-pacing"><i class="fas fa-gauge-high"></i> Target Pace: Save ' + fmtAmt(dailyPace) + '/day to stay on track.</div>';
+        pacingHTML = '<div class="goal-pacing"><i class="fas fa-gauge-high"></i> Target Pace: Save <span class="sensitive">' + fmtAmt(dailyPace) + '</span>/day to stay on track.</div>';
       }
     }
 
@@ -2472,16 +2482,17 @@ async function renderGoals() {
       // Title + amounts
       '<div class="goal-card-body">' +
         '<div class="goal-card-name">' + g.name + '</div>' +
-        '<div class="goal-card-amounts">' + fmt(g.current) + ' of ' + fmt(g.target) + deadlineText + '</div>' +
+        '<div class="goal-card-amounts"><span class="sensitive">' + fmt(currentAmount) + '</span> of <span class="sensitive">' + fmt(g.target) + '</span>' + deadlineText + '</div>' +
       '</div>' +
       // Progress bar
       '<div class="goal-bar-track"><div class="goal-bar-fill" style="width:' + pct + '%;background:' + barColor + ';"></div></div>' +
       // Remaining + pacing
       '<div class="goal-card-footer">' +
         (remaining > 0
-          ? '<div class="goal-remaining">' + fmt(remaining) + ' remaining to reach goal</div>'
+          ? '<div class="goal-remaining"><span class="sensitive">' + fmt(remaining) + '</span> remaining to reach goal</div>'
           : '<div class="goal-remaining" style="color:#34d399;"><i class="fas fa-circle-check"></i> Goal reached!</div>') +
         pacingHTML +
+        '<div class="goal-funding-source">' + fundingLabel + '</div>' +
       '</div>' +
     '</div>';
   }).join('');

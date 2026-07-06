@@ -1353,6 +1353,14 @@ canvas {
   line-height: 1.4;
 }
 
+.goal-funding-source {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
 /* ── Responsive: stack templates on mobile ───────────── */
 @media (max-width: 520px) {
   .empty-state-templates {
