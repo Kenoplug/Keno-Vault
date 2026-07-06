@@ -1358,13 +1358,24 @@ var _fireSaveMul = 1;
 var _fireExpMul  = 1;
 
 function setFireSaveMul(mul, btn) {
+  // Rescale slider so effective value stays constant
+  var oldMul = _fireSaveMul;
+  var slider = document.getElementById('fireSavings');
+  var oldEffective = (parseInt(slider.value) || 0) * oldMul;
   _fireSaveMul = mul;
+  slider.value = Math.round(oldEffective / mul);
+  fillSliderTrack(slider);
   document.querySelectorAll('#fireSaveMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   runFire();
 }
 function setFireExpMul(mul, btn) {
+  var oldMul = _fireExpMul;
+  var slider = document.getElementById('fireExpenses');
+  var oldEffective = (parseInt(slider.value) || 0) * oldMul;
   _fireExpMul = mul;
+  slider.value = Math.round(oldEffective / mul);
+  fillSliderTrack(slider);
   document.querySelectorAll('#fireExpMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   runFire();
@@ -1378,12 +1389,12 @@ function runFire() {
   if (sSl && sSv) sSv.textContent = curSym() + (Math.round(parseInt(sSl.value) || 500) * _fireSaveMul).toLocaleString();
   var eSl = document.getElementById('fireExpenses');
   var eSv = document.getElementById('expensesVal');
-  if (eSl && eSv) eSv.textContent = curSym() + (Math.round(parseInt(eSl.value) || 30000) * _fireExpMul).toLocaleString();
+  if (eSl && eSv) eSv.textContent = curSym() + (Math.round(parseInt(eSl.value) || 500) * _fireExpMul).toLocaleString();
 
   const nw = assets.filter(a => a.cat !== 'liability').reduce((s, a) => s + a.value, 0) - assets.filter(a => a.cat === 'liability').reduce((s, a) => s + a.value, 0);
   // Convert slider (display currency) values to native for simulation — apply multipliers
   var monthlySavings = Math.round(toStored((parseInt(document.getElementById('fireSavings').value) || 500) * _fireSaveMul));
-  var annualExpenses = Math.round(toStored((parseInt(document.getElementById('fireExpenses').value) || 30000) * _fireExpMul));
+  var annualExpenses = Math.round(toStored((parseInt(document.getElementById('fireExpenses').value) || 500) * _fireExpMul));
   var retirementAge = parseInt(document.getElementById('fireRetire').value) || 55;
   var inflationRate = parseInt(document.getElementById('fireInflation').value) || 18;
   var returnRate   = parseInt(document.getElementById('fireReturn').value) || 10;

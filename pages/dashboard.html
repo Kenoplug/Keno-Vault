@@ -563,8 +563,9 @@
                 <input type="range" id="fireInflation" min="1" max="30" value="18" oninput="fillSliderTrack(this);document.getElementById('inflationVal').textContent=this.value+'%';runFire()">
               </div>
               <div class="slider-group">
-                <label class="slider-label">Annual Expenses <span id="expensesVal" class="slider-val">$30,000</span></label>
-                <input type="range" id="fireExpenses" min="0" max="100000" step="100" value="30000" oninput="fillSliderTrack(this);document.getElementById('expensesVal').textContent=curSym()+(Number(this.value)*_fireExpMul).toLocaleString();runFire()">
+                <label class="slider-label"><span>Annual Expenses <span style="cursor:pointer;color:var(--accent);" onclick="var b=document.getElementById('fireExpInfo');b.style.display=b.style.display==='none'?'block':'none'" title="What is this?"><i class="fas fa-circle-info"></i></span></span> <span id="expensesVal" class="slider-val">$500</span></label>
+                <div id="fireExpInfo" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:6px;font-size:12px;color:var(--text-dim);line-height:1.7;">How much you expect to spend per year in retirement. Your <strong style="color:var(--text);">FI Number = Annual Expenses × 25</strong>. Lower expenses mean a smaller target and an earlier retirement.</div>
+                <input type="range" id="fireExpenses" min="0" max="100000" step="100" value="500" oninput="fillSliderTrack(this);document.getElementById('expensesVal').textContent=curSym()+(Number(this.value)*_fireExpMul).toLocaleString();runFire()">
                 <div class="fire-mul-chips" id="fireExpMulChips">
                   <button class="toggle-chip active" onclick="setFireExpMul(1,this)">×1</button>
                   <button class="toggle-chip" onclick="setFireExpMul(10,this)">×10</button>
