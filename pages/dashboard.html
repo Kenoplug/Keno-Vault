@@ -138,9 +138,30 @@
       <div class="form-grid-3">
         <div class="field"><label id="lblEPrincipal">Principal ($)</label><input type="number" id="ePrincipal" min="0" oninput="calcEditProj()"/></div>
         <div class="field"><label>Rate (%)</label><input type="number" id="eRate" min="0" step="0.1" oninput="calcEditProj()"/></div>
-        <div class="field"><label>Years</label><input type="number" id="eYears" min="0" step="1" oninput="calcEditProj()"/></div>
+        <div class="field"><label>Start Date</label><input type="date" id="eStartDate" oninput="calcEditProj()"/></div>
+      </div>
+      <div class="form-grid-3" style="margin-bottom:8px;">
+        <div class="field">
+          <label>Term Length</label>
+          <div style="display:flex;gap:6px;">
+            <input type="number" id="eTerm" placeholder="3" min="0" step="1" oninput="calcEditProj()" style="flex:1;min-width:80px;"/>
+            <select id="eTermUnit" onchange="calcEditProj()" style="width:100px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 8px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;">
+              <option value="years">Years</option>
+              <option value="months">Months</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end;justify-content:center;">
+          <div id="eMaturity" style="font-size:11px;color:var(--text-dim);text-align:center;padding-bottom:4px;"></div>
+        </div>
       </div>
       <div id="eProj" class="proj-preview" style="display:none;"></div>
+    </div>
+    <div id="eLiabWrap" style="display:none;" class="invest-panel-inner">
+      <div class="panel-label">Interest Rate</div>
+      <div class="form-grid-1">
+        <div class="field"><label>Rate (%)</label><input type="number" id="eLiabRate" placeholder="18" min="0" max="100" step="0.1"/></div>
+      </div>
     </div>
     <div id="eDeprecWrap" style="display:none;margin-bottom:10px;">
       <div class="toggle-chip" id="editDeprecToggle" onclick="togglePanel('editDeprecPanel','editDeprecToggle')">
@@ -374,7 +395,17 @@
         <div class="chart-card wide" style="margin-bottom:16px;">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
             <div><div class="chart-title">Timeline</div><div class="chart-heading">Net Worth History</div></div>
-            <div style="font-size:11px;color:var(--text-muted);">Free: 30 snapshots · <span style="color:var(--accent);">Pro: Unlimited</span></div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span id="historyRangeLabel" style="font-size:11px;color:var(--text-muted);">Free: 30 snapshots</span>
+              <select id="historyRange" onchange="switchHistoryRange(this.value)" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--text);font-family:'DM Sans',sans-serif;">
+                <option value="recent">Recent</option>
+                <option value="all">All Time</option>
+                <option value="24">Last 2 Years</option>
+                <option value="12">Last 12 Months</option>
+                <option value="6">Last 6 Months</option>
+                <option value="3">Last 3 Months</option>
+              </select>
+            </div>
           </div>
           <div style="height:180px;display:flex;align-items:center;justify-content:center;position:relative;margin-top:12px;">
             <canvas id="historyChart"></canvas>
@@ -427,13 +458,38 @@
           <div id="investToggleWrap" style="margin-bottom:10px;display:none;">
             <div class="toggle-chip" id="investToggle" onclick="togglePanel('investPanel','investToggle')"><i class="fas fa-gear"></i> Investment Details</div>
           </div>
+          <div id="liabToggleWrap" style="margin-bottom:10px;display:none;">
+            <div class="toggle-chip" id="liabToggle" onclick="togglePanel('liabPanel','liabToggle')"><i class="fas fa-percent"></i> Interest Rate Details</div>
+          </div>
+          <div id="liabPanel" class="collapsible-panel">
+            <div class="invest-panel-inner">
+              <div class="form-grid-1">
+                <div class="field"><label>Interest Rate (%)</label><input type="number" id="fLiabRate" placeholder="18" min="0" max="100" step="0.1"/></div>
+              </div>
+            </div>
+          </div>
           <div id="investPanel" class="collapsible-panel">
             <div class="invest-panel-inner">
               <div class="panel-label">Compound Interest Calculator</div>
-              <div class="form-grid-3" style="margin-bottom:10px;">
+              <div class="form-grid-3" style="margin-bottom:8px;">
                 <div class="field"><label id="lblFPrincipal">Principal ($)</label><input type="number" id="fPrincipal" placeholder="Invested" min="0" oninput="calcPreview()"/></div>
                 <div class="field"><label>Rate (%)</label><input type="number" id="fRate" placeholder="18" min="0" step="0.1" oninput="calcPreview()"/></div>
-                <div class="field"><label>Years</label><input type="number" id="fYears" placeholder="3" min="0" step="1" oninput="calcPreview()"/></div>
+                <div class="field"><label>Start Date</label><input type="date" id="fStartDate" oninput="calcPreview()"/></div>
+              </div>
+              <div class="form-grid-3" style="margin-bottom:10px;">
+                <div class="field">
+                  <label>Term Length</label>
+                  <div style="display:flex;gap:6px;">
+                    <input type="number" id="fTerm" placeholder="3" min="0" step="1" oninput="calcPreview()" style="flex:1;"/>
+                    <select id="fTermUnit" onchange="calcPreview()" style="width:100px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 8px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;">
+                      <option value="years">Years</option>
+                      <option value="months">Months</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field" style="display:flex;align-items:flex-end;justify-content:center;">
+                  <div id="fMaturity" style="font-size:11px;color:var(--text-dim);text-align:center;padding-bottom:4px;"></div>
+                </div>
               </div>
               <div id="fPreview" class="proj-preview" style="display:none;">
                 <div><div class="proj-label">Future Value</div><div class="mono proj-val" style="color:var(--gold);" id="prevFV">—</div></div>
@@ -512,8 +568,8 @@
         <div class="ledger-card invest-table-wrap">
           <div class="ledger-header"><div class="serif ledger-title">Investment Positions</div></div>
           <div style="overflow-x:auto;"><table>
-            <thead><tr><th>Asset</th><th>Principal</th><th>Rate</th><th>Term</th><th>Current Value</th><th>Projected FV</th><th>Interest Gain</th><th>Multiplier</th></tr></thead>
-            <tbody id="investTableBody"><tr><td colspan="8"><div class="empty"><div class="empty-icon"><i class="fas fa-arrow-trend-up"></i></div>No investments logged</div></td></tr></tbody>
+            <thead><tr><th>Asset</th><th>Principal</th><th>Rate</th><th>Term</th><th>Maturity</th><th>Current Value</th><th>Projected FV</th><th>Interest Gain</th><th>Multiplier</th></tr></thead>
+            <tbody id="investTableBody"><tr><td colspan="9"><div class="empty"><div class="empty-icon"><i class="fas fa-arrow-trend-up"></i></div>No investments logged</div></td></tr></tbody>
           </table></div>
         </div>
         <!-- Cards — mobile only -->
@@ -904,6 +960,7 @@
               <select id="gFundingSource" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;">
                 <option value="total_nw">Total Net Worth (All Assets - Liabilities)</option>
                 <option value="liquid_only">Liquid Cash Only (Available Savings)</option>
+                <option value="investment_only">Investment Only (Growth Portfolio)</option>
               </select>
             </div>
             <div class="field span-2"><label>Deadline (optional)</label><input type="date" id="gDeadline"/></div>
@@ -1005,6 +1062,14 @@
             <div id="scoreHistoryArea" style="min-height:50px;"></div>
           </div>
 
+          <!-- Recommendations -->
+          <div class="chart-card wide" style="margin-bottom:16px;padding:20px;">
+            <div class="chart-title">AI Recommendations</div>
+            <div class="chart-heading" style="font-size:17px;margin-bottom:4px;">What to Improve Next</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Personalized actions to raise your score</div>
+            <div id="scoreRecommendations" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+
           <!-- Score Factor Breakdown -->
           <div class="ledger-card" style="margin-bottom:16px;">
             <div class="ledger-header">
@@ -1014,42 +1079,39 @@
             <div id="scoreBreakdown"></div>
           </div>
 
-          <!-- Recommendations -->
-          <div class="chart-card wide" style="margin-bottom:16px;padding:20px;">
-            <div class="chart-title">AI Recommendations</div>
-            <div class="chart-heading" style="font-size:17px;margin-bottom:4px;">What to Improve Next</div>
-            <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">Personalized actions to raise your score</div>
-            <div id="scoreRecommendations" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
           <!-- Score FAQ -->
           <div class="form-card">
-            <div class="serif" style="font-size:17px;margin-bottom:4px;">How is the Score Calculated?</div>
-            <div class="divider"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;color:var(--text-dim);line-height:1.7;">
-              <div>
-                <strong style="color:var(--text);">Debt-to-Asset Ratio (30 pts)</strong><br/>
-                The lower your debt relative to total assets, the higher your score. Under 10% earns full marks.
-              </div>
-              <div>
-                <strong style="color:var(--text);">Liquid Cash Buffer (20 pts)</strong><br/>
-                Maintaining 10–30% in accessible cash balances security vs. opportunity cost.
-              </div>
-              <div>
-                <strong style="color:var(--text);">Investment Ratio (25 pts)</strong><br/>
-                Having 50%+ of your wealth in growth assets maximises long-term wealth building.
-              </div>
-              <div>
-                <strong style="color:var(--text);">Diversification (15 pts)</strong><br/>
-                Spreading wealth across 3–4 asset categories reduces concentration risk.
-              </div>
-              <div>
-                <strong style="color:var(--text);">Positive Net Worth (10 pts)</strong><br/>
-                Assets exceeding liabilities is the foundation of financial health.
-              </div>
-              <div>
-                <strong style="color:var(--text);">Score Grades</strong><br/>
-                80–100: Excellent · 60–79: Good · 40–59: Fair · 0–39: Needs Work
+            <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="var b=document.getElementById('scoreFAQBody');var i=document.getElementById('scoreFAQArrow');b.style.display=b.style.display==='none'?'block':'none';i.style.transform=b.style.display==='none'?'rotate(0deg)':'rotate(180deg)';">
+              <div class="serif" style="font-size:17px;">How is the Score Calculated?</div>
+              <span id="scoreFAQArrow" style="transition:transform .2s;color:var(--text-dim);"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div id="scoreFAQBody" style="display:none;">
+              <div class="divider" style="margin:12px 0;"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+                <div>
+                  <strong style="color:var(--text);">Debt-to-Asset Ratio (30 pts)</strong><br/>
+                  Lower is better. Under 10% = 30 pts · Under 30% = 22 pts · Under 50% = 14 pts · Over 50% = 6 pts.
+                </div>
+                <div>
+                  <strong style="color:var(--text);">Liquid Cash Buffer (20 pts)</strong><br/>
+                  Ideal range: 10–30% = 20 pts. Below 5% = 8 pts. Over 40% = warning to deploy excess cash.
+                </div>
+                <div>
+                  <strong style="color:var(--text);">Investment Allocation (25 pts)</strong><br/>
+                  Over 50% invested = 25 pts · Over 30% = 18 pts · Over 15% = 10 pts · Below 15% = 5 pts.
+                </div>
+                <div>
+                  <strong style="color:var(--text);">Diversification (15 pts)</strong><br/>
+                  Counts positive asset types only (Cash, Physical, Investments). 3 categories = 15 pts, 2 = 10 pts, 1 = 4 pts. Liabilities excluded.
+                </div>
+                <div>
+                  <strong style="color:var(--text);">Net Worth Position (10 pts)</strong><br/>
+                  Graduated: over 50% margin = 10 pts · over 20% = 8 pts · over 5% = 5 pts · under 5% = 2 pts. Negative = 0 pts.
+                </div>
+                <div>
+                  <strong style="color:var(--text);">Score Grades</strong><br/>
+                  80–100: Excellent · 60–79: Good · 40–59: Fair · 0–39: Needs Work
+                </div>
               </div>
             </div>
           </div>
@@ -1069,9 +1131,22 @@
         </div>
         <div id="currencyContent" style="display:none;">
           <div class="kpi-grid" id="currencyKPIs" style="margin-bottom:16px;"></div>
-          <div class="form-card">
-            <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px;">Live exchange rates (base: USD) · Updated daily</div>
-            <div id="fxRateDisplay" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+          <div class="form-card" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+              <span style="font-size:13px;color:var(--text-dim);">Live exchange rates (base: USD) · <span id="fxTimeLabel">Updated just now</span></span>
+              <span style="display:flex;gap:6px;">
+                <button class="btn btn-secondary btn-sm" onclick="renderCurrency()"><i class="fas fa-rotate"></i> Refresh</button>
+                <button class="btn btn-secondary btn-sm" id="fxCustomizeBtn" onclick="toggleFXCustomize()"><i class="fas fa-sliders"></i> Customize</button>
+              </span>
+            </div>
+            <div id="fxCustomizePanel" style="display:none;margin-bottom:12px;padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">KPI Cards (big tiles at top)</div>
+              <div id="fxKpiCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;max-height:120px;overflow-y:auto;"></div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">Rate Chips (small tiles below)</div>
+              <div id="fxCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto;"></div>
+              <button class="btn btn-primary btn-sm" onclick="saveFXCurrencies()" style="margin-top:10px;">Apply</button>
+            </div>
+            <div id="fxRateDisplay" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
           </div>
         </div>
       </div>

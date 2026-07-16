@@ -678,6 +678,7 @@ async function loadAssets() {
     notes: r.notes || '', principal: r.principal ? parseFloat(r.principal) : null,
     rate: r.rate ? parseFloat(r.rate) : null, years: r.years ? parseFloat(r.years) : null,
     fv: parseFloat(r.fv) || 0, interest: parseFloat(r.interest) || 0,
+    start_date: r.start_date || null,
     depreciationType: r.depreciation_type || null, depreciationRate: r.depreciation_rate || null,
     usefulLife: r.useful_life || null, salvageValue: r.salvage_value || null,
     originalCost: r.original_cost || null, depreciationStart: r.depreciation_start || null,
@@ -685,11 +686,53 @@ async function loadAssets() {
   setSyncState('synced', 'Synced');
 }
 
-async function loadHistory() {
-  const limit = isGrowth() ? 500 : 30;
-  const { data } = await sb.from('nw_history').select('*')
-    .order('created_at', { ascending: true }).limit(limit);
-  if (data) nwHistory = data.map(r => ({ id: r.id, nw: parseFloat(r.nw) || 0, ts: r.label }));
+var _historyMonths = null;
+
+async function loadHistory(months) {
+  if (months === undefined) months = _historyMonths;
+  var query = sb.from('nw_history').select('*').order('created_at', { ascending: false });
+  if (months === 'recent') {
+    query = query.limit(30);
+  } else if (months) {
+    var since = new Date();
+    since.setMonth(since.getMonth() - months);
+    query = query.gte('created_at', since.toISOString());
+  } else {
+    query = query.limit(isGrowth() ? 10000 : 30);
+  }
+  var { data } = await query;
+  if (data) {
+    nwHistory = data.reverse().map(r => ({ id: r.id, nw: parseFloat(r.nw) || 0, ts: r.label }));
+  }
+  renderHistory();
+}
+
+function switchHistoryRange(val) {
+  var sel = document.getElementById('historyRange');
+  var lbl = document.getElementById('historyRangeLabel');
+  if (val === 'recent') {
+    _historyMonths = 'recent';
+    if (lbl) lbl.textContent = 'Recent (30 entries)';
+  } else if (val === 'all') {
+    _historyMonths = null;
+    if (lbl) lbl.textContent = 'All Time';
+  } else {
+    _historyMonths = parseInt(val);
+    if (lbl) lbl.textContent = 'Last ' + _historyMonths + ' Months';
+  }
+  loadHistory();
+}
+
+function initHistoryUI() {
+  var sel = document.getElementById('historyRange');
+  var lbl = document.getElementById('historyRangeLabel');
+  if (isGrowth()) {
+    if (sel) sel.style.display = 'inline-block';
+    if (lbl) lbl.textContent = 'All Time';
+  } else {
+    if (sel) sel.style.display = 'none';
+    if (lbl) lbl.textContent = 'Free: 30 snapshots';
+  }
 }
 
 async function dbInsert(a) {
@@ -697,6 +740,7 @@ async function dbInsert(a) {
     user_id: currentUser.id, name: a.name, cat: a.cat, value: a.value,
     notes: a.notes || null, principal: a.principal || null, rate: a.rate || null,
     years: a.years || null, fv: a.fv || 0, interest: a.interest || 0,
+    start_date: a.start_date || null,
     depreciation_type: a.depreciationType || null, depreciation_rate: a.depreciationRate || null,
     useful_life: a.usefulLife || null, salvage_value: a.salvageValue || null,
     original_cost: a.originalCost || null, depreciation_start: a.depreciationStart || null,
@@ -710,6 +754,7 @@ async function dbUpdate(a) {
     name: a.name, cat: a.cat, value: a.value, notes: a.notes || null,
     principal: a.principal || null, rate: a.rate || null, years: a.years || null,
     fv: a.fv || 0, interest: a.interest || 0,
+    start_date: a.start_date || null,
     depreciation_type: a.depreciationType || null,
     depreciation_rate: a.depreciationRate || null,
     useful_life: a.usefulLife || null,
@@ -742,14 +787,20 @@ async function snapHistory() {
 function handleCatChange() {
   var cat = document.getElementById('fCategory').value;
   var investWrap  = document.getElementById('investToggleWrap');
+  var liabWrap    = document.getElementById('liabToggleWrap');
   var deprecWrap  = document.getElementById('deprecToggleWrap');
   if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
+  if (liabWrap)   liabWrap.style.display   = cat === 'liability'  ? 'block' : 'none';
   if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
   // Collapse panels when category changes away
   if (cat !== 'investment') {
     var p = document.getElementById('investPanel'); if (p) p.classList.remove('open');
     var c = document.getElementById('investToggle'); if (c) c.classList.remove('active');
     var prev = document.getElementById('fPreview'); if (prev) prev.style.display = 'none';
+  }
+  if (cat !== 'liability') {
+    var lp = document.getElementById('liabPanel'); if (lp) lp.classList.remove('open');
+    var lc = document.getElementById('liabToggle'); if (lc) lc.classList.remove('active');
   }
   if (cat !== 'physical') {
     var dp = document.getElementById('deprecPanel'); if (dp) dp.classList.remove('open');
@@ -760,11 +811,42 @@ function handleCatChange() {
 function calcPreview() {
   const p = parseFloat(document.getElementById('fPrincipal').value);
   const r = parseFloat(document.getElementById('fRate').value) / 100;
-  const t = parseFloat(document.getElementById('fYears').value);
-  const prev = document.getElementById('fPreview');
+  var tRaw = parseFloat(document.getElementById('fTerm').value) || parseFloat(document.getElementById('fYears')?.value);
+  var unit = (document.getElementById('fTermUnit')?.value) || 'years';
+  var t = unit === 'months' ? tRaw / 12 : tRaw;
+  var startDate = document.getElementById('fStartDate')?.value;
+
+  // ── Maturity countdown ──────────────────────────────────
+  var maturityEl = document.getElementById('fMaturity');
+  if (maturityEl && startDate && tRaw > 0) {
+    var start = new Date(startDate + 'T00:00:00');
+    var maturity = new Date(start);
+    if (unit === 'months') maturity.setMonth(maturity.getMonth() + tRaw);
+    else maturity.setFullYear(maturity.getFullYear() + tRaw);
+    var now = new Date();
+    maturity.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    var diffMs = maturity - now;
+    var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    var diffMonths = Math.round(diffDays / 30.44);
+    if (diffDays < 0) {
+      maturityEl.innerHTML = '<span style="color:#f87171;"><i class="fas fa-circle-check"></i> Matured ' + Math.abs(diffMonths) + ' month' + (Math.abs(diffMonths)!==1?'s':'') + ' ago</span>';
+    } else if (diffDays === 0) {
+      maturityEl.innerHTML = '<span style="color:#34d399;">Matures today</span>';
+    } else {
+      var label = diffMonths >= 1
+        ? diffMonths + ' month' + (diffMonths!==1?'s':'') + ' remaining'
+        : diffDays + ' day' + (diffDays!==1?'s':'') + ' remaining';
+      maturityEl.innerHTML = '<span style="color:#60a5fa;"><i class="fas fa-clock"></i> ' + label + '</span>';
+    }
+  } else if (maturityEl) {
+    maturityEl.innerHTML = '';
+  }
+
+  var prev = document.getElementById('fPreview');
   if (!prev) return;
   if (!p || !r || !t || p <= 0) { prev.style.display = 'none'; return; }
-  const fv = p * Math.pow(1 + r, t);
+  var fv = p * Math.pow(1 + r, t);
   prev.style.display = 'flex';
   document.getElementById('prevFV').textContent   = fmt(fv);
   document.getElementById('prevInt').textContent  = fmt(fv - p);
@@ -789,16 +871,22 @@ async function addAsset() {
   // Convert display currency → native (storage) currency
   var storedValue = Math.round(toStored(value));
 
-  let principal = null, rate = null, years = null, fv = 0, interest = 0;
+  let principal = null, rate = null, years = null, fv = 0, interest = 0, startDate = null;
   if (cat === 'investment') {
     principal = parseFloat(document.getElementById('fPrincipal').value) || null;
     rate      = parseFloat(document.getElementById('fRate').value)      || null;
-    years     = parseFloat(document.getElementById('fYears').value)     || null;
+    var tRaw  = parseFloat(document.getElementById('fTerm').value) || parseFloat((document.getElementById('fYears')||{}).value) || null;
+    var unit  = (document.getElementById('fTermUnit') || {}).value || 'years';
+    years     = tRaw ? (unit === 'months' ? tRaw / 12 : tRaw) : null;
+    startDate = document.getElementById('fStartDate')?.value || null;
     if (principal && rate && years) {
       var storedPrincipal = Math.round(toStored(principal));
       const p = Calculators.compoundInterest(storedPrincipal, rate, years);
       fv = p.fv; interest = p.interest;
     }
+  } else if (cat === 'liability') {
+    var liabRateEl = document.getElementById('fLiabRate');
+    rate = liabRateEl ? (parseFloat(liabRateEl.value) || null) : null;
   }
 
   let depreciationType = null, depreciationRate = null, usefulLife = null;
@@ -820,7 +908,9 @@ async function addAsset() {
 
   try {
     var savedPrincipal = (principal && rate && years) ? storedPrincipal : null;
+    var savedStartDate = startDate || null;
     const asset = { name, cat, value: storedValue, notes, principal: savedPrincipal, rate, years, fv, interest,
+      start_date: savedStartDate,
       depreciationType, depreciationRate, usefulLife, salvageValue: Math.round(toStored(salvageValue || 0)), originalCost: storedValue, depreciationStart };
     const newId = await dbInsert(asset);
     asset.id = newId;
@@ -831,7 +921,7 @@ async function addAsset() {
     renderAll();
     setSyncState('synced', 'Saved ✓');
     UI.toast(`"${name}" added`, 'success');
-    ['fName','fValue','fNotes','fPrincipal','fRate','fYears','fUsefulLife','fSalvage','fDeprecRate'].forEach(function(id) { var el = document.getElementById(id); if(el) el.value = ''; });
+    ['fName','fValue','fNotes','fPrincipal','fRate','fTerm','fStartDate','fUsefulLife','fSalvage','fDeprecRate','fLiabRate'].forEach(function(id) { var el = document.getElementById(id); if(el) el.value = ''; });
     // Collapse and reset panels
     document.getElementById('fCategory').value = 'cash';
     handleCatChange();
@@ -878,7 +968,17 @@ function openEditModal(id) {
   document.getElementById('eNotes').value = a.notes || '';
   document.getElementById('ePrincipal').value = a.principal ? Math.round(toDisplay(a.principal)) : '';
   document.getElementById('eRate').value     = a.rate  || '';
-  document.getElementById('eYears').value    = a.years || '';
+  var eLiabRate = document.getElementById('eLiabRate');
+  if (eLiabRate) eLiabRate.value = a.rate || '';
+  var storedYears = a.years || 0;
+  if (storedYears > 0 && storedYears < 1) {
+    document.getElementById('eTerm').value     = Math.round(storedYears * 12);
+    document.getElementById('eTermUnit').value  = 'months';
+  } else {
+    document.getElementById('eTerm').value     = storedYears || '';
+    document.getElementById('eTermUnit').value  = 'years';
+  }
+  document.getElementById('eStartDate').value = a.start_date ? a.start_date.slice(0,10) : '';
   // Depreciation fields
   var depType = document.getElementById('eDeprecType');
   var depLife = document.getElementById('eUsefulLife');
@@ -908,21 +1008,54 @@ function openEditModal(id) {
 function handleEditCat() {
   const cat = document.getElementById('eCat').value;
   const investWrap = document.getElementById('eInvestWrap');
+  const liabWrap   = document.getElementById('eLiabWrap');
   const deprecWrap = document.getElementById('eDeprecWrap');
   if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
+  if (liabWrap)   liabWrap.style.display   = cat === 'liability'  ? 'block' : 'none';
   if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
 }
 
 function calcEditProj() {
   const p = parseFloat(document.getElementById('ePrincipal').value);
   const r = parseFloat(document.getElementById('eRate').value) / 100;
-  const t = parseFloat(document.getElementById('eYears').value);
-  const prev = document.getElementById('eProj');
+  var tRaw = parseFloat(document.getElementById('eTerm').value) || parseFloat((document.getElementById('eYears')||{}).value);
+  var unit = (document.getElementById('eTermUnit')||{}).value || 'years';
+  var t = unit === 'months' ? tRaw / 12 : tRaw;
+  var startDate = (document.getElementById('eStartDate')||{}).value;
+
+  // ── Maturity countdown ──────────────────────────────────
+  var maturityEl = document.getElementById('eMaturity');
+  if (maturityEl && startDate && tRaw > 0) {
+    var start = new Date(startDate + 'T00:00:00');
+    var maturity = new Date(start);
+    if (unit === 'months') maturity.setMonth(maturity.getMonth() + tRaw);
+    else maturity.setFullYear(maturity.getFullYear() + tRaw);
+    var now = new Date();
+    maturity.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    var diffMs = maturity - now;
+    var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    var diffMonths = Math.round(diffDays / 30.44);
+    if (diffDays < 0) {
+      maturityEl.innerHTML = '<span style="color:#f87171;"><i class="fas fa-circle-check"></i> Matured ' + Math.abs(diffMonths) + ' month' + (Math.abs(diffMonths)!==1?'s':'') + ' ago</span>';
+    } else if (diffDays === 0) {
+      maturityEl.innerHTML = '<span style="color:#34d399;">Matures today</span>';
+    } else {
+      var label = diffMonths >= 1
+        ? diffMonths + ' month' + (diffMonths!==1?'s':'') + ' remaining'
+        : diffDays + ' day' + (diffDays!==1?'s':'') + ' remaining';
+      maturityEl.innerHTML = '<span style="color:#60a5fa;"><i class="fas fa-clock"></i> ' + label + '</span>';
+    }
+  } else if (maturityEl) {
+    maturityEl.innerHTML = '';
+  }
+
+  var prev = document.getElementById('eProj');
   if (!prev) return;
   if (!p || !r || !t) { prev.style.display = 'none'; return; }
-  const fv = p * Math.pow(1 + r, t);
+  var fv = p * Math.pow(1 + r, t);
   prev.style.display = 'block';
-  prev.innerHTML = `FV: <span style="color:var(--gold);">${fmt(fv)}</span> &nbsp;·&nbsp; Interest: <span style="color:var(--green);">${fmt(fv - p)}</span>`;
+  prev.innerHTML = 'FV: <span style="color:var(--gold);">' + fmt(fv) + '</span> &nbsp;·&nbsp; Interest: <span style="color:var(--green);">' + fmt(fv - p) + '</span>';
 }
 
 async function saveEdit() {
@@ -938,8 +1071,15 @@ async function saveEdit() {
 
   const notes     = document.getElementById('eNotes').value.trim();
   var rawPrincipal = parseFloat(document.getElementById('ePrincipal').value) || null;
-  const rate      = parseFloat(document.getElementById('eRate').value)      || null;
-  const years     = parseFloat(document.getElementById('eYears').value)     || null;
+  let rate        = parseFloat(document.getElementById('eRate').value)        || null;
+  var tRaw        = parseFloat(document.getElementById('eTerm').value) || parseFloat((document.getElementById('eYears')||{}).value) || null;
+  var unit        = (document.getElementById('eTermUnit')||{}).value || 'years';
+  const years     = tRaw ? (unit === 'months' ? tRaw / 12 : tRaw) : null;
+  const eStartDate = document.getElementById('eStartDate')?.value || new Date().toISOString().slice(0,10);
+  if (cat === 'liability') {
+    var eLiabRate = document.getElementById('eLiabRate');
+    rate = eLiabRate ? (parseFloat(eLiabRate.value) || null) : null;
+  }
   var principal = null;
   let fv = 0, interest = 0;
   if (cat === 'investment' && rawPrincipal && rate && years) {
@@ -967,8 +1107,10 @@ async function saveEdit() {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   setSyncState('syncing', 'Saving…');
   try {
+    var savedStartDate = eStartDate || new Date().toISOString().slice(0,10);
     Object.assign(a, {
       name, cat, value: storedValue, notes, principal, rate, years, fv, interest,
+      start_date: savedStartDate,
       depreciationType, depreciationRate, usefulLife, salvageValue,
       originalCost, depreciationStart
     });
@@ -1317,6 +1459,47 @@ function renderInvestmentPage() {
     });
   }
 
+  // ── Helper: compute maturity status ────────────────────
+  function formatTimeLeft(diffDays) {
+    var abs = Math.abs(diffDays);
+    var totalMonths = Math.floor(abs / 30.44);
+    var d = Math.round(abs - totalMonths * 30.44);
+    if (d >= 31) { totalMonths++; d = 0; }
+    if (totalMonths >= 24) {
+      var y = Math.floor(totalMonths / 12);
+      var m = totalMonths % 12;
+      var parts = [];
+      if (y > 0) parts.push(y + 'yr');
+      if (m > 0) parts.push(m + 'mo');
+      return parts.join(', ');
+    }
+    if (totalMonths > 0) {
+      return totalMonths + 'mo' + (d > 0 ? ', ' + d + 'd' : '');
+    }
+    return d + 'd';
+  }
+
+  function getMaturityHTML(a) {
+    if (!a.years || a.years <= 0) return '—';
+    var start = (a.start_date || a.created_at) ? new Date(a.start_date || a.created_at) : new Date();
+    var totalMonths = Math.round(a.years * 12); // precise months from stored years
+    var maturity = new Date(start);
+    maturity.setMonth(maturity.getMonth() + totalMonths);
+    var now = new Date();
+    // Strip time for day-level comparison
+    maturity.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    var diffMs = maturity - now;
+    var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) {
+      return '<span style="font-size:10px;color:#f87171;">Matured ' + formatTimeLeft(diffDays) + ' ago</span>';
+    } else if (diffDays === 0) {
+      return '<span style="font-size:10px;color:#34d399;">Today</span>';
+    } else {
+      return '<span style="font-size:10px;color:#60a5fa;">' + formatTimeLeft(diffDays) + ' left</span>';
+    }
+  }
+
   // ── Desktop Table ─────────────────────────────────────
   var tbody = document.getElementById('investTableBody');
   if (tbody) {
@@ -1325,6 +1508,7 @@ function renderInvestmentPage() {
       '<td class="mono sensitive">' + (a.principal ? fmt(a.principal) : '—') + '</td>' +
       '<td class="mono">' + (a.rate ? a.rate + '%' : '—') + '</td>' +
       '<td class="mono">' + (a.years ? a.years + 'yr' : '—') + '</td>' +
+      '<td style="white-space:nowrap;">' + getMaturityHTML(a) + '</td>' +
       '<td class="mono sensitive">' + fmt(a.value) + '</td>' +
       '<td class="mono sensitive" style="color:var(--gold);">' + (a.fv > 0 ? fmt(a.fv) : '—') + '</td>' +
       '<td>' + (a.interest > 0 ? '<span class="gain-pill">+' + fmt(a.interest) + '</span>' : '—') + '</td>' +
@@ -1343,7 +1527,7 @@ function renderInvestmentPage() {
         '</div>' +
         '<div class="invest-card-grid">' +
           '<div class="invest-card-item"><span class="invest-card-label">Principal</span><span class="invest-card-val">' + (a.principal ? fmt(a.principal) : '—') + '</span></div>' +
-          '<div class="invest-card-item"><span class="invest-card-label">Term</span><span class="invest-card-val mono">' + (a.years ? a.years + 'yr' : '—') + '</span></div>' +
+          '<div class="invest-card-item"><span class="invest-card-label">Term</span><span class="invest-card-val mono">' + (a.years ? a.years + 'yr' : '—') + ' ' + getMaturityHTML(a) + '</span></div>' +
           '<div class="invest-card-item"><span class="invest-card-label">Current Value</span><span class="invest-card-val">' + fmt(a.value) + '</span></div>' +
           '<div class="invest-card-item"><span class="invest-card-label">Projected FV</span><span class="invest-card-val" style="color:var(--gold);">' + (a.fv > 0 ? fmt(a.fv) : '—') + '</span></div>' +
         '</div>' +
@@ -1565,10 +1749,11 @@ function runDebt() {
   if (!isPro()) return;
   updateDebtDisplay();
   var debts = assets.filter(function(a) { return a.cat === 'liability'; }).map(function(a) {
+    var r = (a.rate && a.rate > 0 && a.rate <= 100) ? a.rate : 18;
     return {
       name: a.name, balance: a.value,
       minPayment: Math.max(a.value * 0.02, 1),
-      interestRate: a.rate || 18
+      interestRate: r
     };
   });
 
@@ -1825,8 +2010,12 @@ function runOptimizer() {
         buildAllocBar('💵 Liquid Cash',    cashPct, '#60a5fa', bycat.cash,       '10–30%') +
         buildAllocBar('📦 Physical Assets',physPct, '#34d399', bycat.physical,   '<60%') +
         buildAllocBar('📈 Investments',    invPct,  '#f97316', bycat.investment, '>30%') +
-        (bycat.liability > 0 ? buildAllocBar('⚠️ Liabilities', debtRatio, '#f87171', bycat.liability, '<30%') : '') +
       '</div>' +
+      (bycat.liability > 0 ?
+        '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);">' +
+          '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px;">Debt Profile — % of Total Assets</div>' +
+          buildAllocBar('⚠️ Liabilities', debtRatio, '#f87171', bycat.liability, '<30%') +
+        '</div>' : '') +
     '</div>';
 
   // ── Concentration risk analysis ──────────────────────────────
@@ -1853,12 +2042,6 @@ function runOptimizer() {
           new Set(assets.map(function(a){return a.cat;})).size >= 3 ? "Good — You're spread across multiple categories." :
           "Poor — You're concentrated in fewer than 3 categories.",
           new Set(assets.map(function(a){return a.cat;})).size >= 3 ? '#34d399' : '#f87171'
-        ) +
-        buildRiskItem(
-          'Currency Exposure',
-          'Single currency (NGN)',
-          'Consider adding USD or GBP-denominated assets to hedge naira devaluation risk. Unlock Multi-Currency for full FX analysis.',
-          '#f4c553'
         ) +
         buildRiskItem(
           'Liquidity Risk',
@@ -2068,10 +2251,12 @@ function renderScoreBar(id, value, max, color, label) {
 function renderScoreBreakdown(s) {
   var el = document.getElementById('scoreBreakdown');
   if (!el) return;
-  var cats = new Set(assets.map(function(a){ return a.cat; })).size;
+  var cats = new Set(assets.filter(function(a){return a.cat!=='liability';}).map(function(a){return a.cat;})).size;
   var totalAssets = assets.filter(function(a){ return a.cat !== 'liability'; }).reduce(function(sum,a){ return sum+a.value; }, 0);
   var totalLiab   = assets.filter(function(a){ return a.cat === 'liability'; }).reduce(function(sum,a){ return sum+a.value; }, 0);
-  var netPositive = totalAssets > totalLiab;
+  var netWorth    = totalAssets - totalLiab;
+  var netPositive = netWorth > 0;
+  var margin      = totalAssets > 0 ? (netWorth / totalAssets) * 100 : 0;
 
   var factors = [
     {
@@ -2104,20 +2289,23 @@ function renderScoreBreakdown(s) {
     {
       label: 'Portfolio Diversification',
       value: cats + ' categor' + (cats === 1 ? 'y' : 'ies'),
-      target: '3 – 4 categories',
-      pts: Math.min(cats * 4, 15),
+      target: '3 categories',
+      pts: Math.min(cats * 5, 15),
       maxPts: 15,
       status: cats >= 3 ? 'good' : cats >= 2 ? 'warn' : 'bad',
-      desc: 'How spread your wealth is across Cash, Physical, Investments, and Liabilities. More categories = lower risk.'
+      desc: 'How spread your wealth is across Cash, Physical, and Investments. Liabilities are excluded — more positive asset types = lower risk.'
     },
     {
       label: 'Net Worth Position',
-      value: netPositive ? 'Positive (<span class="sensitive">' + fmt(totalAssets - totalLiab) + '</span>)' : 'Negative',
-      target: 'Positive',
-      pts: netPositive ? 10 : 0,
+      value: netPositive ? 'Positive (<span class="sensitive">' + fmt(netWorth) + '</span>)' : 'Negative (<span class="sensitive">-' + fmt(Math.abs(netWorth)) + '</span>)',
+      target: '>20% margin',
+      pts: netWorth <= 0 ? 0 : margin < 5 ? 2 : margin < 20 ? 5 : margin < 50 ? 8 : 10,
       maxPts: 10,
-      status: netPositive ? 'good' : 'bad',
-      desc: 'Assets must exceed liabilities. A positive net worth is the most fundamental measure of financial health.'
+      status: netWorth <= 0 ? 'bad' : margin < 5 ? 'bad' : margin < 20 ? 'warn' : 'good',
+      desc: netWorth <= 0 ? 'Your liabilities exceed your assets. Prioritise debt reduction immediately.' :
+            margin < 5 ? 'Net worth is positive but razor-thin (under 5% of assets). One setback could push you negative.' :
+            margin < 20 ? 'You have a modest buffer. Aim for a stronger cushion to weather financial shocks.' :
+            'A solid margin between your assets and debts — strong financial footing.'
     }
   ];
 
@@ -2197,56 +2385,56 @@ function renderScoreRecommendations(s, opt) {
   var debt      = parseFloat(s.debtRatio);
   var liquid    = parseFloat(s.liquidRatio);
   var invest    = parseFloat(s.investRatio);
-  var cats      = new Set(assets.map(function(a){ return a.cat; })).size;
+  var cats      = new Set(assets.filter(function(a){return a.cat!=='liability';}).map(function(a){return a.cat;})).size;
   var hasInvest   = assets.some(function(a){ return a.cat === 'investment'; });
   var hasCompound = assets.some(function(a){ return a.cat === 'investment' && a.fv > 0; });
   var hasLiab     = assets.some(function(a){ return a.cat === 'liability'; });
 
   if (debt > 50)
-    recs.push({ priority:'high', icon:'🔥', title:'Reduce debt urgently',
+    recs.push({ priority:'high', icon:'<i class="fas fa-fire"></i>', title:'Reduce debt urgently',
       desc:'Debt ratio is ' + debt + '% — above 50% is a danger zone. Prioritise debt paydown before new asset purchases. Use the Debt Optimizer to compare Snowball vs Avalanche strategies.' });
   else if (debt > 30)
-    recs.push({ priority:'med', icon:'⚡', title:'Work on debt reduction',
+    recs.push({ priority:'med', icon:'<i class="fas fa-bolt"></i>', title:'Work on debt reduction',
       desc:'At ' + debt + '% debt ratio, you\'re above the 30% threshold. A focused repayment plan could improve your score by up to 16 points.' });
 
   if (liquid < 5)
-    recs.push({ priority:'high', icon:'💧', title:'Build emergency fund immediately',
+    recs.push({ priority:'high', icon:'<i class="fas fa-droplet"></i>', title:'Build emergency fund immediately',
       desc:'Only ' + liquid + '% is liquid — that\'s dangerously low. Aim for at least 10% in accessible cash before expanding any other category. A financial shock could destabilise your portfolio.' });
   else if (liquid < 10)
-    recs.push({ priority:'med', icon:'💧', title:'Increase liquid reserves',
+    recs.push({ priority:'med', icon:'<i class="fas fa-droplet"></i>', title:'Increase liquid reserves',
       desc:'At ' + liquid + '% liquidity, you\'re below the recommended 10–30% range. Top up your liquid cash to cover 3–6 months of expenses as a safety buffer.' });
   else if (liquid > 40)
-    recs.push({ priority:'med', icon:'📊', title:'Put excess cash to work',
+    recs.push({ priority:'med', icon:'<i class="fas fa-chart-simple"></i>', title:'Put excess cash to work',
       desc:'Over 40% in cash (' + liquid + '%) is losing real value to inflation daily. Consider deploying 10–20% into investments to improve long-term returns.' });
 
   if (!hasInvest)
-    recs.push({ priority:'high', icon:'📈', title:'Start investing — your wealth is not growing',
+    recs.push({ priority:'high', icon:'<i class="fas fa-arrow-trend-up"></i>', title:'Start investing — your wealth is not growing',
       desc:'You have zero investment exposure. Even modest allocations to index funds, fixed income, or crypto can compound significantly over time. Start with as little as ' + Calculators.formatCurrency(Calculators.convertCurrency(100, 'USD', Calculators.getBaseCurrency()), Calculators.getBaseCurrency()) + '.' });
   else if (invest < 15)
-    recs.push({ priority:'high', icon:'📈', title:'Critically low investment allocation',
+    recs.push({ priority:'high', icon:'<i class="fas fa-arrow-trend-up"></i>', title:'Critically low investment allocation',
       desc:'Only ' + invest + '% in investments is well below the 30%+ target. Increasing this is the single biggest lever to raise your Net Worth Score.' });
   else if (invest < 30)
-    recs.push({ priority:'med', icon:'📈', title:'Grow your investment allocation',
+    recs.push({ priority:'med', icon:'<i class="fas fa-arrow-trend-up"></i>', title:'Grow your investment allocation',
       desc:'At ' + invest + '%, you\'re making progress but falling short of the 30–50% target for serious long-term wealth building.' });
 
   if (!hasCompound)
-    recs.push({ priority:'med', icon:'⚙', title:'Add compound interest projections',
+    recs.push({ priority:'med', icon:'<i class="fas fa-gear"></i>', title:'Add compound interest projections',
       desc:'Log principal, interest rate, and duration on your investments to unlock the Projected Future Value column and see how your money grows over time.' });
 
   if (cats < 3)
-    recs.push({ priority:'med', icon:'🎯', title:'Diversify across more asset categories',
+    recs.push({ priority:'med', icon:'<i class="fas fa-bullseye"></i>', title:'Diversify across more asset categories',
       desc:'You only track ' + cats + ' asset type' + (cats === 1 ? '' : 's') + '. A balanced portfolio should span Cash, Physical Assets, and Investments to reduce concentration risk and earn up to 15 bonus points.' });
 
   if (hasLiab && invest > 0)
-    recs.push({ priority:'med', icon:'⚖️', title:'Balance debt paydown with investment',
+    recs.push({ priority:'med', icon:'<i class="fas fa-scale-balanced"></i>', title:'Balance debt paydown with investment',
       desc:'You have both liabilities and investments. Compare your debt interest rate vs your investment returns — if debt costs more than investments earn, prioritise paying it off first.' });
 
   if (s.score >= 70)
-    recs.push({ priority:'good', icon:'🏆', title:'Strong financial position — keep it up',
+    recs.push({ priority:'good', icon:'<i class="fas fa-trophy"></i>', title:'Strong financial position — keep it up',
       desc:'Your score of ' + s.score + '/100 is excellent. Maintain discipline, review monthly, and consider the FIRE Simulator to model early retirement scenarios.' });
 
   if (recs.length === 0)
-    recs.push({ priority:'good', icon:'✅', title:'Portfolio looks healthy',
+    recs.push({ priority:'good', icon:'<i class="fas fa-circle-check"></i>', title:'Portfolio looks healthy',
       desc:'No critical issues detected. Continue updating your values monthly and explore the FIRE Simulator and Tax Drag Simulator for deeper analysis.' });
 
   var priorityColor = { high:'#f87171', med:'#f4c553', good:'#34d399' };
@@ -2279,56 +2467,104 @@ function renderScoreRecommendations(s, opt) {
 }
 
 
+// ══ Multi-Currency Helpers ════════════════════════════════════
+var DEFAULT_FX = ['USD','EUR','GBP','JPY','CNY','INR','CAD','AUD','CHF','NGN','ZAR','GHS','KES','EGP','AED'];
+var DEFAULT_KPI = ['USD','EUR','GBP','JPY','NGN'];
+
+function getFXCurrencies() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('kv-fx-currencies') || 'null');
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+  } catch(e) {}
+  return DEFAULT_FX.slice();
+}
+function getFXKpiCurrencies() {
+  try {
+    var saved = JSON.parse(localStorage.getItem('kv-fx-kpi-currencies') || 'null');
+    if (Array.isArray(saved) && saved.length > 0) return saved;
+  } catch(e) {}
+  return DEFAULT_KPI.slice();
+}
+
+function saveFXCurrencies() {
+  var checks = document.querySelectorAll('#fxCheckboxes input[type=checkbox]');
+  var selected = [];
+  checks.forEach(function(cb) { if (cb.checked) selected.push(cb.value); });
+  localStorage.setItem('kv-fx-currencies', JSON.stringify(selected));
+  var kpiChecks = document.querySelectorAll('#fxKpiCheckboxes input[type=checkbox]');
+  var kpiSelected = [];
+  kpiChecks.forEach(function(cb) { if (cb.checked) kpiSelected.push(cb.value); });
+  localStorage.setItem('kv-fx-kpi-currencies', JSON.stringify(kpiSelected));
+  document.getElementById('fxCustomizePanel').style.display = 'none';
+  renderCurrency();
+}
+
+function toggleFXCustomize() {
+  var panel = document.getElementById('fxCustomizePanel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') {
+    var selected = getFXCurrencies();
+    var kpiSelected = getFXKpiCurrencies();
+    var allCodes = Object.keys(Calculators.rates).sort();
+    var rateContainer = document.getElementById('fxCheckboxes');
+    var kpiContainer = document.getElementById('fxKpiCheckboxes');
+    if (rateContainer) {
+      rateContainer.innerHTML = allCodes.map(function(code) {
+        var checked = selected.indexOf(code) >= 0 ? ' checked' : '';
+        return '<label style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--text-dim);cursor:pointer;padding:2px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">' +
+          '<input type="checkbox" value="' + code + '"' + checked + ' style="accent-color:#f97316;"/> ' + code +
+        '</label>';
+      }).join('');
+    }
+    if (kpiContainer) {
+      kpiContainer.innerHTML = allCodes.map(function(code) {
+        var checked = kpiSelected.indexOf(code) >= 0 ? ' checked' : '';
+        return '<label style="display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--text-dim);cursor:pointer;padding:2px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">' +
+          '<input type="checkbox" value="' + code + '"' + checked + ' style="accent-color:#f97316;"/> ' + code +
+        '</label>';
+      }).join('');
+    }
+  }
+}
+
 async function renderCurrency() {
   if (!isGrowth()) return;
 
-  // Show loading while fetching
   var kpiEl = document.getElementById('currencyKPIs');
   var rateEl = document.getElementById('fxRateDisplay');
   if (kpiEl) kpiEl.innerHTML = '<div class="kpi-card" style="grid-column:span 5;text-align:center;padding:28px;"><div class="spinner" style="margin:0 auto 12px;"></div><div style="font-size:13px;color:var(--text-dim);">Fetching live exchange rates…</div></div>';
   if (rateEl) rateEl.innerHTML = '';
 
-  // Fetch fresh rates
   await Calculators.fetchFXRates();
 
   var baseCur = Calculators.getBaseCurrency();
   var total = assets.filter(function(a) { return a.cat !== 'liability'; }).reduce(function(s, a) { return s + a.value; }, 0)
               - assets.filter(function(a) { return a.cat === 'liability'; }).reduce(function(s, a) { return s + a.value; }, 0);
 
-  // Show net worth in 6 major currencies
-  var displayCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'INR', 'CAD', 'AUD', 'NGN', 'ZAR'];
-  // Remove base currency from list (it's already shown), keep unique and limited
-  displayCurrencies = displayCurrencies.filter(function(c) { return c !== baseCur; }).slice(0, 9);
-
-  if (kpiEl) kpiEl.innerHTML = displayCurrencies.map(function(c) {
+  // Net worth KPI cards — show user's selected KPI currencies
+  var selectedNw = getFXKpiCurrencies().filter(function(c) { return c !== baseCur; });
+  if (kpiEl) kpiEl.innerHTML = selectedNw.map(function(c) {
     var converted = Calculators.convertCurrency(total, baseCur, c);
     return '<div class="kpi-card"><div class="kpi-label">' + c + '</div><div class="kpi-value sensitive">' + Calculators.formatCurrency(converted, c) + '</div><div class="kpi-change">Net Worth</div></div>';
   }).join('');
 
-  // Rates display — show popular currencies grouped by region
+  // Rate chips — show user's selected currencies
+  var selectedRates = getFXCurrencies();
   var lastFetched = Calculators.ratesLastFetched;
   var timeAgo = lastFetched ? Math.floor((Date.now() - lastFetched) / 60000) + ' min ago' : 'just now';
-  var rateCount = Object.keys(Calculators.rates).length;
+  var timeEl = document.getElementById('fxTimeLabel');
+  if (timeEl) timeEl.textContent = 'Updated ' + timeAgo + ' · ' + Object.keys(Calculators.rates).length + ' currencies';
 
-  // Popular rates to display (1 USD = X)
-  var popularRates = ['EUR','GBP','JPY','CNY','INR','AUD','CAD','CHF','NZD','MXN','BRL','KRW','SGD','HKD','NGN','ZAR','KES','GHS','EGP','AED','SAR','TRY','RUB','SEK','NOK','DKK','PLN','THB','MYR','IDR','PHP','VND','PKR','BDT','ILS','ARS','CLP','COP','PEN'];
-
-  if (rateEl) rateEl.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">' +
-      '<span style="font-size:11px;color:var(--text-muted);">🕐 Updated ' + timeAgo + ' · ' + rateCount + ' currencies</span>' +
-      '<button class="btn btn-secondary btn-sm" onclick="renderCurrency()">↻ Refresh Rates</button>' +
-    '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
-      popularRates.map(function(k) {
-        var v = Calculators.rates[k];
-        if (!v) return '';
-        return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;">' +
-          '<div style="font-size:9px;color:var(--text-muted);">1 USD =</div>' +
-          '<div class="mono" style="font-size:13px;font-weight:600;">' + Calculators.getCurrencySymbol(k) + ' ' + (typeof v === 'number' ? v.toFixed(2) : v) + '</div>' +
-          '<div style="font-size:9px;color:var(--text-dim);">' + k + '</div>' +
-        '</div>';
-      }).join('') +
+  if (rateEl) rateEl.innerHTML = selectedRates.map(function(k) {
+    var v = Calculators.rates[k];
+    if (!v) return '';
+    return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;">' +
+      '<div style="font-size:9px;color:var(--text-muted);">1 USD =</div>' +
+      '<div class="mono" style="font-size:13px;font-weight:600;">' + Calculators.getCurrencySymbol(k) + ' ' + (typeof v === 'number' ? v.toFixed(2) : v) + '</div>' +
+      '<div style="font-size:9px;color:var(--text-dim);">' + k + '</div>' +
     '</div>';
+  }).join('');
 }
 
 // ══ GOALS ═════════════════════════════════════════════════════════
@@ -2460,11 +2696,12 @@ async function renderGoals() {
 
   listEl.innerHTML = _goals.map(function(g) {
     // Use the appropriate funding source for current progress
-    var currentAmount = g.fundingSource === 'liquid_only' ? liquidCash : totalNw;
+    var investOnly = assets.filter(function(a){return a.cat==='investment';}).reduce(function(s,a){return s+a.value;},0);
+    var currentAmount = g.fundingSource === 'liquid_only' ? liquidCash : g.fundingSource === 'investment_only' ? investOnly : totalNw;
     var pct = g.target > 0 ? Math.min(Math.round((currentAmount / g.target) * 100), 100) : 0;
     var barColor = pct >= 100 ? '#34d399' : pct >= 50 ? '#f4c553' : pct >= 25 ? '#f97316' : '#f87171';
     var remaining = Math.max(0, g.target - currentAmount);
-    var fundingLabel = g.fundingSource === 'liquid_only' ? 'Tracking: Liquid Cash' : 'Tracking: Net Worth';
+    var fundingLabel = g.fundingSource === 'liquid_only' ? 'Tracking: Liquid Cash' : g.fundingSource === 'investment_only' ? 'Tracking: Investments' : 'Tracking: Net Worth';
 
     // ── Time countdown ──────────────────────────────────
     var deadlineText = '';
@@ -2655,6 +2892,7 @@ async function doBootWithSession(session, source) {
 
   try {
     await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
+    initHistoryUI();
     loadGoals(); // Non-blocking
     console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
     Security.init(isPro());

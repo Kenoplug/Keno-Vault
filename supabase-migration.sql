@@ -172,6 +172,9 @@ create index if not exists audit_log_created_idx on audit_log(created_at);
 -- ── CUSTOM CATEGORIES (Growth tier) ───────────────────────────
 alter table assets add column if not exists custom_cat text;
 
+-- ── INVESTMENT START DATE ───────────────────────────────────
+alter table assets add column if not exists start_date date;
+
 -- ── GOAL EMOJI (Growth tier) ─────────────────────────────────
 alter table goals add column if not exists emoji text default '🎯';
 
