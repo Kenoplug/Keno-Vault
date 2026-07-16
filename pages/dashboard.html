@@ -277,7 +277,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <button id="mobileBackBtn" onclick="goBackMobile()" title="Back" style="display:none;">‹</button>
-        <div class="breadcrumb">Keno Vault / <span id="pageTitle">Dashboard</span></div>
+        <div class="breadcrumb"><span id="pageTitle">Dashboard</span></div>
       </div>
       <div class="topbar-right">
         <div class="sync-status">
@@ -286,7 +286,6 @@
         </div>
         <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)" aria-label="Toggle privacy shield"><i class="fas fa-shield-halved"></i> Shield</button>
         <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle theme"><i class="fas fa-moon"></i> Dark</button>
-        <button class="topbar-btn" onclick="signOut()" style="color:var(--text-muted);">Sign out</button>
       </div>
     </div>
 
@@ -1126,11 +1125,6 @@
       <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()"><i class="fas fa-globe"></i> Multi-Currency</button>
       <button class="mob-menu-item" onclick="window.location.href='settings.html'"><i class="fas fa-gear"></i> Settings</button>
     </div>
-
-    <!-- standalone: Sign Out -->
-    <button class="mob-signout-btn" onclick="closeMobileMenu();signOut()">
-      <i class="fas fa-right-from-bracket"></i> Sign Out
-    </button>
   </div>
 </div>
 

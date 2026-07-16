@@ -196,6 +196,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
   .settings-layout { grid-template-columns: 1fr !important; }
   .settings-sidebar { display: none !important; }
   .settings-content { padding: 16px 16px 100px !important; max-width:100% !important; }
+  .mobile-dash-link { display: flex !important; }
   .settings-tab { display: none; }
   .settings-tab.active { display: block; }
   #settingsMobileNav { display: flex !important; }
@@ -245,8 +246,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
   </div>
   <div class="topbar-right">
     <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()"><i class="fas fa-moon"></i> Dark</button>
-    <a href="dashboard.html" class="topbar-btn" style="text-decoration:none;"><i class="fas fa-arrow-left"></i> Dashboard</a>
-    <button class="topbar-btn" onclick="signOut()" style="color:var(--text-muted);">Sign out</button>
+    <a href="dashboard.html" class="topbar-btn" style="text-decoration:none;border:1px solid rgba(249,115,22,0.5);color:var(--accent);"><i class="fas fa-arrow-left"></i> Dashboard</a>
   </div>
 </div>
 
@@ -263,13 +263,16 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
       <button class="settings-nav-item" onclick="switchSettingsTab('preferences')"><i class="fas fa-gear"></i> Preferences</button>
       <button class="settings-nav-item" onclick="switchSettingsTab('billing')"><i class="fas fa-credit-card"></i> Plan & Billing</button>
       <button class="settings-nav-item" id="adminNavBtn" onclick="switchSettingsTab('admin')" style="display:none;"><i class="fas fa-shield"></i> Admin Panel</button>
+      <a href="dashboard.html" class="settings-nav-item" style="text-decoration:none;border:1px solid rgba(249,115,22,0.5);color:var(--accent);margin-top:8px;"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
       <div style="margin-top:auto;padding-top:20px;border-top:1px solid var(--border);margin-top:24px;">
-        <button class="settings-nav-item" onclick="window.location.href='dashboard.html'" style="color:var(--text-muted);"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-      </div>
+        </div>
     </div>
 
     <!-- SETTINGS CONTENT -->
     <div class="settings-content">
+
+      <!-- Mobile Dashboard link -->
+      <a href="dashboard.html" class="mobile-dash-link" style="display:none;align-items:center;gap:6px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;padding:8px 14px;border:1px solid rgba(249,115,22,0.5);border-radius:10px;"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
 
       <!-- ═══════ PROFILE TAB ═══════ -->
       <div class="settings-tab active" id="tab-profile">
@@ -295,6 +298,15 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
               Your account is linked via <strong style="color:var(--text);">Google OAuth</strong>. Profile details sync automatically.<br/>
               To update your name or photo, edit your Google account at <a href="https://myaccount.google.com" target="_blank" style="color:var(--accent);">myaccount.google.com</a>.
             </div>
+          </div>
+        </div>
+
+        <!-- Sign Out -->
+        <div class="settings-section" style="margin-top:8px;">
+          <div class="section-body" style="padding:0;">
+            <button onclick="signOut()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface2);border:1px solid rgba(239,68,68,0.15);border-radius:12px;padding:14px;font-size:14px;font-weight:600;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">
+              <i class="fas fa-right-from-bracket"></i> Sign Out
+            </button>
           </div>
         </div>
 
