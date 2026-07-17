@@ -623,7 +623,7 @@ body {
   text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px;
 }
 .proj-preview {
-  display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;
+  display: flex; gap: 20px; flex-wrap: wrap; margin: 10px 0 14px 0;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: 8px; padding: 12px;
 }
