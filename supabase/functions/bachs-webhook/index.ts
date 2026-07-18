@@ -6,7 +6,7 @@ import { Resend } from "https://esm.sh/resend@3.2.0";
 const SUPA_URL = Deno.env.get("SB_URL")!;
 const SUPA_SERVICE_KEY = Deno.env.get("SB_SERVICE_KEY")!;
 
-function planLabel(p) { return p === "pro" ? "Pro ($3.99/mo)" : p === "growth" ? "Growth ($1.99/mo)" : p; }
+function planLabel(p) { return p === "elite" ? "Elite ($7.99/mo)" : p === "pro" ? "Pro ($3.99/mo)" : p === "growth" ? "Growth ($1.99/mo)" : p; }
 
 async function sendEmail(email, plan, subject) {
   var key = Deno.env.get("RESEND_API_KEY");
@@ -17,12 +17,12 @@ async function sendEmail(email, plan, subject) {
     from: "Keno Vault <noreply@kenovault.app>",
     to: [email],
     subject: subject || ("Your Keno Vault " + label + " Plan is Active "),
-    html: "<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">" +
-      "<h2 style="color:#f97316;">⬡ Keno Vault</h2>" +
-      "<p>Your <strong>" + label + "</strong> plan is now active.</p>" +
-      "<p>All features are unlocked instantly. <a href="https://keno-vault.vercel.app/pages/dashboard.html">Open your vault</a> to get started.</p>" +
-      "<hr style="border-color:#e5e7eb;margin:24px 0;">" +
-      "<p style="color:#888;font-size:12px;">Questions? Reply or contact kenovault@gmail.com</p></div>",
+    html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+      <h2 style="color:#f97316;">⬡ Keno Vault</h2>
+      <p>Your <strong>${label}</strong> plan is now active.</p>
+      <p>All features are unlocked instantly. <a href="https://keno-vault.vercel.app/pages/dashboard.html">Open your vault</a> to get started.</p>
+      <hr style="border-color:#e5e7eb;margin:24px 0;">
+      <p style="color:#888;font-size:12px;">Questions? Reply or contact kenovault@gmail.com</p></div>`,
   });
   console.log("[Email] Sent to", email);
 }

@@ -695,6 +695,20 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Legacy Dead-Man's Switch</div>
                 </div>
               </div>
+              <div class="plan-card" id="elitePlanCard">
+                <div class="plan-name" style="color:#a855f7;">Elite ⬡</div>
+                <div class="plan-price" style="color:#a855f7;">$7.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">Everything in Pro, plus:</div>
+                <div class="plan-features">
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> AI Portfolio Advisor</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Custom Asset Classes</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Portfolio Stress Testing</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Monthly Wealth Report (PDF)</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Shared Household Vault (3 members)</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> API Access + Custom Branding</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Priority Support</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -709,8 +723,9 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
                 <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 1 — Choose Your Plan</div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-                  <button class="btn btn-primary" onclick="upgradeTo('growth')" style="flex:1;min-width:140px;">Growth — $1.99/mo</button>
-                  <button class="btn btn-primary" onclick="upgradeTo('pro')" style="flex:1;min-width:140px;">Pro — $3.99/mo</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('growth')" style="flex:1;min-width:120px;">Growth — $1.99</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('pro')" style="flex:1;min-width:120px;">Pro — $3.99</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('elite')" style="flex:1;min-width:120px;background:#a855f7;border-color:#a855f7;">Elite — $7.99</button>
                 </div>
               </div>
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
@@ -766,6 +781,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                   <select id="adminPlan" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none;">
                     <option value="growth">Growth — $1.99/month</option>
                     <option value="pro">Pro — $3.99/month</option>
+                    <option value="elite">Elite — $7.99/month</option>
                     <option value="free">Free (downgrade)</option>
                   </select>
                 </div>
@@ -850,8 +866,9 @@ function toast(msg, type = 'info') {
   container.appendChild(el);
   setTimeout(() => el.remove(), 3500);
 }
-const isGrowth = () => userPlan === 'growth' || userPlan === 'pro';
-const isPro    = () => userPlan === 'pro';
+const isGrowth = () => userPlan === 'growth' || userPlan === 'pro' || userPlan === 'elite';
+const isPro    = () => userPlan === 'pro'  || userPlan === 'elite';
+const isElite  = () => userPlan === 'elite';
 const isAdmin  = () => currentUser?.email === ADMIN_EMAIL;
 
 // ══ STYLED CONFIRM ══
@@ -930,6 +947,8 @@ function setProfileUI(user) {
   const planBadge = document.getElementById('profilePlanBadge');
   if (planBadge) {
     if (isPro()) planBadge.innerHTML = '<span class="pro-badge">⬡ Pro Plan</span>';
+    if (isElite()) planBadge.innerHTML = '<span class="pro-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">⬡ Elite Plan</span>';
+    else if (isPro()) planBadge.innerHTML = '<span class="pro-badge">⬡ Pro Plan</span>';
     else if (isGrowth()) planBadge.innerHTML = '<span class="pro-badge">⬡ Growth Plan</span>';
     else planBadge.innerHTML = '<span class="status-badge free">Free Plan</span>';
   }
@@ -948,6 +967,8 @@ function updateBillingUI() {
     if (upgSec)  upgSec.style.display  = 'none';
     if (proSec)  { proSec.style.display = 'block'; proSec.querySelector('.section-header-title').textContent = '⬡ Pro Plan Active'; }
     if (proPlan) proPlan.classList.add('current');
+  } else if (isElite()) {
+    if (badge)   { badge.textContent = 'Elite ⬡'; badge.className = 'status-badge active'; badge.style.background = 'rgba(168,85,247,0.15)'; badge.style.color = '#a855f7'; badge.style.borderColor = 'rgba(168,85,247,0.3)'; }
   } else if (isGrowth()) {
     if (badge)   { badge.textContent = 'Growth ⬡'; badge.className = 'status-badge active'; }
     if (upgSec)  upgSec.style.display  = 'block';

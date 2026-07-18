@@ -9,6 +9,7 @@ const BACHS_BASE = isSandbox ? "https://sandbox-api.bachs.io" : "https://api.bac
 const PRODUCTS = {
   growth: "prod_d79e7052c12148dda083",
   pro:    "prod_69e69d4fb0c7439d88b3",
+  elite:  "prod_4590872b175e4caa8dd7",
 };
 
 serve(async (req) => {

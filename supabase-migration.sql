@@ -46,7 +46,7 @@ create table if not exists subscriptions (
   id                       uuid default gen_random_uuid() primary key,
   user_id                  uuid references auth.users(id) on delete cascade,
   email                    text,
-  plan                     text default 'free' check (plan in ('free','growth','pro')),
+  plan                     text default 'free' check (plan in ('free','growth','pro','elite')),
   status                   text default 'active' check (status in ('active','inactive','cancelled','expired')),
   provider                 text default 'manual',
   provider_customer_id     text,

@@ -274,8 +274,9 @@ const BADGE_LIGHT = {
 };
 
 // ══ HELPERS ══════════════════════════════════════════════════════
-const isGrowth   = () => userPlan === 'growth' || userPlan === 'pro';
-const isPro      = () => userPlan === 'pro';
+const isGrowth   = () => userPlan === 'growth' || userPlan === 'pro' || userPlan === 'elite';
+const isPro      = () => userPlan === 'pro'  || userPlan === 'elite';
+const isElite    = () => userPlan === 'elite';
 const isAdmin    = () => currentUser?.email === ADMIN_EMAIL;
 const fmt        = n  => Calculators.formatCurrency(Math.abs(toDisplay(n)));
 const fmtSigned  = n  => (n < 0 ? '-' : '') + fmt(n);
@@ -586,6 +587,11 @@ async function loadSubscription() {
     const { data: byEmail } = await sb.from('subscriptions')
       .select('plan, status').eq('email', currentUser.email).maybeSingle();
 
+    if (byEmail?.plan === 'elite') {
+      userPlan = 'elite';
+      console.log('[Sub] Elite confirmed by email:', currentUser.email);
+      return;
+    }
     if (byEmail?.plan === 'pro') {
       userPlan = 'pro';
       console.log('[Sub] Pro confirmed by email:', currentUser.email);
@@ -601,6 +607,13 @@ async function loadSubscription() {
     const { data: byId } = await sb.from('subscriptions')
       .select('plan, status').eq('user_id', currentUser.id).maybeSingle();
 
+    if (byId?.plan === 'elite') {
+      userPlan = 'elite';
+      console.log('[Sub] Elite confirmed by user_id');
+      sb.from('subscriptions').update({ email: currentUser.email })
+        .eq('user_id', currentUser.id).then(function(){});
+      return;
+    }
     if (byId?.plan === 'pro') {
       userPlan = 'pro';
       console.log('[Sub] Pro confirmed by user_id');
@@ -627,7 +640,8 @@ function updatePlanUI() {
   var planEl = document.getElementById('sidebarPlan');
   var banner = document.getElementById('proBanner');
   if (planEl) {
-    if (isPro()) planEl.textContent = 'Pro Plan ⬡';
+    if (isElite()) planEl.textContent = 'Elite Plan ⬡';
+    else if (isPro()) planEl.textContent = 'Pro Plan ⬡';
     else if (isGrowth()) planEl.textContent = 'Growth Plan ⬡';
     else planEl.textContent = 'Free Plan';
   }
