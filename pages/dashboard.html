@@ -129,7 +129,9 @@
       <div class="field"><label>Category</label><div class="select-wrap"><select id="eCat" onchange="handleEditCat()">
         <option value="cash"><i class="fas fa-money-bill"></i> Liquid Cash</option><option value="physical"><i class="fas fa-box"></i> Physical Assets</option>
         <option value="investment"><i class="fas fa-arrow-trend-up"></i> Investments</option><option value="liability"><i class="fas fa-triangle-exclamation"></i> Liabilities</option>
+        <option value="custom">Custom…</option>
       </select></div></div>
+      <div class="field span-2" id="eCustomCatWrap" style="display:none;"><label>Custom Category Name</label><input type="text" id="eCustomCat" placeholder="e.g. Digital Collectibles, Farmland…" maxlength="30"/></div>
       <div class="field"><label id="lblEValue">Value ($)</label><input type="number" id="eValue" min="0" step="0.01"/></div>
       <div class="field span-2"><label>Notes</label><textarea id="eNotes" rows="2"></textarea></div>
     </div>
@@ -290,6 +292,8 @@
       <a class="nav-item" id="nav-goals" onclick="switchProPage('goals')"><i class="fas fa-bullseye"></i> Goal Tracker <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
       <a class="nav-item" id="nav-score" onclick="switchProPage('score')"><i class="fas fa-bolt"></i> Net Worth Score <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
       <a class="nav-item" id="nav-currency" onclick="switchProPage('currency')"><i class="fas fa-globe"></i> Multi-Currency <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-stress" onclick="switchProPage('stress')"><i class="fas fa-shield-halved"></i> Stress Test <span class="pro-lock" data-tier="elite"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-ai" onclick="switchProPage('ai')"><i class="fas fa-robot"></i> AI Advisor <span class="pro-lock" data-tier="elite"><i class="fas fa-lock"></i></span></a>
 
       <div class="nav-section">Account</div>
       <a class="nav-item" href="settings.html"><i class="fas fa-gear"></i> Settings</a>
@@ -323,6 +327,7 @@
           <span id="syncLabel" style="font-size:11px;color:var(--text-dim);">—</span>
         </div>
         <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)" aria-label="Toggle privacy shield"><i class="fas fa-shield-halved"></i> Shield</button>
+        <button class="topbar-btn" id="reportBtn" onclick="generateMonthlyReport()" title="Monthly Wealth Report" style="display:none;"><i class="fas fa-file-pdf"></i> Report</button>
         <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle theme"><i class="fas fa-moon"></i> Dark</button>
       </div>
     </div>
@@ -465,7 +470,10 @@
                 <option value="physical"><i class="fas fa-box"></i> Physical Assets</option>
                 <option value="investment"><i class="fas fa-arrow-trend-up"></i> Investments</option>
                 <option value="liability"><i class="fas fa-triangle-exclamation"></i> Liabilities</option>
+                <option value="custom">Custom…</option>
               </select></div></div>
+            <div class="field span-2" id="fCustomCatWrap" style="display:none;"><label>Custom Category Name</label>
+              <input type="text" id="fCustomCat" placeholder="e.g. Digital Collectibles, Farmland…" maxlength="30"/></div>
             <div class="field"><label id="lblFValue">Current Value ($)</label>
               <input type="number" id="fValue" placeholder="0.00" min="0" step="0.01"/></div>
             <div class="field span-2"><label>Notes (optional)</label>
@@ -1168,6 +1176,74 @@
         </div>
       </div>
 
+      <!-- ═══════ STRESS TEST PAGE ═══════ -->
+      <div class="page" id="page-stress">
+        <div class="greeting"><div><h2 class="serif greeting-title">Portfolio <span class="accent">Stress Test</span></h2><p class="text-dim" style="font-size:13px;">Simulate market shocks and see how resilient your portfolio really is.</p></div></div>
+        <div id="stressLock" class="pro-gate-card">
+          <div class="pro-gate-icon"><i class="fas fa-shield-halved"></i></div>
+          <div class="serif" style="font-size:20px;margin-bottom:8px;">Portfolio Stress Testing</div>
+          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Run "what-if" scenarios — market crashes, inflation spikes, real estate dips — against your actual portfolio and see the projected impact.</p>
+          <div class="pro-badge" style="margin:0 auto 16px;background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">⬡ Elite Feature</div>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
+        </div>
+        <div id="stressContent" style="display:none;">
+          <!-- Scenario Presets -->
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Choose a Scenario</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="stressPresets">
+              <button class="toggle-chip active" onclick="setStressScenario('crash',this)"><i class="fas fa-arrow-trend-down"></i> Market Crash</button>
+              <button class="toggle-chip" onclick="setStressScenario('inflation',this)"><i class="fas fa-fire"></i> Inflation Spike</button>
+              <button class="toggle-chip" onclick="setStressScenario('realestate',this)"><i class="fas fa-house-damage"></i> Real Estate Dip</button>
+              <button class="toggle-chip" onclick="setStressScenario('crypto',this)"><i class="fas fa-bitcoin"></i> Crypto Winter</button>
+              <button class="toggle-chip" onclick="setStressScenario('custom',this)"><i class="fas fa-sliders"></i> Custom</button>
+            </div>
+          </div>
+
+          <!-- Custom sliders (hidden by default) -->
+          <div id="stressCustomSliders" style="display:none;margin-bottom:16px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;">
+            <div style="font-size:12px;font-weight:600;margin-bottom:12px;">Custom Shock Percentages (negative = loss)</div>
+            <div class="form-grid-2">
+              <div class="field"><label>Cash <span id="stressCashVal" class="slider-val">-5%</span></label><input type="range" id="stressCash" min="-100" max="100" value="-5" oninput="document.getElementById('stressCashVal').textContent=this.value+'%';runStressTest()"></div>
+              <div class="field"><label>Physical Assets <span id="stressPhysVal" class="slider-val">-35%</span></label><input type="range" id="stressPhys" min="-100" max="100" value="-35" oninput="document.getElementById('stressPhysVal').textContent=this.value+'%';runStressTest()"></div>
+              <div class="field"><label>Investments <span id="stressInvVal" class="slider-val">-30%</span></label><input type="range" id="stressInv" min="-100" max="100" value="-30" oninput="document.getElementById('stressInvVal').textContent=this.value+'%';runStressTest()"></div>
+              <div class="field"><label>Liabilities <span id="stressLiabVal" class="slider-val">+5%</span></label><input type="range" id="stressLiab" min="-100" max="200" value="5" oninput="document.getElementById('stressLiabVal').textContent='+'+(this.value>0?'+':'')+this.value+'%';runStressTest()"></div>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div id="stressResults"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ AI ADVISOR PAGE ═══════ -->
+      <div class="page" id="page-ai">
+        <div class="greeting"><div><h2 class="serif greeting-title">AI Portfolio <span class="accent">Advisor</span></h2><p class="text-dim" style="font-size:13px;">Ask anything about your portfolio — allocation, risk, FIRE, or strategy.</p></div></div>
+        <div id="aiLock" class="pro-gate-card">
+          <div class="pro-gate-icon"><i class="fas fa-robot"></i></div>
+          <div class="serif" style="font-size:20px;margin-bottom:8px;">AI Portfolio Advisor</div>
+          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Chat with an AI that sees your full portfolio. Review your allocation, get rebalancing suggestions, and ask strategy questions. Powered by Gemini — 5 questions per week.</p>
+          <div class="pro-badge" style="margin:0 auto 16px;background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">⬡ Elite Feature</div>
+          <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
+        </div>
+        <div id="aiContent" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <span style="font-size:11px;color:var(--text-muted);" id="aiUsageLabel">0/5 used this week</span>
+            <button class="btn btn-secondary btn-sm" onclick="clearAIChat()"><i class="fas fa-trash"></i> Clear Chat</button>
+          </div>
+          <div id="aiChat" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;min-height:300px;max-height:50vh;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:12px;">
+            <div class="ai-msg ai-msg-bot">
+              <div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>
+              <div class="ai-msg-text">Hello! I'm your AI portfolio advisor. I can see your full portfolio — ask me anything. For example:<br/><br/>• "Am I overexposed to any category?"<br/>• "What should I rebalance?"<br/>• "Is my emergency fund sufficient?"<br/>• "How can I reach my FI target faster?"</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="aiQuestion" placeholder="Ask about your portfolio…" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;" onkeydown="if(event.key==='Enter')askAI()" maxlength="300"/>
+            <button class="btn btn-primary" id="aiAskBtn" onclick="askAI()"><i class="fas fa-paper-plane"></i> Ask</button>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px;text-align:center;">Powered by Gemini · 5 questions/week · Responses are AI-generated, not financial advice</div>
+        </div>
+      </div>
+
     </div><!-- /page-content -->
   </div><!-- /main-content -->
 </div><!-- /app-layout -->
@@ -1210,6 +1286,12 @@
     </div>
 
     <!-- section: ANALYTICS & ACCOUNT -->
+    <div class="mob-section-label">Elite Intelligence</div>
+    <div class="mob-grid">
+      <button class="mob-menu-item" onclick="switchProPage('stress');closeMobileMenu()"><i class="fas fa-shield-halved"></i> Stress Test</button>
+      <button class="mob-menu-item" onclick="switchProPage('ai');closeMobileMenu()"><i class="fas fa-robot"></i> AI Advisor</button>
+    </div>
+
     <div class="mob-section-label">Analytics &amp; Account</div>
     <div class="mob-grid">
       <button class="mob-menu-item" onclick="switchProPage('goals');closeMobileMenu()"><i class="fas fa-bullseye"></i> Goal Tracker</button>

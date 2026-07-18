@@ -640,6 +640,26 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
             </div>
           </div>
         </div>
+
+        <!-- Custom Branding (Elite) -->
+        <div class="settings-section" id="brandingSection" style="display:none;">
+          <div class="section-header">
+            <div><div class="section-header-title" style="color:#a855f7;"><i class="fas fa-palette"></i> Custom Branding</div><div class="section-header-sub">White-label your dashboard with your own brand</div></div>
+            <span class="pro-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">Elite</span>
+          </div>
+          <div class="section-body">
+            <div class="form-grid-2">
+              <div class="field"><label>Brand Name</label><input type="text" id="brandName" placeholder="e.g. My Wealth Vault" maxlength="30"/></div>
+              <div class="field"><label>Brand Icon (emoji)</label><input type="text" id="brandIcon" placeholder="e.g. 💰" maxlength="2" style="font-size:20px;text-align:center;"/></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+              <button class="btn btn-primary btn-sm" onclick="applyBrandingSettings()"><i class="fas fa-circle-check"></i> Apply Branding</button>
+              <button class="btn btn-secondary btn-sm" onclick="revertBranding()"><i class="fas fa-rotate-left"></i> Revert to Keno Vault</button>
+            </div>
+            <div id="brandingMsg" style="font-size:11px;color:var(--text-muted);margin-top:8px;">Replaces "Keno Vault" branding across your dashboard.</div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ═══════ BILLING TAB ═══════ -->
@@ -803,7 +823,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
         <!-- PRO USERS LIST -->
         <div class="settings-section">
           <div class="section-header">
-            <div><div class="section-header-title">Active Pro Subscribers</div><div class="section-header-sub">All users with active Pro plans</div></div>
+            <div><div class="section-header-title">Active Subscribers</div><div class="section-header-sub">All users with active paid plans</div></div>
             <button onclick="loadProUsers()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-dim);font-family:'DM Sans',sans-serif;">↻ Refresh</button>
           </div>
           <div class="section-body" style="padding:0;">
@@ -946,7 +966,6 @@ function setProfileUI(user) {
   }
   const planBadge = document.getElementById('profilePlanBadge');
   if (planBadge) {
-    if (isPro()) planBadge.innerHTML = '<span class="pro-badge">⬡ Pro Plan</span>';
     if (isElite()) planBadge.innerHTML = '<span class="pro-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">⬡ Elite Plan</span>';
     else if (isPro()) planBadge.innerHTML = '<span class="pro-badge">⬡ Pro Plan</span>';
     else if (isGrowth()) planBadge.innerHTML = '<span class="pro-badge">⬡ Growth Plan</span>';
@@ -1026,6 +1045,8 @@ function initSettingsUI() {
   const prefs = JSON.parse(localStorage.getItem('kv-prefs') || '{}');
   const de = document.getElementById('deprecEnabled');    if (de) de.checked = prefs.autoDeprec || false;
   loadNotifPrefs();
+  loadBranding();
+  if (isElite()) document.getElementById('brandingSection').style.display = 'block';
   if (!isPro()) {
     const si = document.getElementById('proOnlyShield'); if (si) si.style.display = 'inline-flex';
     const pi = document.getElementById('proOnlyPin');    if (pi) pi.style.display = 'inline-flex';
@@ -1043,7 +1064,7 @@ async function adminActivatePro() {
   showAdminResult('Processing…', 'info');
 
   try {
-    const isActive = (plan === 'pro' || plan === 'growth') ? 'active' : 'inactive';
+    const isActive = (plan === 'pro' || plan === 'growth' || plan === 'elite') ? 'active' : 'inactive';
 
     // Upsert by email — no user_id needed for admin-created records
     const { error } = await sb.from('subscriptions').upsert({
@@ -1059,8 +1080,9 @@ async function adminActivatePro() {
 
     if (error) throw error;
 
-    const msg = plan === 'pro'
-      ? `<i class="fas fa-circle-check"></i> Pro activated for ${email}. They will see Pro features on next login.`
+    var planLabel = plan === 'elite' ? 'Elite' : plan === 'pro' ? 'Pro' : plan === 'growth' ? 'Growth' : 'Free';
+    const msg = (plan === 'pro' || plan === 'growth' || plan === 'elite')
+      ? `<i class="fas fa-circle-check"></i> ${planLabel} activated for ${email}. They will see ${planLabel} features on next login.`
       : `<i class="fas fa-circle-check"></i> Plan set to Free for ${email}.`;
     showAdminResult(msg, 'success');
     toast(msg, 'success');
@@ -1070,7 +1092,7 @@ async function adminActivatePro() {
   } catch (e) {
     // Fallback: try plain insert if upsert fails
     try {
-      const isActive = (plan === 'pro' || plan === 'growth') ? 'active' : 'inactive';
+      const isActive = (plan === 'pro' || plan === 'growth' || plan === 'elite') ? 'active' : 'inactive';
       // First delete any existing row for this email
       await sb.from('subscriptions').delete().eq('email', email);
       // Then insert fresh
@@ -1079,8 +1101,8 @@ async function adminActivatePro() {
         updated_at: new Date().toISOString(),
       });
       if (insertErr) throw insertErr;
-      const msg = plan === 'pro'
-        ? `<i class="fas fa-circle-check"></i> Pro activated for ${email}.`
+      const msg = (plan === 'pro' || plan === 'growth' || plan === 'elite')
+        ? '<i class="fas fa-circle-check"></i> ' + planLabel + ' activated for ' + email + '.'
         : `<i class="fas fa-circle-check"></i> Plan set to Free for ${email}.`;
       showAdminResult(msg, 'success');
       toast(msg, 'success');
@@ -1138,11 +1160,11 @@ async function loadProUsers() {
   listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;"><div class="spinner" style="margin:0 auto 8px;width:24px;height:24px;border-width:2px;"></div>Loading<i class="fas fa-ellipsis"></i></div>';
   try {
     const { data, error } = await sb.from('subscriptions')
-      .select('*').in('plan', ['pro', 'growth'])
+      .select('*').in('plan', ['pro', 'growth', 'elite'])
       .order('created_at', { ascending: false });
     if (error) throw error;
     if (!data || !data.length) {
-      listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">No Pro subscribers yet.</div>';
+      listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">No paid subscribers yet.</div>';
       return;
     }
     listEl.innerHTML = data.map(s => `
@@ -1155,7 +1177,7 @@ async function loadProUsers() {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">${s.plan === 'pro' ? 'PRO ⬡' : 'GROWTH ⬡'}</span>
+          <span style="background:linear-gradient(135deg,${s.plan==='elite'?'#a855f7,#7c3aed':'#f97316,#ea580c'});color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">${s.plan==='elite'?'ELITE ⬡':s.plan==='pro'?'PRO ⬡':'GROWTH ⬡'}</span>
           <button onclick="quickRemovePro('${s.email}')"
             style="background:transparent;border:1px solid rgba(248,113,113,0.3);color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">
             Remove
@@ -1332,6 +1354,30 @@ function savePreferences() {
 }
 
 // ══ EMAIL NOTIFICATION PREFS ══
+function applyBrandingSettings() {
+  var name = document.getElementById('brandName')?.value?.trim() || '';
+  var icon = document.getElementById('brandIcon')?.value?.trim() || '';
+  localStorage.setItem('kv-branding', JSON.stringify({ name: name, icon: icon }));
+  var msg = document.getElementById('brandingMsg');
+  if (msg) msg.innerHTML = '<span style="color:#34d399;"><i class="fas fa-circle-check"></i> Branding applied! Changes take effect on next page load.</span>';
+  setTimeout(function() { if (msg) msg.innerHTML = 'Replaces "Keno Vault" branding across your dashboard.'; }, 4000);
+}
+
+function revertBranding() {
+  localStorage.removeItem('kv-branding');
+  document.getElementById('brandName').value = '';
+  document.getElementById('brandIcon').value = '';
+  var msg = document.getElementById('brandingMsg');
+  if (msg) msg.innerHTML = '<span style="color:#34d399;"><i class="fas fa-rotate-left"></i> Reverted to Keno Vault defaults.</span>';
+  setTimeout(function() { if (msg) msg.innerHTML = 'Replaces "Keno Vault" branding across your dashboard.'; }, 4000);
+}
+
+function loadBranding() {
+  var saved = JSON.parse(localStorage.getItem('kv-branding') || '{}');
+  document.getElementById('brandName').value = saved.name || '';
+  document.getElementById('brandIcon').value  = saved.icon || '';
+}
+
 function saveNotifPrefs() {
   var p = {
     login_alerts:    document.getElementById('loginAlertsEnabled')?.checked ?? true,
@@ -1502,12 +1548,14 @@ async function bootSettings(session) {
     // Load subscription — matches dashboard app.js logic
     var { data: byEmail } = await sb.from('subscriptions')
       .select('plan,status').eq('email', currentUser.email).maybeSingle();
-    if (byEmail?.plan === 'pro') { userPlan = 'pro'; }
+    if (byEmail?.plan === 'elite') { userPlan = 'elite'; }
+    else if (byEmail?.plan === 'pro') { userPlan = 'pro'; }
     else if (byEmail?.plan === 'growth') { userPlan = 'growth'; }
     else {
       var { data: byId } = await sb.from('subscriptions')
         .select('plan,status').eq('user_id', currentUser.id).maybeSingle();
-      if (byId?.plan === 'pro') { userPlan = 'pro'; }
+      if (byId?.plan === 'elite') { userPlan = 'elite'; }
+      else if (byId?.plan === 'pro') { userPlan = 'pro'; }
       else if (byId?.plan === 'growth') { userPlan = 'growth'; }
       else { userPlan = 'free'; }
     }

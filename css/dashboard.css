@@ -1205,6 +1205,30 @@ canvas {
   .invest-cards { display: none !important; }
 }
 
+/* ══ AI CHAT ═══════════════════════════════════════════════════ */
+.ai-msg { display: flex; gap: 10px; align-items: flex-start; }
+.ai-msg-bot { flex-direction: row; }
+.ai-msg-user { flex-direction: row-reverse; }
+.ai-msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(168,85,247,0.15); color: #a855f7;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.ai-msg-user .ai-msg-avatar { display: none; }
+.ai-msg-text {
+  max-width: 80%; padding: 10px 14px; border-radius: 12px;
+  font-size: 13px; line-height: 1.6; word-wrap: break-word;
+}
+.ai-msg-bot .ai-msg-text {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.ai-msg-user .ai-msg-text {
+  background: rgba(168,85,247,0.12); border: 1px solid rgba(168,85,247,0.2);
+  color: var(--text);
+}
+
 /* ══ GOAL CARDS ═══════════════════════════════════════════════ */
 .goal-card { padding: 20px; }
 .goal-card-header {

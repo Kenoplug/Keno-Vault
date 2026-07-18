@@ -29,6 +29,11 @@ function fmtAmt(v) {
 
 // ══ STYLED CONFIRM DIALOG ═════════════════════════════════════════
 function showConfirm(title, msg, okText, icon) {
+  // Remove any lingering prompt input
+  var oldInput = document.getElementById('confirmInput');
+  if (oldInput) oldInput.remove();
+  document.getElementById('confirmMsg').style.display = '';
+
   return new Promise(function(resolve) {
     document.getElementById('confirmIcon').textContent = icon || '⚠️';
     document.getElementById('confirmTitle').textContent = title || 'Are you sure?';
@@ -47,6 +52,46 @@ function showConfirm(title, msg, okText, icon) {
     document.getElementById('confirmCancel').onclick = function() { cleanup(false); };
     document.getElementById('confirmOk').onclick = function() { cleanup(true); };
     openModal('confirmModal');
+  });
+}
+
+function showPrompt(title, msg, placeholder, okText, icon) {
+  // Create a text input inside the confirm modal
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'confirmInput';
+  input.placeholder = placeholder || '';
+  input.style.cssText = 'width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--text);font-family:inherit;margin-bottom:16px;text-align:center;';
+  input.maxLength = 40;
+
+  return new Promise(function(resolve) {
+    document.getElementById('confirmIcon').textContent = icon || '✏️';
+    document.getElementById('confirmTitle').textContent = title || 'Enter value';
+    document.getElementById('confirmMsg').textContent = msg || '';
+    document.getElementById('confirmMsg').style.display = msg ? '' : 'none';
+    document.getElementById('confirmOk').textContent = okText || 'Save';
+    var okBtn = document.getElementById('confirmOk');
+    okBtn.style.background = 'var(--accent)';
+    okBtn.style.color = '#fff';
+    okBtn.style.border = 'none';
+
+    // Insert input before the button row
+    var btnRow = document.getElementById('confirmOk').parentNode;
+    btnRow.parentNode.insertBefore(input, btnRow);
+
+    function cleanup(val) {
+      closeModal('confirmModal');
+      document.getElementById('confirmCancel').onclick = null;
+      document.getElementById('confirmOk').onclick = null;
+      if (input.parentNode) input.remove();
+      resolve(val);
+    }
+    document.getElementById('confirmCancel').onclick = function() { cleanup(null); };
+    document.getElementById('confirmOk').onclick = function() { cleanup(input.value.trim() || null); };
+    // Submit on Enter
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('confirmOk').click(); });
+    openModal('confirmModal');
+    setTimeout(function() { input.focus(); }, 150);
   });
 }
 
@@ -395,6 +440,8 @@ var PRO_PAGE_IDS = {
   fire:      { lock: 'fireLock',      content: 'fireContent',      tier: 'pro' },
   debt:      { lock: 'debtLock',      content: 'debtContent',      tier: 'pro' },
   tax:       { lock: 'taxLock',       content: 'taxContent',       tier: 'pro' },
+  stress:    { lock: 'stressLock',    content: 'stressContent',    tier: 'elite' },
+  ai:        { lock: 'aiLock',        content: 'aiContent',        tier: 'elite' },
 };
 
 function switchProPage(name) {
@@ -416,6 +463,8 @@ function switchProPage(name) {
   if (name === 'score')     { renderScore();    return; }
   if (name === 'currency')  { renderCurrency(); return; }
   if (name === 'goals')     { renderGoals();    return; }
+  if (name === 'stress')    { runStressTest();  return; }
+  if (name === 'ai')        { updateAIUsage();  return; }
 }
 
 function togglePanel(panelId, chipId) {
@@ -645,6 +694,13 @@ function updatePlanUI() {
     else if (isGrowth()) planEl.textContent = 'Growth Plan ⬡';
     else planEl.textContent = 'Free Plan';
   }
+  // Show report button for elite users
+  var reportBtn = document.getElementById('reportBtn');
+  if (reportBtn) reportBtn.style.display = isElite() ? 'inline-block' : 'none';
+
+  // Apply custom branding (Elite)
+  applyBranding();
+
   // Show upgrade banner for free users only
   if (banner) banner.style.display = (userPlan === 'free') ? 'flex' : 'none';
 
@@ -652,11 +708,12 @@ function updatePlanUI() {
   var scoreLockOverlay = document.getElementById('scoreLockOverlay');
   if (scoreLockOverlay) scoreLockOverlay.style.display = isGrowth() ? 'none' : 'flex';
 
-  // Lock icons — hide based on actual tier, not blanket
+  // Lock icons — hide based on actual tier
   document.querySelectorAll('.pro-lock').forEach(function(el) {
     var tier = el.getAttribute('data-tier') || 'growth';
-    if (tier === 'growth') el.style.display = isGrowth() ? 'none' : 'inline';
-    else el.style.display = isPro() ? 'none' : 'inline';
+    if (tier === 'elite') el.style.display = isElite() ? 'none' : 'inline';
+    else if (tier === 'pro') el.style.display = isPro() ? 'none' : 'inline';
+    else el.style.display = isGrowth() ? 'none' : 'inline';
   });
 
   // Gated pages
@@ -687,12 +744,13 @@ async function loadAssets() {
   setSyncState('syncing', 'Loading…');
   const { data, error } = await sb.from('assets').select('*').order('created_at', { ascending: true });
   if (error) { setSyncState('error', 'Error'); UI.toast('Load error: ' + error.message, 'error'); return; }
+  if (!data) { setSyncState('error', 'Error'); console.error('loadAssets: data is null'); return; }
   assets = data.map(r => ({
     id: r.id, name: r.name, cat: r.cat, value: parseFloat(r.value) || 0,
     notes: r.notes || '', principal: r.principal ? parseFloat(r.principal) : null,
     rate: r.rate ? parseFloat(r.rate) : null, years: r.years ? parseFloat(r.years) : null,
     fv: parseFloat(r.fv) || 0, interest: parseFloat(r.interest) || 0,
-    start_date: r.start_date || null,
+    custom_cat: r.custom_cat || null, start_date: r.start_date || null,
     depreciationType: r.depreciation_type || null, depreciationRate: r.depreciation_rate || null,
     usefulLife: r.useful_life || null, salvageValue: r.salvage_value || null,
     originalCost: r.original_cost || null, depreciationStart: r.depreciation_start || null,
@@ -754,7 +812,7 @@ async function dbInsert(a) {
     user_id: currentUser.id, name: a.name, cat: a.cat, value: a.value,
     notes: a.notes || null, principal: a.principal || null, rate: a.rate || null,
     years: a.years || null, fv: a.fv || 0, interest: a.interest || 0,
-    start_date: a.start_date || null,
+    custom_cat: a.custom_cat || null, start_date: a.start_date || null,
     depreciation_type: a.depreciationType || null, depreciation_rate: a.depreciationRate || null,
     useful_life: a.usefulLife || null, salvage_value: a.salvageValue || null,
     original_cost: a.originalCost || null, depreciation_start: a.depreciationStart || null,
@@ -768,7 +826,7 @@ async function dbUpdate(a) {
     name: a.name, cat: a.cat, value: a.value, notes: a.notes || null,
     principal: a.principal || null, rate: a.rate || null, years: a.years || null,
     fv: a.fv || 0, interest: a.interest || 0,
-    start_date: a.start_date || null,
+    custom_cat: a.custom_cat || null, start_date: a.start_date || null,
     depreciation_type: a.depreciationType || null,
     depreciation_rate: a.depreciationRate || null,
     useful_life: a.usefulLife || null,
@@ -803,9 +861,11 @@ function handleCatChange() {
   var investWrap  = document.getElementById('investToggleWrap');
   var liabWrap    = document.getElementById('liabToggleWrap');
   var deprecWrap  = document.getElementById('deprecToggleWrap');
+  var customWrap  = document.getElementById('fCustomCatWrap');
   if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
   if (liabWrap)   liabWrap.style.display   = cat === 'liability'  ? 'block' : 'none';
   if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
+  if (customWrap) customWrap.style.display = cat === 'custom' ? 'block' : 'none';
   // Collapse panels when category changes away
   if (cat !== 'investment') {
     var p = document.getElementById('investPanel'); if (p) p.classList.remove('open');
@@ -874,6 +934,7 @@ async function addAsset() {
 
   const name  = document.getElementById('fName').value.trim();
   const cat   = document.getElementById('fCategory').value;
+  const customCat = cat === 'custom' ? (document.getElementById('fCustomCat')?.value?.trim() || null) : null;
   const value = parseFloat(document.getElementById('fValue').value);
   const notes = document.getElementById('fNotes').value.trim();
   const errEl = document.getElementById('formError');
@@ -924,7 +985,7 @@ async function addAsset() {
     var savedPrincipal = (principal && rate && years) ? storedPrincipal : null;
     var savedStartDate = startDate || null;
     const asset = { name, cat, value: storedValue, notes, principal: savedPrincipal, rate, years, fv, interest,
-      start_date: savedStartDate,
+      custom_cat: customCat, start_date: savedStartDate,
       depreciationType, depreciationRate, usefulLife, salvageValue: Math.round(toStored(salvageValue || 0)), originalCost: storedValue, depreciationStart };
     const newId = await dbInsert(asset);
     asset.id = newId;
@@ -993,6 +1054,8 @@ function openEditModal(id) {
     document.getElementById('eTermUnit').value  = 'years';
   }
   document.getElementById('eStartDate').value = a.start_date ? a.start_date.slice(0,10) : '';
+  document.getElementById('eCustomCat').value = a.custom_cat || '';
+  if (a.custom_cat) document.getElementById('eCustomCatWrap').style.display = 'block';
   // Depreciation fields
   var depType = document.getElementById('eDeprecType');
   var depLife = document.getElementById('eUsefulLife');
@@ -1024,9 +1087,11 @@ function handleEditCat() {
   const investWrap = document.getElementById('eInvestWrap');
   const liabWrap   = document.getElementById('eLiabWrap');
   const deprecWrap = document.getElementById('eDeprecWrap');
+  const customWrap = document.getElementById('eCustomCatWrap');
   if (investWrap) investWrap.style.display = cat === 'investment' ? 'block' : 'none';
   if (liabWrap)   liabWrap.style.display   = cat === 'liability'  ? 'block' : 'none';
   if (deprecWrap) deprecWrap.style.display = (cat === 'physical' && isPro()) ? 'block' : 'none';
+  if (customWrap) customWrap.style.display = cat === 'custom' ? 'block' : 'none';
 }
 
 function calcEditProj() {
@@ -1090,6 +1155,7 @@ async function saveEdit() {
   var unit        = (document.getElementById('eTermUnit')||{}).value || 'years';
   const years     = tRaw ? (unit === 'months' ? tRaw / 12 : tRaw) : null;
   const eStartDate = document.getElementById('eStartDate')?.value || new Date().toISOString().slice(0,10);
+  const customCat = cat === 'custom' ? (document.getElementById('eCustomCat')?.value?.trim() || null) : null;
   if (cat === 'liability') {
     var eLiabRate = document.getElementById('eLiabRate');
     rate = eLiabRate ? (parseFloat(eLiabRate.value) || null) : null;
@@ -1124,7 +1190,7 @@ async function saveEdit() {
     var savedStartDate = eStartDate || new Date().toISOString().slice(0,10);
     Object.assign(a, {
       name, cat, value: storedValue, notes, principal, rate, years, fv, interest,
-      start_date: savedStartDate,
+      custom_cat: customCat, start_date: savedStartDate,
       depreciationType, depreciationRate, usefulLife, salvageValue,
       originalCost, depreciationStart
     });
@@ -1167,7 +1233,8 @@ function exportCSV() {
   if (!assets.length) { UI.toast('No data to export', 'info'); return; }
   var h = ['Name','Category','Notes','Value','Principal','Rate (%)','Years','FV','Interest'];
   var rows = assets.map(function(a) {
-    var catObj = CAT[a.cat] || { l: a.cat || 'Unknown' };
+    var isCustom = a.cat === 'custom' && a.custom_cat;
+    var catObj = isCustom ? { i: '', l: a.custom_cat } : (CAT[a.cat] || { l: a.cat || 'Unknown' });
     return [
       '"' + a.name + '"', catObj.l, '"' + (a.notes||'') + '"',
       a.value, a.principal||'', a.rate||'', a.years||'',
@@ -1282,6 +1349,8 @@ function renderTable() {
   const order = { cash: 0, physical: 1, investment: 2, liability: 3 };
   const sorted = [...assets].sort((a, b) => order[a.cat] - order[b.cat]);
   tbody.innerHTML = sorted.map(a => {
+    const isCustom = a.cat === 'custom' && a.custom_cat;
+    const catObj   = isCustom ? { i: '', l: a.custom_cat } : (CAT[a.cat] || { l: a.cat || 'Unknown' });
     const isLiab = a.cat === 'liability';
     const depStr = a.depreciationType ? `<span style="font-size:10px;color:var(--text-muted);">[${a.depreciationType}]</span>` : '';
     const proj   = a.fv > 0 ? `<span class="mono sensitive" style="color:var(--gold);">${fmt(a.fv)}</span>` : '<span style="color:var(--muted);">—</span>';
@@ -1289,7 +1358,7 @@ function renderTable() {
     const ratec  = a.rate && a.years ? `<span class="mono" style="color:var(--text-dim);font-size:11px;">${a.rate}%/${a.years}yr</span>` : '<span style="color:var(--muted);">—</span>';
     return `<tr class="animate-in">
       <td style="font-weight:500;">${a.name} ${depStr}</td>
-      <td><span class="badge" style="${(BADGE[a.cat] || '')}">${(CAT[a.cat] || {i:'📦',l:a.cat}).i} ${(CAT[a.cat] || {l:a.cat}).l}</span></td>
+      <td><span class="badge" style="${isCustom ? 'background:rgba(168,85,247,0.12);color:#c084fc;' : (BADGE[a.cat] || '')}">${catObj.i} ${catObj.l}</span></td>
       <td style="color:var(--text-dim);font-size:12px;">${a.notes || '—'}</td>
       <td><span class="mono sensitive" style="color:${isLiab ? 'var(--red)' : 'var(--text)'};">${isLiab ? '-' : ''}${fmt(a.value)}</span></td>
       <td>${proj}</td><td>${intc}</td><td>${ratec}</td>
@@ -2540,6 +2609,379 @@ function toggleFXCustomize() {
       }).join('');
     }
   }
+}
+
+// ══ CUSTOM BRANDING ═══════════════════════════════════════════
+function applyBranding() {
+  var b = JSON.parse(localStorage.getItem('kv-branding') || '{}');
+  var name = b.name || 'Keno Vault';
+  var icon = b.icon || '⬡';
+  // Sidebar logo
+  var logo = document.querySelector('.sidebar-logo');
+  if (logo) logo.innerHTML = icon + ' <span>' + name + '</span>';
+  // Breadcrumb
+  var bc = document.querySelector('.breadcrumb span');
+  // Browser title
+  document.title = 'Dashboard — ' + name;
+}
+
+// ══ AI PORTFOLIO ADVISOR ═══════════════════════════════════════
+var AI_URL = 'https://soxqotattmhahzpehycz.supabase.co/functions/v1/ai-advisor';
+
+function getAIWeekKey() {
+  var now = new Date();
+  var start = new Date(now.getFullYear(), 0, 1);
+  return 'kv-ai-' + Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+}
+
+function getAIUsage() {
+  try {
+    var data = JSON.parse(localStorage.getItem('kv-ai-usage') || '{}');
+    var key = getAIWeekKey();
+    if (data.week !== key) return { week: key, count: 0 };
+    return data;
+  } catch(e) { return { week: getAIWeekKey(), count: 0 }; }
+}
+
+function saveAIUsage(data) {
+  localStorage.setItem('kv-ai-usage', JSON.stringify(data));
+}
+
+function updateAIUsage() {
+  var usage = getAIUsage();
+  var label = document.getElementById('aiUsageLabel');
+  if (label) label.textContent = usage.count + '/5 used this week';
+  var btn = document.getElementById('aiAskBtn');
+  if (btn) btn.disabled = usage.count >= 5;
+  var input = document.getElementById('aiQuestion');
+  if (input) input.disabled = usage.count >= 5;
+}
+
+async function askAI() {
+  var usage = getAIUsage();
+  if (usage.count >= 5) { UI.toast('Weekly limit reached (5/5). Resets next week.', 'info'); return; }
+  var input = document.getElementById('aiQuestion');
+  var question = input?.value?.trim();
+  if (!question) return;
+
+  // Prepare portfolio summary
+  var total = assets.filter(function(a){return a.cat!=='liability';}).reduce(function(s,a){return s+a.value;},0);
+  var totalLiab = assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+  var portfolio = {
+    netWorth: total - totalLiab,
+    assets: assets.map(function(a){ return { name:a.name, cat:a.cat, value:a.value, rate:a.rate, years:a.years, fv:a.fv, interest:a.interest, custom_cat:a.custom_cat }; }),
+    allocation: {
+      cash: assets.filter(function(a){return a.cat==='cash';}).reduce(function(s,a){return s+a.value;},0),
+      physical: assets.filter(function(a){return a.cat==='physical';}).reduce(function(s,a){return s+a.value;},0),
+      investment: assets.filter(function(a){return a.cat==='investment';}).reduce(function(s,a){return s+a.value;},0),
+      liability: totalLiab
+    },
+    goals: _goals || [],
+    currency: Calculators.getBaseCurrency ? Calculators.getBaseCurrency() : 'USD',
+  };
+
+  // Show user message
+  appendAIMessage(question, 'user');
+  input.value = '';
+  input.disabled = true;
+  var btn = document.getElementById('aiAskBtn'); if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  // Show thinking
+  appendAIMessage('<i>Analyzing your portfolio…</i>', 'bot');
+
+  try {
+    var resp = await fetch(AI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ portfolio: portfolio, question: question }),
+    });
+    var data = await resp.json();
+    // Remove thinking message
+    var chat = document.getElementById('aiChat');
+    if (chat) chat.removeChild(chat.lastChild);
+
+    if (data.error) {
+      appendAIMessage('Sorry, something went wrong: ' + data.error, 'bot');
+    } else {
+      appendAIMessage(data.reply || 'No response.', 'bot');
+      usage.count++;
+      saveAIUsage(usage);
+      updateAIUsage();
+    }
+  } catch(e) {
+    var chat2 = document.getElementById('aiChat');
+    if (chat2) chat2.removeChild(chat2.lastChild);
+    appendAIMessage('Network error. Check your connection and try again.', 'bot');
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Ask'; }
+  if (input) { input.disabled = false; input.focus(); }
+}
+
+function appendAIMessage(text, role) {
+  var chat = document.getElementById('aiChat');
+  if (!chat) return;
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + (role === 'user' ? 'ai-msg-user' : 'ai-msg-bot');
+  div.innerHTML = (role === 'user' ? '' : '<div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>') +
+    '<div class="ai-msg-text">' + text + '</div>';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function clearAIChat() {
+  var chat = document.getElementById('aiChat');
+  if (chat) chat.innerHTML = '<div class="ai-msg ai-msg-bot"><div class="ai-msg-avatar"><i class="fas fa-robot"></i></div><div class="ai-msg-text">Chat cleared. Ask me anything about your portfolio.</div></div>';
+}
+
+// ══ PORTFOLIO STRESS TEST ══════════════════════════════════════
+var _stressScenario = 'crash';
+
+var SCENARIOS = {
+  crash:      { cash: -5,   physical: -15,  investment: -30,  liability: 5   },
+  inflation:  { cash: -20,  physical: -10,  investment: -25,  liability: 10  },
+  realestate: { cash: -5,   physical: -35,  investment: -10,  liability: 0   },
+  crypto:     { cash: -5,   physical: -10,  investment: -60,  liability: 5   },
+};
+
+function setStressScenario(name, btn) {
+  _stressScenario = name;
+  document.querySelectorAll('#stressPresets .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var custom = document.getElementById('stressCustomSliders');
+  if (custom) custom.style.display = name === 'custom' ? 'block' : 'none';
+  if (name !== 'custom' && SCENARIOS[name]) {
+    var s = SCENARIOS[name];
+    document.getElementById('stressCash').value  = s.cash;
+    document.getElementById('stressPhys').value  = s.physical;
+    document.getElementById('stressInv').value   = s.investment;
+    document.getElementById('stressLiab').value  = s.liability;
+    document.getElementById('stressCashVal').textContent  = s.cash + '%';
+    document.getElementById('stressPhysVal').textContent  = s.physical + '%';
+    document.getElementById('stressInvVal').textContent   = s.investment + '%';
+    document.getElementById('stressLiabVal').textContent  = (s.liability > 0 ? '+' : '') + s.liability + '%';
+  }
+  runStressTest();
+}
+
+function runStressTest() {
+  var el = document.getElementById('stressResults');
+  if (!el) return;
+
+  var shockCash = parseInt(document.getElementById('stressCash')?.value) || 0;
+  var shockPhys = parseInt(document.getElementById('stressPhys')?.value) || 0;
+  var shockInv  = parseInt(document.getElementById('stressInv')?.value)  || 0;
+  var shockLiab = parseInt(document.getElementById('stressLiab')?.value) || 0;
+
+  var bycat = { cash:0, physical:0, investment:0, liability:0 };
+  assets.forEach(function(a) { bycat[a.cat] = (bycat[a.cat]||0) + a.value; });
+
+  var originalNW = bycat.cash + bycat.physical + bycat.investment - bycat.liability;
+  var stressedCash = bycat.cash       * (1 + shockCash / 100);
+  var stressedPhys = bycat.physical   * (1 + shockPhys / 100);
+  var stressedInv  = bycat.investment * (1 + shockInv  / 100);
+  var stressedLiab = bycat.liability  * (1 + shockLiab / 100);
+  var stressedNW   = stressedCash + stressedPhys + stressedInv - stressedLiab;
+  var loss         = originalNW - stressedNW;
+  var lossPct      = originalNW > 0 ? ((loss / originalNW) * 100).toFixed(1) : '0';
+
+  var worstCat = '', worstPct = 0;
+  [{n:'Cash',p:shockCash,v:bycat.cash},{n:'Physical',p:shockPhys,v:bycat.physical},{n:'Investments',p:shockInv,v:bycat.investment},{n:'Liabilities',p:shockLiab,v:bycat.liability}].forEach(function(c) {
+    var impact = Math.abs(c.p);
+    if (impact > worstPct && c.v > 0) { worstPct = impact; worstCat = c.n; }
+  });
+
+  var statusColor = lossPct > 30 ? '#f87171' : lossPct > 15 ? '#f4c553' : lossPct > 5 ? '#f97316' : '#34d399';
+  var statusLabel = lossPct > 30 ? 'Highly Vulnerable' : lossPct > 15 ? 'Moderately Exposed' : lossPct > 5 ? 'Mildly Affected' : 'Resilient';
+  var statusIcon  = lossPct > 30 ? '🔴' : lossPct > 15 ? '🟡' : lossPct > 5 ? '🟠' : '🟢';
+
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;">' +
+      '<div class="kpi-card" style="text-align:center;padding:20px;">' +
+        '<div class="kpi-label">Original Net Worth</div>' +
+        '<div class="kpi-value sensitive" style="color:var(--text);">' + fmt(originalNW) + '</div>' +
+      '</div>' +
+      '<div class="kpi-card" style="text-align:center;padding:20px;">' +
+        '<div class="kpi-label">Stressed Net Worth</div>' +
+        '<div class="kpi-value sensitive" style="color:' + statusColor + ';">' + fmt(stressedNW) + '</div>' +
+        '<div class="kpi-change" style="color:' + statusColor + ';">' + (loss > 0 ? '-' : '+') + fmt(Math.abs(loss)) + ' (' + (lossPct > 0 ? '-' : '+') + lossPct + '%)</div>' +
+      '</div>' +
+      '<div class="kpi-card" style="text-align:center;padding:20px;">' +
+        '<div class="kpi-label">Resilience Rating</div>' +
+        '<div style="font-size:28px;margin-bottom:2px;">' + statusIcon + '</div>' +
+        '<div class="kpi-change" style="color:' + statusColor + ';font-weight:700;">' + statusLabel + '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:14px;">Category Impact Breakdown</div>' +
+      '<div style="display:flex;flex-direction:column;gap:10px;">' +
+        buildStressBar('Cash', shockCash, stressedCash, bycat.cash, '#60a5fa') +
+        buildStressBar('Physical', shockPhys, stressedPhys, bycat.physical, '#34d399') +
+        buildStressBar('Investments', shockInv, stressedInv, bycat.investment, '#f97316') +
+        (bycat.liability > 0 ? buildStressBar('Liabilities', shockLiab, stressedLiab, bycat.liability, '#f87171') : '') +
+      '</div>' +
+    '</div>' +
+
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;">' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">Strategic Takeaway</div>' +
+      '<p style="font-size:13px;color:var(--text-dim);line-height:1.7;margin:0;">' +
+        (lossPct > 30
+          ? 'This scenario would wipe out <strong style="color:#f87171;">over 30% of your net worth</strong>. ' + worstCat + ' takes the biggest hit. Consider rebalancing away from ' + worstCat.toLowerCase() + ' to reduce concentration risk and improve your shock resilience.'
+          : lossPct > 15
+            ? 'Your portfolio would lose <strong style="color:#f4c553;">' + lossPct + '% of its value</strong> under this scenario. ' + worstCat + ' is your most exposed category. Diversifying across more asset types can cushion future shocks.'
+            : lossPct > 5
+              ? 'A modest <strong style="color:#f97316;">' + lossPct + '% decline</strong> in net worth. Your portfolio shows reasonable diversification — ' + worstCat + ' bears the most impact but the damage is contained.'
+              : 'Your portfolio is <strong style="color:#34d399;">highly resilient</strong> to this scenario. Net worth barely moves. Keep maintaining your balanced allocation across categories — it\'s working.') +
+      '</p>' +
+    '</div>';
+}
+
+function buildStressBar(label, shock, stressed, original, color) {
+  if (original === 0) return '';
+  var change = stressed - original;
+  var arrow = change >= 0 ? '<i class="fas fa-arrow-up"></i>' : '<i class="fas fa-arrow-down"></i>';
+  return '<div style="display:flex;align-items:center;gap:10px;">' +
+    '<span style="font-size:12px;font-weight:500;min-width:90px;">' + label + '</span>' +
+    '<div style="flex:1;display:flex;align-items:center;gap:8px;">' +
+      '<span class="mono sensitive" style="font-size:13px;min-width:90px;text-align:right;">' + fmt(original) + '</span>' +
+      '<span style="font-size:14px;color:' + (change >= 0 ? '#34d399' : '#f87171') + ';">' + arrow + '</span>' +
+      '<span class="mono sensitive" style="font-size:13px;min-width:90px;color:' + (change >= 0 ? '#34d399' : '#f87171') + ';">' + fmt(Math.round(stressed)) + '</span>' +
+      '<span style="font-size:11px;color:var(--text-muted);">(' + (shock > 0 ? '+' : '') + shock + '%)</span>' +
+    '</div>' +
+  '</div>';
+}
+
+// ══ MONTHLY WEALTH REPORT ═══════════════════════════════════════
+async function generateMonthlyReport() {
+  var includeFIRE = isPro() && await showConfirm('Monthly Report', 'Include FIRE Projection in the report?', 'Yes', '📊');
+  var preparedFor = await showPrompt('Add Recipient', '(optional)', 'e.g. My Accountant or Mortgage Advisor', 'Add to Report', '📋');
+  if (preparedFor === null) preparedFor = ''; // cancelled
+  var total = assets.filter(function(a){return a.cat!=='liability';}).reduce(function(s,a){return s+a.value;},0);
+  var totalLiab = assets.filter(function(a){return a.cat==='liability';}).reduce(function(s,a){return s+a.value;},0);
+  var nw = total - totalLiab;
+  var cashVal = assets.filter(function(a){return a.cat==='cash';}).reduce(function(s,a){return s+a.value;},0);
+  var physVal = assets.filter(function(a){return a.cat==='physical';}).reduce(function(s,a){return s+a.value;},0);
+  var invVal  = assets.filter(function(a){return a.cat==='investment';}).reduce(function(s,a){return s+a.value;},0);
+  var invGains = assets.filter(function(a){return a.cat==='investment';}).reduce(function(s,a){return s+(a.interest||0);},0);
+  var count = assets.length;
+
+  var topAssets = assets.filter(function(a){return a.cat!=='liability';}).sort(function(a,b){return b.value - a.value;}).slice(0,5);
+
+  var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var today = new Date();
+  var monthLabel = monthNames[today.getMonth()] + ' ' + today.getFullYear();
+  var baseCur = Calculators.getBaseCurrency ? Calculators.getBaseCurrency() : 'USD';
+
+  var goalsHTML = '';
+  if (_goals && _goals.length > 0) {
+    goalsHTML = _goals.map(function(g) {
+      var currentAmount = g.fundingSource === 'liquid_only' ? cashVal : g.fundingSource === 'investment_only' ? invVal : nw;
+      var pct = g.target > 0 ? Math.round((currentAmount / g.target) * 100) : 0;
+      return '<tr><td>' + g.name + '</td><td>' + fmt(g.target) + '</td><td>' + fmt(currentAmount) + '</td><td>' + pct + '%</td></tr>';
+    }).join('');
+  }
+
+  var historyHTML = '';
+  if (nwHistory && nwHistory.length >= 2) {
+    var firstNW = nwHistory[0].nw;
+    var lastNW  = nwHistory[nwHistory.length - 1].nw;
+    var changeNW = lastNW - firstNW;
+    var changePct = firstNW > 0 ? ((changeNW / firstNW) * 100).toFixed(1) : 0;
+    historyHTML = '<p>Started at <strong>' + fmt(firstNW) + '</strong> · Now at <strong>' + fmt(lastNW) + '</strong> · <strong style="color:' + (changeNW >= 0 ? '#34d399' : '#f87171') + ';">' + (changeNW >= 0 ? '+' : '') + fmt(changeNW) + ' (' + (changePct > 0 ? '+' : '') + changePct + '%)</strong></p>';
+  }
+
+  var w = window.open('', '_blank', 'width=800,height=900');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Keno Vault — Monthly Wealth Report</title>');
+  w.document.write('<style>');
+  w.document.write('body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:0 auto;padding:40px 24px;color:#1a1a1a;line-height:1.6;font-size:14px;}');
+  w.document.write('h1{font-family:Georgia,serif;font-size:32px;margin:0 0 4px;letter-spacing:-0.02em;}');
+  w.document.write('h2{font-family:Georgia,serif;font-size:20px;margin:32px 0 12px;border-bottom:2px solid #f97316;padding-bottom:6px;}');
+  w.document.write('.accent{color:#f97316;}.muted{color:#888;}.mono{font-family:monospace;}');
+  w.document.write('.kpi-row{display:flex;gap:20px;flex-wrap:wrap;margin:16px 0;}');
+  w.document.write('.kpi{border:1px solid #e5e5e5;border-radius:10px;padding:16px;flex:1;min-width:140px;text-align:center;}');
+  w.document.write('.kpi-val{font-size:24px;font-weight:700;font-family:Georgia,serif;}');
+  w.document.write('.kpi-label{font-size:11px;text-transform:uppercase;color:#888;letter-spacing:.06em;}');
+  w.document.write('table{width:100%;border-collapse:collapse;margin:12px 0;}');
+  w.document.write('th,td{text-align:left;padding:8px 12px;border-bottom:1px solid #e5e5e5;font-size:13px;}');
+  w.document.write('th{font-weight:600;color:#888;font-size:11px;text-transform:uppercase;}');
+  w.document.write('.footer{margin-top:40px;padding-top:16px;border-top:1px solid #e5e5e5;font-size:11px;color:#aaa;}');
+  w.document.write('@media print{body{padding:20px;}@page{margin:20mm;}}');
+  w.document.write('</style></head><body>');
+
+  w.document.write('<h1>Keno Vault <span class="accent">⬡</span></h1>');
+  w.document.write('<p class="muted">Monthly Wealth Report · ' + monthLabel + ' · Base Currency: ' + baseCur + '</p>');
+  if (preparedFor) w.document.write('<p class="muted">Prepared for: <strong>' + preparedFor + '</strong></p>');
+
+  w.document.write('<h2>Net Worth Summary</h2>');
+  w.document.write('<div class="kpi-row">');
+  w.document.write('<div class="kpi"><div class="kpi-label">Total Net Worth</div><div class="kpi-val accent">' + fmt(nw) + '</div></div>');
+  w.document.write('<div class="kpi"><div class="kpi-label">Total Assets</div><div class="kpi-val">' + fmt(total) + '</div></div>');
+  w.document.write('<div class="kpi"><div class="kpi-label">Liabilities</div><div class="kpi-val" style="color:#dc2626;">' + fmt(totalLiab) + '</div></div>');
+  w.document.write('<div class="kpi"><div class="kpi-label">Entries</div><div class="kpi-val">' + count + '</div></div>');
+  w.document.write('</div>');
+
+  w.document.write('<h2>Asset Allocation</h2>');
+  w.document.write('<table><tr><th>Category</th><th>Value</th><th>% of Assets</th></tr>');
+  w.document.write('<tr><td>💵 Liquid Cash</td><td>' + fmt(cashVal) + '</td><td>' + (total > 0 ? (cashVal/total*100).toFixed(1) : '0') + '%</td></tr>');
+  w.document.write('<tr><td>📦 Physical Assets</td><td>' + fmt(physVal) + '</td><td>' + (total > 0 ? (physVal/total*100).toFixed(1) : '0') + '%</td></tr>');
+  w.document.write('<tr><td>📈 Investments</td><td>' + fmt(invVal) + '</td><td>' + (total > 0 ? (invVal/total*100).toFixed(1) : '0') + '%</td></tr>');
+  w.document.write('<tr><td>⚠️ Liabilities</td><td>' + fmt(totalLiab) + '</td><td>' + (total > 0 ? (totalLiab/total*100).toFixed(1) : '0') + '%</td></tr>');
+  w.document.write('</table>');
+  if (invGains > 0) w.document.write('<p>Projected investment gains: <strong style="color:#16a34a;">+' + fmt(invGains) + '</strong></p>');
+
+  if (topAssets.length) {
+    w.document.write('<h2>Top Assets</h2>');
+    w.document.write('<table><tr><th>#</th><th>Asset</th><th>Category</th><th>Value</th></tr>');
+    topAssets.forEach(function(a, i) {
+      var catLabel = (a.cat === 'custom' && a.custom_cat) ? a.custom_cat : a.cat;
+      w.document.write('<tr><td>' + (i+1) + '</td><td>' + a.name + '</td><td>' + catLabel + '</td><td>' + fmt(a.value) + '</td></tr>');
+    });
+    w.document.write('</table>');
+  }
+
+  if (nwHistory && nwHistory.length >= 2) {
+    w.document.write('<h2>Net Worth Trend</h2>');
+    w.document.write(historyHTML);
+  }
+
+  if (goalsHTML) {
+    w.document.write('<h2>Goal Progress</h2>');
+    w.document.write('<table><tr><th>Goal</th><th>Target</th><th>Current</th><th>Progress</th></tr>');
+    w.document.write(goalsHTML);
+    w.document.write('</table>');
+  }
+
+  // FIRE Snapshot (Pro+ users, optional)
+  if (includeFIRE) {
+    var fireAge = parseInt(document.getElementById('fireAge')?.value) || 30;
+    var fireRetire = parseInt(document.getElementById('fireRetire')?.value) || 55;
+    var fireSave = (parseInt(document.getElementById('fireSavings')?.value) || 500) * (_fireSaveMul || 1);
+    var fireReturn = parseInt(document.getElementById('fireReturn')?.value) || 10;
+    var fireInflation = parseInt(document.getElementById('fireInflation')?.value) || 18;
+    var fireExpenses = (parseInt(document.getElementById('fireExpenses')?.value) || 30000) * (_fireExpMul || 1);
+    var fireRes = Calculators.fireSimulation({
+      currentAge: fireAge, retirementAge: fireRetire, currentNetWorth: nw,
+      monthlySavings: fireSave, annualReturnRate: fireReturn, inflationRate: fireInflation, annualExpenses: fireExpenses
+    });
+    w.document.write('<h2>FIRE Projection</h2>');
+    w.document.write('<div class="kpi-row">');
+    w.document.write('<div class="kpi"><div class="kpi-label">Retirement Age</div><div class="kpi-val accent">' + fireRetire + '</div></div>');
+    w.document.write('<div class="kpi"><div class="kpi-label">FI Target Number</div><div class="kpi-val">' + fmt(fireRes.fiNumber) + '</div></div>');
+    w.document.write('<div class="kpi"><div class="kpi-label">Projected at ' + fireRetire + '</div><div class="kpi-val" style="color:' + (fireRes.isFIReady ? '#16a34a' : '#dc2626') + ';">' + fmt(fireRes.projectedNW) + '</div></div>');
+    w.document.write('<div class="kpi"><div class="kpi-label">Status</div><div class="kpi-val" style="color:' + (fireRes.isFIReady ? '#16a34a' : '#dc2626') + ';">' + (fireRes.isFIReady ? 'FIRE Ready' : 'Shortfall') + '</div></div>');
+    w.document.write('</div>');
+    if (fireRes.isFIReady) {
+      w.document.write('<p>Surplus of <strong style="color:#16a34a;">' + fmt(fireRes.surplus) + '</strong> over FI target. Your real (inflation-adjusted) return rate: <strong>' + fireRes.realReturnRate + '%</strong>.</p>');
+    } else {
+      w.document.write('<p>Shortfall of <strong style="color:#dc2626;">' + fmt(fireRes.shortfall) + '</strong> to reach FI target. Consider increasing monthly savings or adjusting your retirement timeline.</p>');
+    }
+  }
+
+  w.document.write('<div class="footer">Generated by Keno Vault on ' + today.toLocaleDateString() + ' · kenovault@gmail.com</div>');
+  w.document.write('<script>setTimeout(function(){window.print();},500);</script>');
+  w.document.write('</body></html>');
+  w.document.close();
 }
 
 async function renderCurrency() {
