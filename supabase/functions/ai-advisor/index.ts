@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 
 const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") || "";
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-1.5-flash";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 serve(async (req: Request) => {
@@ -63,7 +63,15 @@ The user asks: ${question}`;
     const data = await resp.json();
     if (!resp.ok) {
       console.error("[AI] Gemini error:", JSON.stringify(data));
-      return new Response(JSON.stringify({ error: data?.error?.message || "Gemini API error" }), {
+      var errMsg = data?.error?.message || "";
+      // Sanitize — don't leak API details to the user
+      if (errMsg.includes("quota") || errMsg.includes("rate") || errMsg.includes("limit")) {
+        return new Response(JSON.stringify({ error: "AI is temporarily unavailable. Please try again in a few minutes." }), {
+          status: 503,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "AI couldn't process that request. Try rephrasing your question." }), {
         status: 502,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
