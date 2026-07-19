@@ -2611,6 +2611,136 @@ function toggleFXCustomize() {
   }
 }
 
+// ══ SHARED HOUSEHOLD VAULT ══════════════════════════════════
+var _household = null;
+var _householdView = false;
+
+async function loadHousehold() {
+  if (!currentUser) return;
+  try {
+    var { data: owned } = await sb.from('households').select('*, household_members(*)').eq('owner_id', currentUser.id).maybeSingle();
+    if (owned) { _household = owned; _household.role = 'owner'; return; }
+    var { data: member } = await sb.from('household_members').select('*, households(*)').eq('user_id', currentUser.id).maybeSingle();
+    if (member) { _household = member.households; _household.role = 'member'; _household.members = [{ user_id: member.user_id }]; return; }
+    _household = null;
+  } catch(e) { console.warn('[Household] Load error (table may not exist):', e.message); _household = null; }
+}
+
+async function createHousehold() {
+  if (!isElite()) return;
+  try {
+    var { data, error } = await sb.from('households').insert({ owner_id: currentUser.id }).select().single();
+    if (error) throw error;
+    _household = data;
+    _household.role = 'owner';
+    renderHouseholdUI();
+    UI.toast('Household created! Share the invite code.', 'success');
+  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+}
+
+async function joinHousehold() {
+  if (!isElite()) return;
+  var code = (document.getElementById('householdInviteCode')?.value || '').trim().toLowerCase();
+  if (!code) { UI.toast('Enter an invite code', 'info'); return; }
+  try {
+    var { data: hh } = await sb.from('households').select('*').eq('invite_code', code).maybeSingle();
+    if (!hh) { UI.toast('Invalid invite code', 'error'); return; }
+    var count = await sb.from('household_members').select('*', { count: 'exact', head: true }).eq('household_id', hh.id);
+    if (count >= 3) { UI.toast('Household is full (max 3 members)', 'error'); return; }
+    var { error } = await sb.from('household_members').insert({ household_id: hh.id, user_id: currentUser.id });
+    if (error) throw error;
+    _household = hh;
+    _household.role = 'member';
+    renderHouseholdUI();
+    UI.toast('Joined household!', 'success');
+  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+}
+
+async function leaveHousehold() {
+  if (!_household) return;
+  try {
+    if (_household.role === 'owner') {
+      await sb.from('household_members').delete().eq('household_id', _household.id);
+      await sb.from('households').delete().eq('id', _household.id);
+    } else {
+      await sb.from('household_members').delete().eq('household_id', _household.id).eq('user_id', currentUser.id);
+    }
+    _household = null;
+    _householdView = false;
+    renderHouseholdUI();
+    renderAll();
+    UI.toast('Left household', 'info');
+  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+}
+
+async function removeHouseholdMember(userId) {
+  if (!_household || _household.role !== 'owner') return;
+  try {
+    await sb.from('household_members').delete().eq('household_id', _household.id).eq('user_id', userId);
+    await loadHousehold();
+    renderHouseholdUI();
+    UI.toast('Member removed', 'info');
+  } catch(e) { UI.toast('Error: ' + e.message, 'error'); }
+}
+
+function renderHouseholdUI() {
+  var none = document.getElementById('householdNone');
+  var active = document.getElementById('householdActive');
+  var info = document.getElementById('householdInfo');
+  if (!_household) {
+    if (none) none.style.display = '';
+    if (active) active.style.display = 'none';
+    return;
+  }
+  if (none) none.style.display = 'none';
+  if (active) active.style.display = '';
+  if (info) {
+    var code = _household.invite_code || '—';
+    info.innerHTML = '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">' +
+      '<div style="font-size:12px;font-weight:600;margin-bottom:4px;">' + (_household.role === 'owner' ? 'Your Household' : 'Shared Household') + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dim);">Invite Code: <strong class="mono" style="color:var(--accent);">' + code + '</strong> <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(\'' + code + '\');UI.toast(\'Copied!\',\'success\')" style="font-size:10px;padding:2px 8px;">Copy</button></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Share this code — up to 3 family members can join.</div>' +
+    '</div>' +
+    '<button class="btn btn-secondary btn-sm" onclick="leaveHousehold()" style="color:var(--red);"><i class="fas fa-right-from-bracket"></i> ' + (_household.role === 'owner' ? 'Disband Household' : 'Leave Household') + '</button>';
+  }
+}
+
+async function toggleHouseholdView() {
+  if (!_household) return;
+  _householdView = !_householdView;
+  var btn = document.getElementById('householdToggleBtn');
+  if (btn) btn.textContent = _householdView ? 'My Vault' : 'Household View';
+  if (_householdView) {
+    await loadHouseholdAssets();
+  } else {
+    // Restore personal assets
+    if (window._personalAssets) {
+      assets = window._personalAssets;
+      window._personalAssets = null;
+    }
+  }
+  renderAll();
+}
+
+async function loadHouseholdAssets() {
+  if (!_household) return;
+  try {
+    var memberIds = [_household.owner_id];
+    if (_household.household_members) {
+      _household.household_members.forEach(function(m) { memberIds.push(m.user_id); });
+    }
+    // Load assets for all members
+    var allAssets = [];
+    for (var i = 0; i < memberIds.length; i++) {
+      var { data } = await sb.from('assets').select('*').eq('user_id', memberIds[i]);
+      if (data) allAssets = allAssets.concat(data);
+    }
+    // Temporarily swap assets for rendering
+    window._personalAssets = assets;
+    assets = allAssets.map(function(r) { return { id: r.id, name: r.name, cat: r.cat, value: parseFloat(r.value)||0, notes: r.notes||'', principal: r.principal?parseFloat(r.principal):null, rate: r.rate?parseFloat(r.rate):null, years: r.years?parseFloat(r.years):null, fv: parseFloat(r.fv)||0, interest: parseFloat(r.interest)||0, custom_cat: r.custom_cat||null, start_date: r.start_date||null, created_at: r.created_at, depreciationType: r.depreciation_type||null, depreciationRate: r.depreciation_rate||null, usefulLife: r.useful_life||null, salvageValue: r.salvage_value||null, originalCost: r.original_cost||null, depreciationStart: r.depreciation_start||null }; });
+  } catch(e) { console.error('Household load error:', e); }
+}
+
 // ══ CUSTOM BRANDING ═══════════════════════════════════════════
 function applyBranding() {
   var b = JSON.parse(localStorage.getItem('kv-branding') || '{}');
@@ -2655,6 +2785,7 @@ function updateAIUsage() {
   if (btn) btn.disabled = usage.count >= 5;
   var input = document.getElementById('aiQuestion');
   if (input) input.disabled = usage.count >= 5;
+  renderAIChatHistory();
 }
 
 async function askAI() {
@@ -2718,20 +2849,61 @@ async function askAI() {
   if (input) { input.disabled = false; input.focus(); }
 }
 
-function appendAIMessage(text, role) {
+function formatAIText(text) {
+  // Convert markdown-ish formatting to HTML
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/^### (.+)$/gm, '<h4 style="margin:10px 0 4px;font-size:14px;color:var(--text);">$1</h4>')
+    .replace(/^## (.+)$/gm, '<h3 style="margin:12px 0 4px;font-size:15px;color:var(--text);">$1</h3>')
+    .replace(/^- (.+)$/gm, '<li style="margin-left:16px;">$1</li>')
+    .replace(/^(\d+)\. (.+)$/gm, '<li style="margin-left:16px;">$1. $2</li>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>');
+}
+
+function getAIChatHistory() {
+  try { return JSON.parse(localStorage.getItem('kv-ai-chat') || '[]'); } catch(e) { return []; }
+}
+function saveAIChatHistory(h) {
+  localStorage.setItem('kv-ai-chat', JSON.stringify(h));
+}
+function renderAIChatHistory() {
   var chat = document.getElementById('aiChat');
   if (!chat) return;
-  var div = document.createElement('div');
-  div.className = 'ai-msg ' + (role === 'user' ? 'ai-msg-user' : 'ai-msg-bot');
-  div.innerHTML = (role === 'user' ? '' : '<div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>') +
-    '<div class="ai-msg-text">' + text + '</div>';
-  chat.appendChild(div);
+  var history = getAIChatHistory();
+  if (!history.length) {
+    chat.innerHTML = '<div class="ai-msg ai-msg-bot"><div class="ai-msg-avatar"><i class="fas fa-robot"></i></div><div class="ai-msg-text">Hello! I\'m your AI portfolio advisor. I can see your full portfolio — ask me anything. For example:<br/><br/>• "Am I overexposed to any category?"<br/>• "What should I rebalance?"<br/>• "Is my emergency fund sufficient?"<br/>• "How can I reach my FI target faster?"</div></div>';
+    return;
+  }
+  chat.innerHTML = history.map(function(m) {
+    var html = m.role === 'bot' ? formatAIText(m.text) : m.text;
+    return m.role === 'user'
+      ? '<div class="ai-msg ai-msg-user"><div class="ai-msg-text">' + html + '</div></div>'
+      : '<div class="ai-msg ai-msg-bot"><div class="ai-msg-avatar"><i class="fas fa-robot"></i></div><div class="ai-msg-text">' + html + '</div></div>';
+  }).join('');
   chat.scrollTop = chat.scrollHeight;
 }
 
-function clearAIChat() {
+function appendAIMessage(text, role) {
   var chat = document.getElementById('aiChat');
-  if (chat) chat.innerHTML = '<div class="ai-msg ai-msg-bot"><div class="ai-msg-avatar"><i class="fas fa-robot"></i></div><div class="ai-msg-text">Chat cleared. Ask me anything about your portfolio.</div></div>';
+  if (!chat) return;
+  var formatted = role === 'bot' ? formatAIText(text) : text;
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + (role === 'user' ? 'ai-msg-user' : 'ai-msg-bot');
+  div.innerHTML = (role === 'user' ? '' : '<div class="ai-msg-avatar"><i class="fas fa-robot"></i></div>') +
+    '<div class="ai-msg-text">' + formatted + '</div>';
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  var history = getAIChatHistory();
+  history.push({ role: role, text: text, time: Date.now() });
+  if (history.length > 50) history = history.slice(-50);
+  saveAIChatHistory(history);
+}
+
+function clearAIChat() {
+  localStorage.removeItem('kv-ai-chat');
+  renderAIChatHistory();
 }
 
 // ══ PORTFOLIO STRESS TEST ══════════════════════════════════════
@@ -3350,6 +3522,10 @@ async function doBootWithSession(session, source) {
     await Promise.all([loadSubscription(), loadAssets(), loadHistory()]);
     initHistoryUI();
     loadGoals(); // Non-blocking
+    if (isElite()) loadHousehold().then(function() {
+      var hhToggle = document.getElementById('householdToggleBtn');
+      if (hhToggle && _household) hhToggle.style.display = 'inline-block';
+    });
     console.log('[Boot] userPlan after load:', userPlan, '| email:', currentUser.email);
     Security.init(isPro());
     renderAll();

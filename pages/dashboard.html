@@ -327,6 +327,7 @@
           <span id="syncLabel" style="font-size:11px;color:var(--text-dim);">—</span>
         </div>
         <button class="topbar-btn" id="blurToggleBtn" onclick="toggleBlur()" title="Privacy Shield (press B)" aria-label="Toggle privacy shield"><i class="fas fa-shield-halved"></i> Shield</button>
+        <button class="topbar-btn" id="householdToggleBtn" onclick="toggleHouseholdView()" title="Household View" style="display:none;"><i class="fas fa-users"></i> Household View</button>
         <button class="topbar-btn" id="reportBtn" onclick="generateMonthlyReport()" title="Monthly Wealth Report" style="display:none;"><i class="fas fa-file-pdf"></i> Report</button>
         <button class="topbar-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle theme"><i class="fas fa-moon"></i> Dark</button>
       </div>
@@ -1228,7 +1229,9 @@
         <div id="aiContent" style="display:none;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
             <span style="font-size:11px;color:var(--text-muted);" id="aiUsageLabel">0/5 used this week</span>
-            <button class="btn btn-secondary btn-sm" onclick="clearAIChat()"><i class="fas fa-trash"></i> Clear Chat</button>
+            <span style="display:flex;gap:6px;">
+              <button class="btn btn-secondary btn-sm" onclick="clearAIChat()"><i class="fas fa-trash"></i> Clear</button>
+            </span>
           </div>
           <div id="aiChat" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;min-height:300px;max-height:50vh;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:12px;">
             <div class="ai-msg ai-msg-bot">

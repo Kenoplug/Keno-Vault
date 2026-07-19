@@ -181,6 +181,68 @@ alter table goals add column if not exists emoji text default '🎯';
 -- ── GOAL FUNDING SOURCE (Growth tier) ─────────────────────────
 alter table goals add column if not exists funding_source text default 'total_nw';
 
+-- ── HOUSEHOLD VAULT (Elite tier) ─────────────────────────────
+create table if not exists households (
+  id uuid default gen_random_uuid() primary key,
+  owner_id uuid references auth.users(id) on delete cascade not null,
+  invite_code text unique not null default substr(md5(random()::text), 1, 8),
+  created_at timestamptz default now()
+);
+
+create table if not exists household_members (
+  id uuid default gen_random_uuid() primary key,
+  household_id uuid references households(id) on delete cascade not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  joined_at timestamptz default now(),
+  unique(household_id, user_id)
+);
+
+alter table households enable row level security;
+alter table household_members enable row level security;
+
+create policy "households_own" on households
+  for all using (auth.uid() = owner_id);
+
+create policy "households_member_read" on households
+  for select using (auth.uid() in (select user_id from household_members where household_id = id));
+
+-- Members: anyone in the household can see who else is in it
+create policy "hm_select_owner" on household_members
+  for select using (
+    auth.uid() in (select owner_id from households where id = household_id)
+  );
+
+-- Insert: anyone can join a household by inserting themselves
+create policy "hm_insert" on household_members
+  for insert with check (auth.uid() = user_id);
+
+-- Delete: only the owner can remove members
+create policy "hm_delete" on household_members
+  for delete using (
+    auth.uid() in (select owner_id from households where id = household_id)
+  );
+
+create index if not exists households_owner_idx on households(owner_id);
+create index if not exists household_members_household_idx on household_members(household_id);
+create index if not exists household_members_user_idx on household_members(user_id);
+
+-- Allow household members to read each other's assets (for combined view)
+drop policy if exists "assets_household_read" on assets;
+create policy "assets_household_read" on assets
+  for select using (
+    assets.user_id = auth.uid()
+    or assets.user_id in (
+      select owner_id from households where id in (
+        select household_id from household_members where user_id = auth.uid()
+      )
+    )
+    or assets.user_id in (
+      select user_id from household_members where household_id in (
+        select id from households where owner_id = auth.uid()
+      )
+    )
+  );
+
 -- ── NOTIFICATION PREFERENCES ─────────────────────────────────
 create table if not exists notification_prefs (
   id               uuid default gen_random_uuid() primary key,

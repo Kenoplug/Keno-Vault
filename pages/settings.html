@@ -641,6 +641,30 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
           </div>
         </div>
 
+        <!-- Household Vault (Elite) -->
+        <div class="settings-section" id="householdSection" style="display:none;">
+          <div class="section-header">
+            <div><div class="section-header-title" style="color:#a855f7;"><i class="fas fa-users"></i> Shared Household Vault</div><div class="section-header-sub">Link up to 3 family members for a combined net worth view</div></div>
+            <span class="pro-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">Elite</span>
+          </div>
+          <div class="section-body" id="householdBody">
+            <div id="householdNone">
+              <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">Create a household to link family members, or join an existing one with an invite code.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" onclick="createHousehold()"><i class="fas fa-plus"></i> Create Household</button>
+                <span style="display:flex;gap:6px;align-items:center;">
+                  <input type="text" id="householdInviteCode" placeholder="Invite code" maxlength="12" style="width:130px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:monospace;text-transform:uppercase;"/>
+                  <button class="btn btn-secondary btn-sm" onclick="joinHousehold()">Join</button>
+                </span>
+              </div>
+              <div id="householdMsg" style="font-size:12px;margin-top:10px;"></div>
+            </div>
+            <div id="householdActive" style="display:none;">
+              <div id="householdInfo"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Custom Branding (Elite) -->
         <div class="settings-section" id="brandingSection" style="display:none;">
           <div class="section-header">
@@ -1047,6 +1071,8 @@ function initSettingsUI() {
   loadNotifPrefs();
   loadBranding();
   if (isElite()) document.getElementById('brandingSection').style.display = 'block';
+  if (isElite()) document.getElementById('householdSection').style.display = 'block';
+  if (isElite()) { loadHousehold().then(function() { renderHouseholdUI(); }); }
   if (!isPro()) {
     const si = document.getElementById('proOnlyShield'); if (si) si.style.display = 'inline-flex';
     const pi = document.getElementById('proOnlyPin');    if (pi) pi.style.display = 'inline-flex';
@@ -1354,6 +1380,77 @@ function savePreferences() {
 }
 
 // ══ EMAIL NOTIFICATION PREFS ══
+// ══ HOUSEHOLD VAULT ══
+var _household = null;
+
+async function loadHousehold() {
+  if (!currentUser) return;
+  try {
+    var { data: owned } = await sb.from('households').select('*, household_members(*)').eq('owner_id', currentUser.id).maybeSingle();
+    if (owned) { _household = owned; _household.role = 'owner'; return; }
+    var { data: member } = await sb.from('household_members').select('*, households(*)').eq('user_id', currentUser.id).maybeSingle();
+    if (member) { _household = member.households; _household.role = 'member'; _household.members = [{ user_id: member.user_id }]; return; }
+    _household = null;
+  } catch(e) { console.warn('[Household]', e.message); _household = null; }
+}
+async function createHousehold() {
+  try {
+    var { data, error } = await sb.from('households').insert({ owner_id: currentUser.id }).select().single();
+    if (error) throw error;
+    _household = data; _household.role = 'owner';
+    renderHouseholdUI();
+    toast('Household created!', 'success');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+async function joinHousehold() {
+  var code = (document.getElementById('householdInviteCode')?.value || '').trim().toLowerCase();
+  if (!code) { toast('Enter an invite code', 'info'); return; }
+  try {
+    var { data: hh } = await sb.from('households').select('*').eq('invite_code', code).maybeSingle();
+    if (!hh) { toast('Invalid code', 'error'); return; }
+    var { error } = await sb.from('household_members').insert({ household_id: hh.id, user_id: currentUser.id });
+    if (error) throw error;
+    _household = hh; _household.role = 'member';
+    renderHouseholdUI();
+    toast('Joined household!', 'success');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+async function leaveHousehold() {
+  if (!_household) return;
+  try {
+    if (_household.role === 'owner') {
+      await sb.from('household_members').delete().eq('household_id', _household.id);
+      await sb.from('households').delete().eq('id', _household.id);
+    } else {
+      await sb.from('household_members').delete().eq('household_id', _household.id).eq('user_id', currentUser.id);
+    }
+    _household = null;
+    renderHouseholdUI();
+    toast('Left household', 'info');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+function renderHouseholdUI() {
+  var none = document.getElementById('householdNone');
+  var active = document.getElementById('householdActive');
+  var info = document.getElementById('householdInfo');
+  if (!_household) {
+    if (none) none.style.display = '';
+    if (active) active.style.display = 'none';
+    return;
+  }
+  if (none) none.style.display = 'none';
+  if (active) active.style.display = '';
+  if (info) {
+    var code = _household.invite_code || '—';
+    info.innerHTML = '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;">' +
+      '<div style="font-size:12px;font-weight:600;margin-bottom:4px;">' + (_household.role === 'owner' ? 'Your Household' : 'Shared Household') + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dim);">Invite Code: <strong class="mono" style="color:var(--accent);">' + code + '</strong> <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(\'' + code + '\');toast(\'Copied!\',\'success\')" style="font-size:10px;padding:2px 8px;">Copy</button></div>' +
+      '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Share this code — up to 3 family members can join.</div>' +
+    '</div>' +
+    '<button class="btn btn-secondary btn-sm" onclick="leaveHousehold()" style="color:var(--red);"><i class="fas fa-right-from-bracket"></i> ' + (_household.role === 'owner' ? 'Disband Household' : 'Leave Household') + '</button>';
+  }
+}
+
 function applyBrandingSettings() {
   var name = document.getElementById('brandName')?.value?.trim() || '';
   var icon = document.getElementById('brandIcon')?.value?.trim() || '';
