@@ -1205,6 +1205,14 @@ canvas {
   .invest-cards { display: none !important; }
 }
 
+/* ══ AUTH BRAND PANEL ══════════════════════════════════════════ */
+.auth-brand-panel {
+  background: linear-gradient(160deg, #0a0a0a 0%, #12100e 40%, #16120c 100%);
+}
+[data-theme="light"] .auth-brand-panel {
+  background: linear-gradient(160deg, #f5f5f4 0%, #fafaf9 40%, #fefefe 100%);
+}
+
 /* ══ AI CHAT ═══════════════════════════════════════════════════ */
 .ai-msg { display: flex; gap: 10px; align-items: flex-start; }
 .ai-msg-bot { flex-direction: row; }
