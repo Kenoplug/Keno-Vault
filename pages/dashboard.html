@@ -285,7 +285,7 @@
       <div class="nav-section">Pro Intelligence</div>
       <a class="nav-item" id="nav-fire" onclick="switchProPage('fire')"><i class="fas fa-fire"></i> FIRE Simulator <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
       <a class="nav-item" id="nav-debt" onclick="switchProPage('debt')"><i class="fas fa-scale-balanced"></i> Debt Optimizer <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
-      <a class="nav-item" id="nav-tax" onclick="switchProPage('tax')"><i class="fas fa-receipt"></i> Tax Simulator <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
+      <a class="nav-item" id="nav-tax" onclick="switchProPage('tax')"><i class="fas fa-piggy-bank"></i> Savings Rate <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></a>
       <a class="nav-item" id="nav-optimizer" onclick="switchProPage('optimizer')"><i class="fas fa-bullseye"></i> Asset Optimizer <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></a>
 
       <div class="nav-section">Analytics</div>
@@ -421,12 +421,12 @@
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
               <span id="historyRangeLabel" style="font-size:11px;color:var(--text-muted);">Free: 30 snapshots</span>
               <select id="historyRange" onchange="switchHistoryRange(this.value)" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--text);font-family:'DM Sans',sans-serif;">
-                <option value="recent">Recent</option>
+                <option value="recent" selected>Recent</option>
                 <option value="all">All Time</option>
-                <option value="24">Last 2 Years</option>
                 <option value="12">Last 12 Months</option>
                 <option value="6">Last 6 Months</option>
                 <option value="3">Last 3 Months</option>
+                <option value="1">Last 1 Month</option>
               </select>
             </div>
           </div>
@@ -850,36 +850,113 @@
 
       <!-- ═══════ TAX SIMULATOR PAGE ═══════ -->
       <div class="page" id="page-tax">
-        <div class="greeting"><div><h2 class="serif greeting-title">Tax-Drag <span class="accent">Simulator</span></h2><p class="text-dim" style="font-size:13px;">Your true net-of-tax wealth on liquidation.</p></div></div>
+        <div class="greeting"><div><h2 class="serif greeting-title">Savings Rate <span class="accent">Analyzer</span></h2><p class="text-dim" style="font-size:13px;">See what percentage of your income you're saving — and how fast it compounds.</p></div></div>
         <div id="taxLock" class="pro-gate-card">
-          <div class="pro-gate-icon"><i class="fas fa-receipt"></i></div>
-          <div class="serif" style="font-size:20px;margin-bottom:8px;">Tax-Drag & Net-of-Tax Simulator</div>
-          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Know your true take-home wealth. Simulates CGT and withholding taxes on liquidation across all your assets.</p>
+          <div class="pro-gate-icon"><i class="fas fa-piggy-bank"></i></div>
+          <div class="serif" style="font-size:20px;margin-bottom:8px;">Savings Rate Analyzer</div>
+          <p style="font-size:13px;color:var(--text-dim);max-width:400px;margin:0 auto 16px;line-height:1.7;">Enter your monthly income to see your savings rate, compare to FIRE benchmarks, and project when you'll reach financial independence.</p>
           <div class="pro-badge" style="margin:0 auto 16px;">⬡ Pro Feature</div>
           <button class="btn btn-primary" onclick="openModal('upgradeModal')">Upgrade <i class="fas fa-arrow-right"></i></button>
         </div>
         <div id="taxContent" style="display:none;">
-          <div class="kpi-grid" style="margin-bottom:16px;">
-            <div class="kpi-card"><div class="kpi-label">Pre-Tax Value</div><div class="kpi-value sensitive" id="taxPreTax">—</div></div>
-            <div class="kpi-card"><div class="kpi-label">Total Tax Drag</div><div class="kpi-value sensitive" id="taxAmount" style="color:var(--red);">—</div></div>
-            <div class="kpi-card"><div class="kpi-label">True Net Wealth</div><div class="kpi-value sensitive" id="taxPostTax" style="color:var(--green);">—</div><div class="kpi-change" id="taxRate">—</div></div>
-          </div>
+          <!-- Dual Sliders -->
           <div class="form-card" style="margin-bottom:16px;">
-            <div style="font-weight:600;font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">Tax Rate Settings <span onclick="document.getElementById('taxInfoBox').style.display=document.getElementById('taxInfoBox').style.display==='none'?'block':'none'" style="cursor:pointer;color:var(--accent);font-size:13px;" title="How this works"><i class="fas fa-circle-info"></i></span></div>
-            <div id="taxInfoBox" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;font-size:12px;color:var(--text-dim);line-height:1.8;">
-              <strong style="color:var(--text);">Capital Gains Tax (CGT)</strong> — applies to investment profits when you sell. E.g. you bought for $1,000, it grew to $1,500 — CGT is charged on the $500 gain.<br/>
-              <strong style="color:var(--text);">Withholding Tax</strong> — applies to interest/dividend income projected from your investments.<br/>
-              <span style="color:var(--text-muted);">Adjust the rates above to match your country's tax laws. Default is 10% each.</span>
+            <div style="font-weight:600;font-size:14px;margin-bottom:12px;">Cash Flow Inputs</div>
+            <div class="slider-group">
+              <label class="slider-label">Monthly Net Income <span id="savingsIncVal" class="slider-val">$0</span></label>
+              <input type="range" id="savingsIncome" min="0" max="100000" step="100" value="0" oninput="fillSliderTrack(this);document.getElementById('savingsIncVal').textContent=curSym()+(Number(this.value)*_savingsIncMul).toLocaleString();runSavingsRate()">
+              <div class="fire-mul-chips" id="savingsIncMulChips">
+                <button class="toggle-chip active" onclick="setSavingsIncMul(1,this)">×1</button><button class="toggle-chip" onclick="setSavingsIncMul(10,this)">×10</button><button class="toggle-chip" onclick="setSavingsIncMul(100,this)">×100</button><button class="toggle-chip" onclick="setSavingsIncMul(1000,this)">×1k</button><button class="toggle-chip" onclick="setSavingsIncMul(10000,this)">×10k</button>
+              </div>
             </div>
-            <div class="form-grid-2">
-              <div class="field"><label>Capital Gains Tax (%)</label><input type="number" id="taxCGT" value="10" min="0" max="100" step="0.1" oninput="runTax()"/></div>
-              <div class="field"><label>Withholding Tax (%)</label><input type="number" id="taxWithholding" value="10" min="0" max="100" step="0.1" oninput="runTax()"/></div>
+            <div class="slider-group">
+              <label class="slider-label">Monthly Expenses <span id="savingsExpVal" class="slider-val">$0</span></label>
+              <input type="range" id="savingsExpenses" min="0" max="100000" step="100" value="0" oninput="fillSliderTrack(this);document.getElementById('savingsExpVal').textContent=curSym()+(Number(this.value)*_savingsExpMul).toLocaleString();runSavingsRate()">
+              <div class="fire-mul-chips" id="savingsExpMulChips">
+                <button class="toggle-chip active" onclick="setSavingsExpMul(1,this)">×1</button><button class="toggle-chip" onclick="setSavingsExpMul(10,this)">×10</button><button class="toggle-chip" onclick="setSavingsExpMul(100,this)">×100</button><button class="toggle-chip" onclick="setSavingsExpMul(1000,this)">×1k</button><button class="toggle-chip" onclick="setSavingsExpMul(10000,this)">×10k</button>
+              </div>
             </div>
           </div>
-          <div class="ledger-card">
-            <div class="ledger-header"><div class="serif ledger-title">Tax Breakdown by Asset</div></div>
-            <div style="overflow-x:auto;"><table><thead><tr><th>Asset</th><th>Pre-Tax</th><th>Tax Amount</th><th>Post-Tax</th><th>Eff. Rate</th></tr></thead>
-            <tbody id="taxTableBody"></tbody></table></div>
+
+          <!-- 3 KPI Cards -->
+          <div class="kpi-grid" style="margin-bottom:16px;">
+            <div class="kpi-card" style="text-align:center;">
+              <div class="kpi-label">Savings Rate</div>
+              <div class="kpi-value" id="savingsRatePct" style="color:var(--accent);">—</div>
+              <div class="kpi-change" id="savingsRateLabel">—</div>
+            </div>
+            <div class="kpi-card" style="text-align:center;">
+              <div class="kpi-label">Monthly Surplus</div>
+              <div class="kpi-value sensitive" id="savingsMonthly" style="color:var(--green);">—</div>
+            </div>
+            <div class="kpi-card" style="text-align:center;">
+              <div class="kpi-label">Annualized Savings</div>
+              <div class="kpi-value sensitive" id="savingsAnnual" style="color:var(--green);">—</div>
+            </div>
+          </div>
+
+          <!-- What-If Optimizer -->
+          <div class="chart-card wide" style="margin-bottom:16px;padding:20px;">
+            <div class="chart-title">Optimization Insight</div>
+            <div class="chart-heading">What if you reduced expenses by 5%?</div>
+            <div id="savingsOptimizer" style="margin-top:10px;font-size:13px;color:var(--text-dim);line-height:1.7;"></div>
+          </div>
+
+          <!-- 50/30/20 Budget Bar -->
+          <div class="chart-card wide" style="padding:20px;margin-bottom:16px;">
+            <div class="chart-title">Budget Breakdown</div>
+            <div class="chart-heading">50/30/20 Rule: Needs / Wants / Savings</div>
+            <div id="savings503020" style="margin-top:14px;"></div>
+          </div>
+
+          <!-- Smart Allocation Benchmarks -->
+          <div class="chart-card wide" style="padding:20px;">
+            <div class="chart-title">Smart Allocation Benchmarks</div>
+            <div class="chart-heading">Calculated guidelines derived from your monthly income</div>
+            <div class="bm-grid" id="benchmarkGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;">
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Housing Budget</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip1')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-housing">—</div>
+                <div class="bm-sub">30% of Income Cap</div>
+                <div class="bm-tip" id="bmTip1">Keeping housing at or below 30% of net pay prevents house-poverty and leaves room for aggressive investing.</div>
+              </div>
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Max Car Value</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip2')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-car">—</div>
+                <div class="bm-sub">3× Monthly Target</div>
+                <div class="bm-tip" id="bmTip2">Total vehicle asset value shouldn't exceed 3× monthly income to avoid rapid depreciation eating into net worth.</div>
+              </div>
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Emergency Fund</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip3')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-emergency">—</div>
+                <div class="bm-sub">4× Monthly Target</div>
+                <div class="bm-tip" id="bmTip3">A 4-month income buffer protects your core liquid cash flow against sudden income disruption or large unexpected bills.</div>
+              </div>
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Essentials Cap</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip4')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-essentials">—</div>
+                <div class="bm-sub">55% of Income Max</div>
+                <div class="bm-tip" id="bmTip4">Covers non-negotiables like rent, utilities, groceries, and debt baselines. Staying under 55% ensures high savings capability.</div>
+              </div>
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Min. Investment</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip5')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-invest">—</div>
+                <div class="bm-sub">10% of Income Baseline</div>
+                <div class="bm-tip" id="bmTip5">The absolute minimum baseline for monthly long-term wealth building before accounting for discretionary savings.</div>
+              </div>
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Guilt-Free Fun</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip6')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-fun">—</div>
+                <div class="bm-sub">5% of Income Fun Budget</div>
+                <div class="bm-tip" id="bmTip6">Allocated strictly for non-essential personal enjoyment so you can spend without sabotaging your long-term goals.</div>
+              </div>
+              <div class="bm-card">
+                <div class="bm-top"><span class="bm-label">Income Replacement</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip7')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="bm-val sensitive" id="bm-replace">—</div>
+                <div class="bm-sub">200× Portfolio Target</div>
+                <div class="bm-tip" id="bmTip7">A general benchmark portfolio target needed for investment yields to fully replace your active salary over time.</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1284,7 +1361,7 @@
     <div class="mob-grid">
       <button class="mob-menu-item" onclick="switchProPage('fire');closeMobileMenu()"><i class="fas fa-fire"></i> FIRE Simulator</button>
       <button class="mob-menu-item" onclick="switchProPage('debt');closeMobileMenu()"><i class="fas fa-scale-balanced"></i> Debt Optimizer</button>
-      <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()"><i class="fas fa-receipt"></i> Tax Simulator</button>
+      <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()"><i class="fas fa-piggy-bank"></i> Savings Rate</button>
       <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()"><i class="fas fa-bullseye"></i> Asset Optimizer</button>
     </div>
 

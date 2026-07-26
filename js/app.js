@@ -458,7 +458,7 @@ function switchProPage(name) {
   }
   if (name === 'fire')      { runFire();        initAllSliderTracks(); return; }
   if (name === 'debt')      { runDebt();        initAllSliderTracks(); return; }
-  if (name === 'tax')       { runTax();         return; }
+  if (name === 'tax')       { runSavingsRate(); return; }
   if (name === 'optimizer') { runOptimizer();   return; }
   if (name === 'score')     { renderScore();    return; }
   if (name === 'currency')  { renderCurrency(); return; }
@@ -799,8 +799,9 @@ function initHistoryUI() {
   var sel = document.getElementById('historyRange');
   var lbl = document.getElementById('historyRangeLabel');
   if (isGrowth()) {
-    if (sel) sel.style.display = 'inline-block';
-    if (lbl) lbl.textContent = 'All Time';
+    _historyMonths = 'recent';
+    if (sel) { sel.style.display = 'inline-block'; sel.value = 'recent'; }
+    if (lbl) lbl.textContent = 'Recent (30 entries)';
   } else {
     if (sel) sel.style.display = 'none';
     if (lbl) lbl.textContent = 'Free: 30 snapshots';
@@ -1619,6 +1620,111 @@ function renderInvestmentPage() {
     }).join('');
   }
 }
+
+// ══ SAVINGS RATE ANALYZER ════════════════════════════════════
+var _savingsIncMul = 1;
+var _savingsExpMul = 1;
+
+function setSavingsIncMul(mul, btn) {
+  var slider = document.getElementById('savingsIncome');
+  var oldEffective = (parseInt(slider.value) || 0) * _savingsIncMul;
+  _savingsIncMul = mul;
+  slider.value = Math.round(oldEffective / mul);
+  fillSliderTrack(slider);
+  document.querySelectorAll('#savingsIncMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  runSavingsRate();
+}
+function setSavingsExpMul(mul, btn) {
+  var slider = document.getElementById('savingsExpenses');
+  var oldEffective = (parseInt(slider.value) || 0) * _savingsExpMul;
+  _savingsExpMul = mul;
+  slider.value = Math.round(oldEffective / mul);
+  fillSliderTrack(slider);
+  document.querySelectorAll('#savingsExpMulChips .toggle-chip').forEach(function(c) { c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  runSavingsRate();
+}
+
+function runSavingsRate() {
+  if (!isPro()) return;
+  var income = (parseInt(document.getElementById('savingsIncome')?.value) || 0) * _savingsIncMul;
+  var expenses = (parseInt(document.getElementById('savingsExpenses')?.value) || 0) * _savingsExpMul;
+  var savings = Math.max(0, income - expenses);
+  var savingsPct = income > 0 ? Math.round((savings / income) * 100) : 0;
+
+  // KPI cards
+  var pctColor = savingsPct >= 25 ? '#34d399' : savingsPct >= 15 ? '#f4c553' : '#f87171';
+  var pctLabel = savingsPct >= 25 ? 'Aggressive' : savingsPct >= 15 ? 'Solid' : 'Tight';
+  var pctEl = document.getElementById('savingsRatePct');
+  if (pctEl) { pctEl.textContent = savingsPct + '%'; pctEl.style.color = pctColor; }
+  var lblEl = document.getElementById('savingsRateLabel');
+  if (lblEl) { lblEl.textContent = pctLabel; lblEl.style.color = pctColor; }
+  var monEl = document.getElementById('savingsMonthly'); if (monEl) monEl.textContent = fmt(savings);
+  var annEl = document.getElementById('savingsAnnual'); if (annEl) annEl.textContent = fmt(savings * 12);
+
+  // What-If Optimizer
+  var opt5pct = expenses * 0.05;
+  var optEl = document.getElementById('savingsOptimizer');
+  if (optEl) {
+    if (expenses > 0) {
+      optEl.innerHTML = 'Reducing monthly expenses by <strong style="color:var(--accent);">5%</strong> unlocks an extra <strong style="color:#34d399;">' + fmt(opt5pct) + '/month</strong> (<strong style="color:#34d399;">' + fmt(opt5pct * 12) + '/year</strong>) — that\'s ' + (income > 0 ? Math.round((opt5pct / income) * 100) : 0) + '% more going straight to savings.';
+    } else {
+      optEl.innerHTML = 'Set your monthly expenses above to see how small cuts can boost your savings rate.';
+    }
+  }
+
+  // 50/30/20 Budget Bar
+  var barEl = document.getElementById('savings503020');
+  if (barEl && income > 0) {
+    barEl.innerHTML =
+      '<div style="display:flex;height:32px;border-radius:8px;overflow:hidden;margin-bottom:8px;">' +
+        '<div style="width:' + Math.round((Math.min(savingsPct, 20)/20)*33) + '%;background:#34d399;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;min-width:' + (savingsPct > 0 ? '30px' : '0') + ';">' + (savingsPct > 0 ? savingsPct + '%' : '') + '</div>' +
+        '<div style="flex:1;background:#1a1a1e;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted);">50% Needs</div>' +
+        '<div style="flex:1;background:#222;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-muted);">30% Wants</div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--text-dim);line-height:1.6;">' +
+        (savingsPct >= 20 ? '<span style="color:#34d399;"><i class="fas fa-circle-check"></i> You\'re hitting the 20% savings benchmark!</span>' :
+         savingsPct >= 10 ? '<span style="color:#f4c553;">You\'re at ' + savingsPct + '% — 20% is the recommended target.</span>' :
+         '<span style="color:#f87171;">At ' + savingsPct + '% you\'re below the 20% benchmark. Reducing expenses by just 5% could get you to ' + (income > 0 ? Math.round(((savings + opt5pct) / income) * 100) : 0) + '%.</span>') +
+      '</div>';
+  } else if (barEl) {
+    barEl.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px;">Set your income above to see the 50/30/20 breakdown.</div>';
+  }
+
+  // Smart Allocation Benchmarks
+  updateBenchmarks(income);
+}
+
+function updateBenchmarks(income) {
+  var benchmarks = {
+    'bm-housing':    { val: income * 0.30 },
+    'bm-car':        { val: income * 3 },
+    'bm-emergency':  { val: income * 4 },
+    'bm-essentials': { val: income * 0.55 },
+    'bm-invest':     { val: income * 0.10 },
+    'bm-fun':        { val: income * 0.05 },
+    'bm-replace':    { val: income * 200 },
+  };
+  Object.keys(benchmarks).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = income > 0 ? fmt(benchmarks[id].val) : '—';
+  });
+}
+
+function toggleBMTooltip(e, tipId) {
+  e.stopPropagation();
+  var tip = document.getElementById(tipId);
+  if (!tip) return;
+  var wasOpen = tip.classList.contains('show');
+  // Close all tooltips
+  document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+  if (!wasOpen) tip.classList.add('show');
+}
+// Close tooltips on outside click
+document.addEventListener('click', function() {
+  document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+});
 
 // ══ PRO ENGINES ═══════════════════════════════════════════════════
 var _fireSaveMul = 1;
