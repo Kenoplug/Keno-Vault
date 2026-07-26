@@ -1216,10 +1216,10 @@ canvas {
 /* ══ SMART ALLOCATION BENCHMARKS ══════════════════════════════ */
 .bm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
 @media(max-width:1024px){.bm-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:480px){.bm-grid{grid-template-columns:1fr;}}
+@media(max-width:768px){.bm-grid{grid-template-columns:1fr;}}
 .bm-card{
   background:var(--surface2);border:1px solid var(--border);
-  border-radius:12px;padding:14px 16px;position:relative;
+  border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;
   transition:border-color .2s;
 }
 .bm-card:hover{border-color:rgba(249,115,22,0.2);}
@@ -1227,16 +1227,22 @@ canvas {
 .bm-label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);}
 .bm-info{cursor:pointer;color:var(--text-muted);font-size:12px;transition:color .15s;position:relative;}
 .bm-info:hover{color:var(--accent);}
-.bm-val{font-size:16px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.bm-val{
+  font-size:clamp(14px,3.5vw,16px);font-weight:700;color:var(--text);
+  font-family:'JetBrains Mono',monospace;margin-bottom:4px;
+  overflow:hidden;text-overflow:ellipsis;
+}
 .bm-sub{font-size:10px;color:var(--text-muted);}
 .bm-tip{
-  display:none;position:absolute;z-index:20;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
-  background:#1e1e1e;border:1px solid var(--border);border-radius:8px;padding:10px 14px;
-  font-size:11px;color:var(--text-dim);line-height:1.6;width:min(240px,80vw);box-shadow:0 8px 24px rgba(0,0,0,0.5);
-  pointer-events:none;
+  display:none;position:fixed;z-index:200;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#1e1e1e;border:1px solid var(--border);border-radius:10px;padding:14px 18px;
+  font-size:12px;color:var(--text-dim);line-height:1.6;width:min(280px,88vw);
+  box-shadow:0 12px 40px rgba(0,0,0,0.7);
 }
-.bm-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#1e1e1e;}
 .bm-tip.show{display:block;}
+/* overlay when tooltip is open */
+.bm-tip-backdrop{display:none;position:fixed;inset:0;z-index:199;background:rgba(0,0,0,0.4);}
+.bm-tip-backdrop.show{display:block;}
 
 /* ══ AI CHAT ═══════════════════════════════════════════════════ */
 .ai-msg { display: flex; gap: 10px; align-items: flex-start; }

@@ -1715,18 +1715,20 @@ function updateBenchmarks(income) {
 function toggleBMTooltip(e, tipId) {
   e.stopPropagation();
   var tip = document.getElementById(tipId);
+  var backdrop = document.getElementById('bmBackdrop');
   if (!tip) return;
   var wasOpen = tip.classList.contains('show');
-  // Close all tooltips
-  document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
-  if (!wasOpen) tip.classList.add('show');
-}
-// Close tooltips on outside click
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('.bm-info') && !e.target.closest('.bm-tip')) {
-    document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+  closeAllBMTooltips();
+  if (!wasOpen) {
+    tip.classList.add('show');
+    if (backdrop) backdrop.classList.add('show');
   }
-});
+}
+function closeAllBMTooltips() {
+  document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+  var backdrop = document.getElementById('bmBackdrop');
+  if (backdrop) backdrop.classList.remove('show');
+}
 
 // ══ PRO ENGINES ═══════════════════════════════════════════════════
 var _fireSaveMul = 1;
