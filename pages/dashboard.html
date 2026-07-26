@@ -913,48 +913,48 @@
           <div class="chart-card wide" style="padding:20px;">
             <div class="chart-title">Smart Allocation Benchmarks</div>
             <div class="chart-heading">Calculated guidelines derived from your monthly income</div>
-            <div class="bm-grid" id="benchmarkGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;">
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Housing Budget</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip1')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-housing">—</div>
-                <div class="bm-sub">30% of Income Cap</div>
-                <div class="bm-tip" id="bmTip1">Keeping housing at or below 30% of net pay prevents house-poverty and leaves room for aggressive investing.</div>
+            <div class="benchmark-grid" id="benchmarkGrid" style="margin-top:14px;">
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Housing Budget</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip1')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-housing">—</div>
+                <div class="benchmark-sub">30% of Income Cap</div>
+                <div class="benchmark-tip" id="bmTip1">Keeping housing at or below 30% of net pay prevents house-poverty and leaves room for aggressive investing.</div>
               </div>
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Max Car Value</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip2')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-car">—</div>
-                <div class="bm-sub">3× Monthly Target</div>
-                <div class="bm-tip" id="bmTip2">Total vehicle asset value shouldn't exceed 3× monthly income to avoid rapid depreciation eating into net worth.</div>
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Max Car Value</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip2')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-car">—</div>
+                <div class="benchmark-sub">3× Monthly Target</div>
+                <div class="benchmark-tip" id="bmTip2">Total vehicle asset value shouldn't exceed 3× monthly income to avoid rapid depreciation eating into net worth.</div>
               </div>
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Emergency Fund</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip3')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-emergency">—</div>
-                <div class="bm-sub">4× Monthly Target</div>
-                <div class="bm-tip" id="bmTip3">A 4-month income buffer protects your core liquid cash flow against sudden income disruption or large unexpected bills.</div>
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Emergency Fund</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip3')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-emergency">—</div>
+                <div class="benchmark-sub">4× Monthly Target</div>
+                <div class="benchmark-tip" id="bmTip3">A 4-month income buffer protects your core liquid cash flow against sudden income disruption or large unexpected bills.</div>
               </div>
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Essentials Cap</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip4')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-essentials">—</div>
-                <div class="bm-sub">55% of Income Max</div>
-                <div class="bm-tip" id="bmTip4">Covers non-negotiables like rent, utilities, groceries, and debt baselines. Staying under 55% ensures high savings capability.</div>
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Essentials Cap</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip4')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-essentials">—</div>
+                <div class="benchmark-sub">55% of Income Max</div>
+                <div class="benchmark-tip" id="bmTip4">Covers non-negotiables like rent, utilities, groceries, and debt baselines. Staying under 55% ensures high savings capability.</div>
               </div>
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Min. Investment</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip5')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-invest">—</div>
-                <div class="bm-sub">10% of Income Baseline</div>
-                <div class="bm-tip" id="bmTip5">The absolute minimum baseline for monthly long-term wealth building before accounting for discretionary savings.</div>
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Min. Investment</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip5')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-invest">—</div>
+                <div class="benchmark-sub">10% of Income Baseline</div>
+                <div class="benchmark-tip" id="bmTip5">The absolute minimum baseline for monthly long-term wealth building before accounting for discretionary savings.</div>
               </div>
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Guilt-Free Fun</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip6')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-fun">—</div>
-                <div class="bm-sub">5% of Income Fun Budget</div>
-                <div class="bm-tip" id="bmTip6">Allocated strictly for non-essential personal enjoyment so you can spend without sabotaging your long-term goals.</div>
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Guilt-Free Fun</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip6')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-fun">—</div>
+                <div class="benchmark-sub">5% of Income Fun Budget</div>
+                <div class="benchmark-tip" id="bmTip6">Allocated strictly for non-essential personal enjoyment so you can spend without sabotaging your long-term goals.</div>
               </div>
-              <div class="bm-card">
-                <div class="bm-top"><span class="bm-label">Income Replacement</span><span class="bm-info" onclick="toggleBMTooltip(event,'bmTip7')"><i class="fas fa-circle-info"></i></span></div>
-                <div class="bm-val sensitive" id="bm-replace">—</div>
-                <div class="bm-sub">200× Portfolio Target</div>
-                <div class="bm-tip" id="bmTip7">A general benchmark portfolio target needed for investment yields to fully replace your active salary over time.</div>
+              <div class="benchmark-card">
+                <div class="benchmark-top"><span class="benchmark-label">Income Replacement</span><span class="benchmark-info" onclick="toggleBMTooltip(event,'bmTip7')"><i class="fas fa-circle-info"></i></span></div>
+                <div class="benchmark-value sensitive" id="bm-replace">—</div>
+                <div class="benchmark-sub">200× Portfolio Target</div>
+                <div class="benchmark-tip" id="bmTip7">A general benchmark portfolio target needed for investment yields to fully replace your active salary over time.</div>
               </div>
             </div>
           </div>
@@ -1325,7 +1325,7 @@
       </div>
 
     </div><!-- /page-content -->
-    <div class="bm-tip-backdrop" id="bmBackdrop" onclick="closeAllBMTooltips()"></div>
+    <div class="benchmark-tip-backdrop" id="bmBackdrop" onclick="closeAllBMTooltips()"></div>
   </div><!-- /main-content -->
 </div><!-- /app-layout -->
 

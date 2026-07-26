@@ -1725,7 +1725,7 @@ function toggleBMTooltip(e, tipId) {
   }
 }
 function closeAllBMTooltips() {
-  document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+  document.querySelectorAll('.benchmark-tip.show').forEach(function(t) { t.classList.remove('show'); });
   var backdrop = document.getElementById('bmBackdrop');
   if (backdrop) backdrop.classList.remove('show');
 }
