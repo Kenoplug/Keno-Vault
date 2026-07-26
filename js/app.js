@@ -1722,8 +1722,10 @@ function toggleBMTooltip(e, tipId) {
   if (!wasOpen) tip.classList.add('show');
 }
 // Close tooltips on outside click
-document.addEventListener('click', function() {
-  document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.bm-info') && !e.target.closest('.bm-tip')) {
+    document.querySelectorAll('.bm-tip.show').forEach(function(t) { t.classList.remove('show'); });
+  }
 });
 
 // ══ PRO ENGINES ═══════════════════════════════════════════════════

@@ -1232,7 +1232,7 @@ canvas {
 .bm-tip{
   display:none;position:absolute;z-index:20;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
   background:#1e1e1e;border:1px solid var(--border);border-radius:8px;padding:10px 14px;
-  font-size:11px;color:var(--text-dim);line-height:1.6;width:240px;box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  font-size:11px;color:var(--text-dim);line-height:1.6;width:min(240px,80vw);box-shadow:0 8px 24px rgba(0,0,0,0.5);
   pointer-events:none;
 }
 .bm-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#1e1e1e;}
