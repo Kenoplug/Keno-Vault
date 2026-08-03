@@ -232,10 +232,11 @@ async function upgradeTo(plan) {
   try {
     var btn = document.querySelector('#upgradeModal .btn-primary');
     if (btn) { btn.disabled = true; btn.textContent = 'Connecting to checkout…'; }
+    var period = isBillingYearly() ? 'yearly' : 'monthly';
     var resp = await fetch(EDGE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
-      body: JSON.stringify({ email: currentUser.email, plan: plan }),
+      body: JSON.stringify({ email: currentUser.email, plan: plan, period: period }),
     });
     var data = await resp.json();
     console.log('[Bachs]', data);
@@ -715,21 +716,42 @@ function updatePlanUI() {
 // ══ DYNAMIC UPGRADE MODAL ═══════════════════════════════════
 var UPGRADE_CARDS = {
   growth: {
-    tier: 'growth', color: '#60a5fa', price: '$4.99', border: 'rgba(96,165,250,0.4)',
+    tier: 'growth', color: '#60a5fa', border: 'rgba(96,165,250,0.4)',
     features: ['20 asset entries','Unlimited history','Multi-Currency (160+)','Net Worth Score','Asset Optimizer','Goal Tracker + Audit Log','3–6 month history','Custom Categories'],
     btnBg: '#3b82f6',
   },
   pro: {
-    tier: 'pro', color: '#f97316', price: '$9.99', border: '#f97316', popular: true,
+    tier: 'pro', color: '#f97316', border: '#f97316', popular: true,
     features: ['Everything in Growth','100 asset entries','FIRE Simulator','Savings Rate Analyzer','Debt Optimizer','Depreciation Engine','Privacy Shield + PIN','AES Backups + Legacy'],
     btnBg: '',
   },
   elite: {
-    tier: 'elite', color: '#a855f7', price: '$19.99', border: 'rgba(168,85,247,0.4)',
+    tier: 'elite', color: '#a855f7', border: 'rgba(168,85,247,0.4)',
     features: ['Everything in Pro','Unlimited entries','AI Portfolio Advisor','Custom Asset Classes','Portfolio Stress Testing','Monthly PDF Report','Shared Household Vault','API + Priority Support'],
     btnBg: '#a855f7',
   },
 };
+var UPGRADE_PRICES = { growth: { monthly: '$4.99', yearly: '$54' }, pro: { monthly: '$9.99', yearly: '$103' }, elite: { monthly: '$19.99', yearly: '$197' } };
+function getUpgradePrice(key) {
+  var prices = UPGRADE_PRICES[key];
+  return isBillingYearly() ? prices.yearly + '<span style="font-size:14px;color:var(--text-dim);">/year <span style="font-size:10px;color:#34d399;">Save ' + (key==='growth'?'9':key==='pro'?'14':'18') + '%</span></span>' : prices.monthly + '<span style="font-size:14px;color:var(--text-dim);">/mo</span>';
+}
+function getUpgradeBtnPrice(key) {
+  return isBillingYearly() ? UPGRADE_PRICES[key].yearly + '/year' : UPGRADE_PRICES[key].monthly + '/mo';
+}
+function updateBillingToggleUI() {
+  var k = document.getElementById('upgradeToggleKnob');
+  var t = document.getElementById('upgradeToggleTrack');
+  var m = document.getElementById('upgradeMonthlyLabel');
+  var y = document.getElementById('upgradeYearlyLabel');
+  if (k) k.style.left = isBillingYearly() ? '24px' : '2px';
+  if (t) t.style.background = isBillingYearly() ? '#22c55e' : 'var(--accent)';
+  if (m) m.style.color = isBillingYearly() ? 'var(--text-dim)' : 'var(--text)';
+  if (y) y.style.color = isBillingYearly() ? 'var(--text)' : 'var(--text-dim)';
+  // Rebuild modal with new prices
+  buildUpgradeModal();
+}
+
 function buildUpgradeModal() {
   var container = document.getElementById('upgradeCards');
   var subtitle = document.getElementById('upgradeSubtitle');
@@ -742,7 +764,16 @@ function buildUpgradeModal() {
 
   if (subtitle) subtitle.textContent = isPro() ? 'You\'re on Pro. Ready for the ultimate?' : isGrowth() ? 'Unlock Pro or Elite for advanced tools.' : 'Choose the plan that fits your wealth journey.';
 
-  container.innerHTML = tiers.map(function(key) {
+  // Billing toggle inside modal
+  var toggleHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;">' +
+    '<span id="upgradeMonthlyLabel" style="font-size:13px;font-weight:600;cursor:pointer;color:' + (isBillingYearly() ? 'var(--text-dim)' : 'var(--text)') + ';" onclick="setBillingYearly(false)">Monthly</span>' +
+    '<div onclick="setBillingYearly(!isBillingYearly())" style="cursor:pointer;width:48px;height:26px;background:' + (isBillingYearly() ? '#22c55e' : 'var(--accent)') + ';border-radius:13px;position:relative;flex-shrink:0;border:2px solid var(--border);" id="upgradeToggleTrack">' +
+      '<div id="upgradeToggleKnob" style="position:absolute;top:2px;left:' + (isBillingYearly() ? '24px' : '2px') + ';width:18px;height:18px;background:#fff;border-radius:50%;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>' +
+    '</div>' +
+    '<span id="upgradeYearlyLabel" style="font-size:13px;font-weight:600;cursor:pointer;color:' + (isBillingYearly() ? 'var(--text)' : 'var(--text-dim)') + ';" onclick="setBillingYearly(true)">Yearly <span style="font-size:9px;color:#34d399;background:rgba(34,197,94,0.12);padding:2px 6px;border-radius:8px;">Save up to 18%</span></span>' +
+  '</div>';
+
+  container.innerHTML = toggleHTML + tiers.map(function(key) {
     var c = UPGRADE_CARDS[key];
     var popBadge = c.popular ? '<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:' + c.color + ';color:#fff;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;">MOST POPULAR</div>' : '';
     var popMargin = c.popular ? 'margin-top:4px;' : '';
@@ -750,11 +781,11 @@ function buildUpgradeModal() {
     return '<div style="background:var(--surface2);border:2px solid ' + c.border + ';border-radius:14px;padding:20px;margin-bottom:12px;position:relative;">' +
       popBadge +
       '<div style="font-size:16px;font-weight:700;color:' + c.color + ';margin-bottom:2px;' + popMargin + '">' + c.tier.charAt(0).toUpperCase() + c.tier.slice(1) + ' ⬡</div>' +
-      '<div class="upgrade-price" style="font-size:36px;margin-bottom:4px;' + (c.tier === 'elite' ? 'color:#a855f7;' : '') + '">' + c.price + '<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>' +
+      '<div class="upgrade-price" style="font-size:36px;margin-bottom:4px;' + (c.tier === 'elite' ? 'color:#a855f7;' : '') + '">' + getUpgradePrice(key) + '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">' +
         c.features.map(function(f) { return '<div class="pro-feature-item"><i class="fas fa-circle-check"></i> ' + f + '</div>'; }).join('') +
       '</div>' +
-      '<button class="btn btn-primary" onclick="upgradeTo(\'' + key + '\')" style="' + btnStyle + '">Pay ' + c.price + '/mo — Card · Bank · Crypto</button>' +
+      '<button class="btn btn-primary" onclick="upgradeTo(\'' + key + '\')" style="' + btnStyle + '">Pay ' + getUpgradeBtnPrice(key) + ' — Card · Bank · Crypto</button>' +
     '</div>';
   }).join('');
 }

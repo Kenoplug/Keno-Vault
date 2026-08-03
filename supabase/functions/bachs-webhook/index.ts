@@ -6,7 +6,7 @@ import { Resend } from "https://esm.sh/resend@3.2.0";
 const SUPA_URL = Deno.env.get("SB_URL")!;
 const SUPA_SERVICE_KEY = Deno.env.get("SB_SERVICE_KEY")!;
 
-function planLabel(p) { return p === "elite" ? "Elite ($7.99/mo)" : p === "pro" ? "Pro ($3.99/mo)" : p === "growth" ? "Growth ($1.99/mo)" : p; }
+function planLabel(p) { return p === "elite" ? "Elite ($19.99/mo)" : p === "pro" ? "Pro ($9.99/mo)" : p === "growth" ? "Growth ($4.99/mo)" : p; }
 
 async function sendEmail(email, plan, subject) {
   var key = Deno.env.get("RESEND_API_KEY");

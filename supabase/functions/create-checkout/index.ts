@@ -7,9 +7,9 @@ const isSandbox = BACHS_KEY.startsWith("sk_sandbox_");
 const BACHS_BASE = isSandbox ? "https://sandbox-api.bachs.io" : "https://api.bachs.io";
 
 const PRODUCTS = {
-  growth: "prod_d79e7052c12148dda083",
-  pro:    "prod_69e69d4fb0c7439d88b3",
-  elite:  "prod_4590872b175e4caa8dd7",
+  growth:        { monthly: "prod_d79e7052c12148dda083", yearly: "prod_65f2dd94d2634399bdbe" },
+  pro:           { monthly: "prod_69e69d4fb0c7439d88b3", yearly: "prod_68a50d554c364d7c921e" },
+  elite:         { monthly: "prod_4590872b175e4caa8dd7", yearly: "prod_3e6822985cd34366b64b" },
 };
 
 serve(async (req) => {
@@ -23,10 +23,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
   }
   try {
-    const { email, plan } = await req.json();
-    const productId = PRODUCTS[plan];
+    const { email, plan, period } = await req.json();
+    const planProducts = PRODUCTS[plan];
+    const productId = period === 'yearly' ? planProducts?.yearly : planProducts?.monthly;
     if (!email || !productId) return new Response(JSON.stringify({ error: "Missing email or invalid plan" }), { status: 400 });
-    console.log("[Checkout]", plan, "for", email);
+    console.log("[Checkout]", plan, period || 'monthly', "for", email);
     const bachsResp = await fetch(BACHS_BASE + "/v1/checkout-sessions", {
       method: "POST",
       headers: { "Authorization": "Bearer " + BACHS_KEY, "Content-Type": "application/json" },

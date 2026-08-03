@@ -52,6 +52,20 @@ function applyTheme(t) {
   if (btn) btn.innerHTML = t === 'dark' ? '<i class=\"fas fa-moon\"></i> Dark' : '<i class=\"fas fa-sun\"></i> Light';
 }
 
+// ══ BILLING INTERVAL — shared across landing, dashboard, settings ══
+var _billingYearly = (function() {
+  var stored = localStorage.getItem('kv-billing-yearly');
+  return stored === null ? true : stored === 'true'; // default: yearly
+})();
+function setBillingYearly(val) {
+  _billingYearly = !!val;
+  localStorage.setItem('kv-billing-yearly', _billingYearly ? 'true' : 'false');
+  if (typeof updateBillingToggleUI === 'function') updateBillingToggleUI();
+  if (typeof updatePricingDisplay === 'function') updatePricingDisplay();
+  if (typeof buildUpgradeModal === 'function') buildUpgradeModal();
+}
+function isBillingYearly() { return _billingYearly; }
+
 function toggleTheme() {
   applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
 }

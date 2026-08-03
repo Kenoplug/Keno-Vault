@@ -1365,10 +1365,11 @@ function updateNativeLabel() {
 async function upgradeTo(plan) {
   if (!currentUser) { toast('Sign in first', 'error'); return; }
   try {
+    var period = isBillingYearly() ? 'yearly' : 'monthly';
     var resp = await fetch('https://soxqotattmhahzpehycz.supabase.co/functions/v1/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SUPA_KEY },
-      body: JSON.stringify({ email: currentUser.email, plan: plan }),
+      body: JSON.stringify({ email: currentUser.email, plan: plan, period: period }),
     });
     var data = await resp.json();
     if (data.url) { window.location.href = data.url; }

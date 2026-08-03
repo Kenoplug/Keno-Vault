@@ -969,15 +969,21 @@ document.addEventListener('keydown', function(e) {
 
 
 <script>if(location.hash==='#terms')openLegal('terms');if(location.hash==='#privacy')openLegal('privacy');if(location.hash==='#refund')openLegal('refund');
+// Init billing toggle + pricing display
+(function() {
+  updatePricingDisplay();
+  if (_billingYearly) { setTimeout(updateBillingToggleUI, 150); }
+})();
 // Pricing monthly/yearly toggle
-var _pricingYearly = false;
 function togglePricingPeriod() {
-  _pricingYearly = !_pricingYearly;
+  setBillingYearly(!_billingYearly);
+}
+function updateBillingToggleUI() {
   var m = document.getElementById('toggleMonthly');
   var y = document.getElementById('toggleYearly');
   var k = document.getElementById('pricingToggleKnob');
   var t = document.getElementById('pricingToggleTrack');
-  if (_pricingYearly) {
+  if (_billingYearly) {
     if (m) m.style.color = 'var(--text-dim)';
     if (y) y.style.color = 'var(--text)';
     if (k) k.style.left = '24px';
@@ -988,15 +994,14 @@ function togglePricingPeriod() {
     if (k) k.style.left = '2px';
     if (t) t.style.background = 'var(--accent)';
   }
-  updatePricingDisplay();
 }
 function updatePricingDisplay() {
   var growthEl = document.getElementById('growthPrice');
   var proEl    = document.getElementById('proPrice');
   var eliteEl  = document.getElementById('elitePrice');
-  if (growthEl) growthEl.innerHTML = _pricingYearly ? '$54<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $4.50/mo</span><div style="clear:both;"></div>' : '$4.99<span>/month</span>';
-  if (proEl)    proEl.innerHTML    = _pricingYearly ? '$103<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $8.58/mo</span><div style="clear:both;"></div>' : '$9.99<span>/month</span>';
-  if (eliteEl)  eliteEl.innerHTML  = _pricingYearly ? '$197<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $16.42/mo</span><div style="clear:both;"></div>' : '$19.99<span>/month</span>';
+  if (growthEl) growthEl.innerHTML = _billingYearly ? '$54<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $4.50/mo</span><div style="clear:both;"></div>' : '$4.99<span>/month</span>';
+  if (proEl)    proEl.innerHTML    = _billingYearly ? '$103<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $8.58/mo</span><div style="clear:both;"></div>' : '$9.99<span>/month</span>';
+  if (eliteEl)  eliteEl.innerHTML  = _billingYearly ? '$197<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $16.42/mo</span><div style="clear:both;"></div>' : '$19.99<span>/month</span>';
 }</script>
 
 </body>
