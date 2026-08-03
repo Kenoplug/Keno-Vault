@@ -5,7 +5,11 @@
 // ══ CONFIG ══════════════════════════════════════════════════════
 // Shared constants (SUPA_URL, SUPA_KEY, ADMIN_EMAIL, SITE_URL) are in js/config.js
 // Load that file before this one.
-const FREE_LIMIT = 10;
+const FREE_LIMIT = 5;
+const GROWTH_LIMIT = 20;
+const PRO_LIMIT = 100;
+function getAssetLimit() { return isElite() ? Infinity : isPro() ? PRO_LIMIT : isGrowth() ? GROWTH_LIMIT : FREE_LIMIT; }
+function isAtAssetLimit() { return isElite() ? false : assets.length >= getAssetLimit(); }
 
 // ══ GLOBAL HELPERS (used by inline HTML oninput handlers) ═══════
 function curSym()  { return (Calculators && Calculators.getCurrencySymbol) ? Calculators.getCurrencySymbol(Calculators.getBaseCurrency()) : '$'; }
@@ -449,7 +453,7 @@ function switchProPage(name) {
   var ids = PRO_PAGE_IDS[name];
   if (ids) {
     var neededTier = ids.tier || 'pro';
-    var unlocked = (neededTier === 'growth') ? isGrowth() : isPro();
+    var unlocked = (neededTier === 'elite') ? isElite() : (neededTier === 'growth') ? isGrowth() : isPro();
     var lockEl    = document.getElementById(ids.lock);
     var contentEl = document.getElementById(ids.content);
     if (lockEl)    lockEl.style.display    = unlocked ? 'none'  : 'block';
@@ -689,10 +693,10 @@ function updatePlanUI() {
   var planEl = document.getElementById('sidebarPlan');
   var banner = document.getElementById('proBanner');
   if (planEl) {
-    if (isElite()) planEl.textContent = 'Elite Plan ⬡';
-    else if (isPro()) planEl.textContent = 'Pro Plan ⬡';
-    else if (isGrowth()) planEl.textContent = 'Growth Plan ⬡';
-    else planEl.textContent = 'Free Plan';
+    if (isElite()) { planEl.textContent = 'Elite Plan ⬡'; planEl.style.color = '#a855f7'; planEl.style.background = 'rgba(168,85,247,0.1)'; planEl.style.borderColor = 'rgba(168,85,247,0.2)'; }
+    else if (isPro()) { planEl.textContent = 'Pro Plan ⬡'; planEl.style.color = '#f97316'; planEl.style.background = ''; planEl.style.borderColor = ''; }
+    else if (isGrowth()) { planEl.textContent = 'Growth Plan ⬡'; planEl.style.color = '#60a5fa'; planEl.style.background = 'rgba(96,165,250,0.1)'; planEl.style.borderColor = 'rgba(96,165,250,0.2)'; }
+    else { planEl.textContent = 'Free Plan'; planEl.style.color = ''; planEl.style.background = ''; planEl.style.borderColor = ''; }
   }
   // Show report button for elite users
   var reportBtn = document.getElementById('reportBtn');
@@ -708,7 +712,60 @@ function updatePlanUI() {
   var scoreLockOverlay = document.getElementById('scoreLockOverlay');
   if (scoreLockOverlay) scoreLockOverlay.style.display = isGrowth() ? 'none' : 'flex';
 
-  // Lock icons — hide based on actual tier
+// ══ DYNAMIC UPGRADE MODAL ═══════════════════════════════════
+var UPGRADE_CARDS = {
+  growth: {
+    tier: 'growth', color: '#60a5fa', price: '$4.99', border: 'rgba(96,165,250,0.4)',
+    features: ['20 asset entries','Unlimited history','Multi-Currency (160+)','Net Worth Score','Asset Optimizer','Goal Tracker + Audit Log','3–6 month history','Custom Categories'],
+    btnBg: '#3b82f6',
+  },
+  pro: {
+    tier: 'pro', color: '#f97316', price: '$9.99', border: '#f97316', popular: true,
+    features: ['Everything in Growth','100 asset entries','FIRE Simulator','Savings Rate Analyzer','Debt Optimizer','Depreciation Engine','Privacy Shield + PIN','AES Backups + Legacy'],
+    btnBg: '',
+  },
+  elite: {
+    tier: 'elite', color: '#a855f7', price: '$19.99', border: 'rgba(168,85,247,0.4)',
+    features: ['Everything in Pro','Unlimited entries','AI Portfolio Advisor','Custom Asset Classes','Portfolio Stress Testing','Monthly PDF Report','Shared Household Vault','API + Priority Support'],
+    btnBg: '#a855f7',
+  },
+};
+function buildUpgradeModal() {
+  var container = document.getElementById('upgradeCards');
+  var subtitle = document.getElementById('upgradeSubtitle');
+  if (!container) return;
+  var tiers = [];
+  if (isElite()) { closeModal('upgradeModal'); return; }
+  else if (isPro()) tiers = ['elite'];
+  else if (isGrowth()) tiers = ['pro', 'elite'];
+  else tiers = ['growth', 'pro', 'elite'];
+
+  if (subtitle) subtitle.textContent = isPro() ? 'You\'re on Pro. Ready for the ultimate?' : isGrowth() ? 'Unlock Pro or Elite for advanced tools.' : 'Choose the plan that fits your wealth journey.';
+
+  container.innerHTML = tiers.map(function(key) {
+    var c = UPGRADE_CARDS[key];
+    var popBadge = c.popular ? '<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:' + c.color + ';color:#fff;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;">MOST POPULAR</div>' : '';
+    var popMargin = c.popular ? 'margin-top:4px;' : '';
+    var btnStyle = 'width:100%;padding:12px;font-size:14px;' + (c.btnBg ? 'background:' + c.btnBg + ';border-color:' + c.btnBg + ';' : '');
+    return '<div style="background:var(--surface2);border:2px solid ' + c.border + ';border-radius:14px;padding:20px;margin-bottom:12px;position:relative;">' +
+      popBadge +
+      '<div style="font-size:16px;font-weight:700;color:' + c.color + ';margin-bottom:2px;' + popMargin + '">' + c.tier.charAt(0).toUpperCase() + c.tier.slice(1) + ' ⬡</div>' +
+      '<div class="upgrade-price" style="font-size:36px;margin-bottom:4px;' + (c.tier === 'elite' ? 'color:#a855f7;' : '') + '">' + c.price + '<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">' +
+        c.features.map(function(f) { return '<div class="pro-feature-item"><i class="fas fa-circle-check"></i> ' + f + '</div>'; }).join('') +
+      '</div>' +
+      '<button class="btn btn-primary" onclick="upgradeTo(\'' + key + '\')" style="' + btnStyle + '">Pay ' + c.price + '/mo — Card · Bank · Crypto</button>' +
+    '</div>';
+  }).join('');
+}
+// Build modal content when opening upgradeModal
+var _origOpenModal = openModal;
+openModal = function(name) {
+  if (name === 'upgradeModal') buildUpgradeModal();
+  _origOpenModal(name);
+};
+
+// ══ Lock icons — hide based on actual tier
   document.querySelectorAll('.pro-lock').forEach(function(el) {
     var tier = el.getAttribute('data-tier') || 'growth';
     if (tier === 'elite') el.style.display = isElite() ? 'none' : 'inline';
@@ -724,7 +781,7 @@ function updatePlanUI() {
     var lockEl = document.getElementById(ids.lock);
     var contEl = document.getElementById(ids.content);
     var neededTier = ids.tier || 'pro';
-    var unlocked = (neededTier === 'growth') ? isGrowth() : isPro();
+    var unlocked = (neededTier === 'elite') ? isElite() : (neededTier === 'growth') ? isGrowth() : isPro();
     if (lockEl) lockEl.style.display = unlocked ? 'none'  : 'block';
     if (contEl) contEl.style.display = unlocked ? 'block' : 'none';
   });
@@ -782,6 +839,10 @@ async function loadHistory(months) {
 function switchHistoryRange(val) {
   var sel = document.getElementById('historyRange');
   var lbl = document.getElementById('historyRangeLabel');
+  // Tier gating checks
+  if (val === 'all' && !isElite()) { sel.value = 'recent'; openModal('upgradeModal'); return; }
+  if (val === '12' && (!isPro() && !isElite())) { sel.value = '6'; openModal('upgradeModal'); return; }
+  if ((val === '6' || val === '3') && !isGrowth() && !isPro() && !isElite()) { sel.value = '1'; openModal('upgradeModal'); return; }
   if (val === 'recent') {
     _historyMonths = 'recent';
     if (lbl) lbl.textContent = 'Recent (30 entries)';
@@ -798,14 +859,33 @@ function switchHistoryRange(val) {
 function initHistoryUI() {
   var sel = document.getElementById('historyRange');
   var lbl = document.getElementById('historyRangeLabel');
-  if (isGrowth()) {
+  if (isElite()) {
     _historyMonths = 'recent';
     if (sel) { sel.style.display = 'inline-block'; sel.value = 'recent'; }
     if (lbl) lbl.textContent = 'Recent (30 entries)';
+    // Show all options
+    document.querySelectorAll('#historyRange option').forEach(function(o) { o.style.display = ''; });
+  } else if (isPro()) {
+    _historyMonths = 'recent';
+    if (sel) { sel.style.display = 'inline-block'; sel.value = 'recent'; }
+    if (lbl) lbl.textContent = 'Recent (30 entries)';
+    // Hide All Time for non-elite
+    var allTime = sel.querySelector('option[value="all"]'); if (allTime) allTime.style.display = 'none';
+  } else if (isGrowth()) {
+    _historyMonths = 'recent';
+    if (sel) { sel.style.display = 'inline-block'; sel.value = 'recent'; }
+    if (lbl) lbl.textContent = 'Recent (30 entries)';
+    // Hide All Time, 12mo for growth
+    ['all','12'].forEach(function(v) {
+      var opt = sel.querySelector('option[value="' + v + '"]'); if (opt) opt.style.display = 'none';
+    });
   } else {
-    if (sel) sel.style.display = 'none';
-    if (lbl) lbl.textContent = 'Free: 30 snapshots';
+    // Free: only 1 month
+    _historyMonths = 1;
+    if (sel) { sel.style.display = 'none'; }
+    if (lbl) lbl.textContent = 'Last 1 Month';
   }
+  loadHistory();
 }
 
 async function dbInsert(a) {
@@ -931,7 +1011,7 @@ function calcPreview() {
 // ══ ADD ASSET ════════════════════════════════════════════════════
 async function addAsset() {
   if (!currentUser) { UI.toast('Sign in first', 'error'); return; }
-  if (!isGrowth() && assets.length >= FREE_LIMIT) { openModal('upgradeModal'); return; }
+  if (isAtAssetLimit()) { openModal('upgradeModal'); return; }
 
   const name  = document.getElementById('fName').value.trim();
   const cat   = document.getElementById('fCategory').value;
@@ -1331,7 +1411,7 @@ function renderKPIs() {
   }
 
   var lw = document.getElementById('limitWarning');
-  if (lw) lw.style.display = (!isGrowth() && assets.length >= FREE_LIMIT) ? 'block' : 'none';
+  if (lw) lw.style.display = (!isElite() && assets.length >= getAssetLimit()) ? 'block' : 'none';
   const ec = document.getElementById('entryCount');
   if (ec) ec.textContent = `(${assets.length} entr${assets.length === 1 ? 'y' : 'ies'})`;
 }
@@ -3647,7 +3727,7 @@ async function doBootWithSession(session, source) {
       const name = currentUser.user_metadata?.full_name ||
                    currentUser.user_metadata?.given_name ||
                    currentUser.email?.split('@')[0] || 'there';
-      UI.toast('Welcome back, ' + name + '! \uD83D\uDC4B', 'success');
+      UI.toast('Welcome back, ' + name + '!', 'success');
       logAudit('login', 'session', currentUser.email, '');
       sendLoginAlert();
     }

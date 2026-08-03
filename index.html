@@ -520,7 +520,7 @@ footer::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none
         <div class="pricing-price">$0<span>/month</span></div>
         <p class="pricing-desc">Everything you need to start tracking your net worth today.</p>
         <ul class="pricing-features">
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Up to 10 asset entries</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Up to 5 asset entries</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Basic KPI dashboard + charts</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> 30-day net worth history</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Google + email sign-in</li>
@@ -533,38 +533,37 @@ footer::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none
       </div>
       <!-- GROWTH -->
       <div class="pricing-card">
-        <div class="pricing-plan" style="color:var(--orange);">Growth</div>
-        <div id="growthPrice" class="pricing-price" style="color:var(--orange);">$1.99<span>/month</span></div>
-        <p class="pricing-desc">Practical power tools to grow your wealth — unlimited entries, multi-currency, and smart tracking.</p>
+        <div class="pricing-plan" style="color:#60a5fa;">Growth</div>
+        <div id="growthPrice" class="pricing-price" style="color:#60a5fa;">$4.99<span>/month</span></div>
+        <p class="pricing-desc">20 entries, multi-currency, net worth score, and smart tracking tools.</p>
         <ul class="pricing-features">
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Unlimited asset entries</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Unlimited net worth history</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> 20 asset entries</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Multi-Currency FX (160+ rates)</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Net Worth Score (0–100)</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Asset Allocation Optimizer</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Custom Asset Categories</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Goal Tracking + milestones</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Goal Tracking</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Advanced Audit Log</li>
-          <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">FIRE + Tax + Debt Sims</span></li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> 3–6 month history</li>
+          <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">FIRE + Savings Rate + Debt</span></li>
           <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">Privacy Shield + Encrypted Backups</span></li>
         </ul>
-        <button class="pricing-btn pricing-btn-pro" onclick="window.location.href='pages/dashboard.html'">Get Growth <i class="fas fa-arrow-right"></i></button>
+        <button class="pricing-btn" style="background:#60a5fa;border-color:#60a5fa;" onclick="window.location.href='pages/dashboard.html'">Get Growth <i class="fas fa-arrow-right"></i></button>
       </div>
       <!-- PRO — Most Popular -->
       <div class="pricing-card featured">
         <div class="pricing-plan">Pro</div>
-        <div id="proPrice" class="pricing-price">$3.99<span>/month</span></div>
-        <p class="pricing-desc">Advanced simulation & security. For serious wealth builders.</p>
+        <div id="proPrice" class="pricing-price">$9.99<span>/month</span></div>
+        <p class="pricing-desc">100 entries, FIRE simulation & advanced security.</p>
         <ul class="pricing-features">
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Everything in Growth</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> 100 asset entries</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> FIRE Retirement Simulator</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Tax-Drag Simulator</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Savings Rate Analyzer</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Debt Paydown Optimizer</li>
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Depreciation Engine</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Privacy Shield (press B)</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Session Auto-Lock PIN</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> AES Encrypted Backups</li>
-          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Legacy Dead-Man's Switch</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Privacy Shield + Auto-Lock PIN</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> AES Encrypted Backups + Legacy</li>
+          <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> 12-month history</li>
           <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">AI Advisor</span></li>
           <li><span class="check check-muted">—</span> <span style="color:var(--text-muted);">Custom Asset Classes</span></li>
         </ul>
@@ -573,7 +572,7 @@ footer::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none
       <!-- ELITE -->
       <div class="pricing-card" style="border-color:rgba(168,85,247,0.4);background:linear-gradient(135deg,rgba(168,85,247,0.06),rgba(139,92,246,0.03));">
         <div class="pricing-plan" style="color:#a855f7;">Elite</div>
-        <div id="elitePrice" class="pricing-price" style="color:#a855f7;">$7.99<span>/month</span></div>
+        <div id="elitePrice" class="pricing-price" style="color:#a855f7;">$19.99<span>/month</span></div>
         <p class="pricing-desc">AI-powered intelligence & premium tools. For wealth masters.</p>
         <ul class="pricing-features">
           <li><span class="check check-green"><i class="fas fa-circle-check"></i></span> Everything in Pro</li>
@@ -840,7 +839,7 @@ const LEGAL_CONTENT = {
     </ul>
 
     <h3>4. Free and Pro Plans</h3>
-    <p>Keno Vault offers a Free tier (up to 10 entries, basic dashboard) and a Pro subscription ($4.99/month, all features unlocked). Features may evolve over time with reasonable notice.</p>
+    <p>Keno Vault offers a Free tier (up to 5 entries, basic dashboard) and paid plans starting at $4.99/month (Growth). Features may evolve over time with reasonable notice.</p>
 
     <h3>5. Acceptable Use</h3>
     <p>You agree not to misuse the service, attempt unauthorized access to other users' data or our systems, reverse engineer the platform, transmit malicious code, or resell the service without written permission.</p>
@@ -995,9 +994,9 @@ function updatePricingDisplay() {
   var growthEl = document.getElementById('growthPrice');
   var proEl    = document.getElementById('proPrice');
   var eliteEl  = document.getElementById('elitePrice');
-  if (growthEl) growthEl.innerHTML = _pricingYearly ? '$19<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $1.58/mo</span><div style="clear:both;"></div>' : '$1.99<span>/month</span>';
-  if (proEl)    proEl.innerHTML    = _pricingYearly ? '$39<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $3.25/mo</span><div style="clear:both;"></div>' : '$3.99<span>/month</span>';
-  if (eliteEl)  eliteEl.innerHTML  = _pricingYearly ? '$79<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $6.58/mo</span><div style="clear:both;"></div>' : '$7.99<span>/month</span>';
+  if (growthEl) growthEl.innerHTML = _pricingYearly ? '$54<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $4.50/mo</span><div style="clear:both;"></div>' : '$4.99<span>/month</span>';
+  if (proEl)    proEl.innerHTML    = _pricingYearly ? '$103<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $8.58/mo</span><div style="clear:both;"></div>' : '$9.99<span>/month</span>';
+  if (eliteEl)  eliteEl.innerHTML  = _pricingYearly ? '$197<span>/year</span><span style="float:right;font-size:14px;font-weight:500;color:var(--text-dim);">≈ $16.42/mo</span><div style="clear:both;"></div>' : '$19.99<span>/month</span>';
 }</script>
 
 </body>

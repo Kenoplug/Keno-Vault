@@ -207,62 +207,11 @@
 
 <!-- UPGRADE MODAL -->
 <div class="modal-overlay" id="upgradeModal">
-  <div class="modal" style="text-align:center;">
+  <div class="modal" style="text-align:center;" id="upgradeModalInner">
     <div style="font-size:44px;margin-bottom:16px;">⬡</div>
     <div class="modal-title">Unlock Keno Vault</div>
-    <div class="modal-sub">Choose the plan that fits your wealth journey</div>
-
-    <!-- GROWTH CARD -->
-    <div style="background:var(--surface2);border:2px solid var(--accent);border-radius:14px;padding:20px;margin-bottom:12px;position:relative;">
-      <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;">MOST POPULAR</div>
-      <div style="font-size:16px;font-weight:700;color:var(--accent);margin-bottom:2px;margin-top:4px;">Growth ⬡</div>
-      <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;">$1.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Unlimited entries</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Unlimited history</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Multi-Currency (160+)</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Net Worth Score</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Asset Optimizer</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Goal Tracker</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Custom Categories</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Audit Log</div>
-      </div>
-      <button class="btn btn-primary" onclick="upgradeTo('growth')" style="width:100%;padding:12px;font-size:14px;">Pay $1.99/mo — Card · Bank · Crypto</button>
-    </div>
-
-    <!-- PRO CARD -->
-    <div style="background:var(--surface2);border:2px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;">
-      <div style="font-size:16px;font-weight:700;color:#f97316;margin-bottom:2px;">Pro ⬡</div>
-      <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;">$3.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Everything in Growth</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> FIRE Simulator</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Tax-Drag Simulator</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Debt Optimizer</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Depreciation Engine</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Privacy Shield</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> AES Encrypted Backups</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Legacy Mode</div>
-      </div>
-      <button class="btn btn-primary" onclick="upgradeTo('pro')" style="width:100%;padding:12px;font-size:14px;">Pay $3.99/mo — Card · Bank · Crypto</button>
-    </div>
-
-    <!-- ELITE CARD -->
-    <div style="background:var(--surface2);border:2px solid rgba(168,85,247,0.3);border-radius:14px;padding:20px;margin-bottom:12px;">
-      <div style="font-size:16px;font-weight:700;color:#a855f7;margin-bottom:2px;">Elite ⬡</div>
-      <div class="upgrade-price" style="font-size:36px;margin-bottom:4px;color:#a855f7;">$7.99<span style="font-size:14px;color:var(--text-dim);">/mo</span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;text-align:left;font-size:11px;color:var(--text-dim);margin-bottom:12px;">
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Everything in Pro</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> AI Portfolio Advisor</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Custom Asset Classes</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Portfolio Stress Testing</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Monthly PDF Report</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Shared Household Vault</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> API Access</div>
-        <div class="pro-feature-item"><i class="fas fa-circle-check"></i> Priority Support</div>
-      </div>
-      <button class="btn btn-primary" onclick="upgradeTo('elite')" style="width:100%;padding:12px;font-size:14px;background:#a855f7;border-color:#a855f7;">Pay $7.99/mo — Card · Bank · Crypto</button>
-    </div>
+    <div class="modal-sub" id="upgradeSubtitle">Choose the plan that fits your wealth journey</div>
+    <div id="upgradeCards"></div>
     <button class="btn btn-secondary" onclick="closeModal('upgradeModal')" style="width:100%;">Maybe later</button>
   </div>
 </div>
@@ -1360,24 +1309,24 @@
     <!-- section: PRO INTELLIGENCE -->
     <div class="mob-section-label">Pro Intelligence</div>
     <div class="mob-grid">
-      <button class="mob-menu-item" onclick="switchProPage('fire');closeMobileMenu()"><i class="fas fa-fire"></i> FIRE Simulator</button>
-      <button class="mob-menu-item" onclick="switchProPage('debt');closeMobileMenu()"><i class="fas fa-scale-balanced"></i> Debt Optimizer</button>
-      <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()"><i class="fas fa-piggy-bank"></i> Savings Rate</button>
-      <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()"><i class="fas fa-bullseye"></i> Asset Optimizer</button>
+      <button class="mob-menu-item" onclick="switchProPage('fire');closeMobileMenu()"><i class="fas fa-fire"></i> FIRE Simulator <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></button>
+      <button class="mob-menu-item" onclick="switchProPage('debt');closeMobileMenu()"><i class="fas fa-scale-balanced"></i> Debt Optimizer <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></button>
+      <button class="mob-menu-item" onclick="switchProPage('tax');closeMobileMenu()"><i class="fas fa-piggy-bank"></i> Savings Rate <span class="pro-lock" data-tier="pro"><i class="fas fa-lock"></i></span></button>
+      <button class="mob-menu-item" onclick="switchProPage('optimizer');closeMobileMenu()"><i class="fas fa-bullseye"></i> Asset Optimizer <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></button>
     </div>
 
-    <!-- section: ANALYTICS & ACCOUNT -->
+    <!-- section: ELITE INTELLIGENCE -->
     <div class="mob-section-label">Elite Intelligence</div>
     <div class="mob-grid">
-      <button class="mob-menu-item" onclick="switchProPage('stress');closeMobileMenu()"><i class="fas fa-shield-halved"></i> Stress Test</button>
-      <button class="mob-menu-item" onclick="switchProPage('ai');closeMobileMenu()"><i class="fas fa-robot"></i> AI Advisor</button>
+      <button class="mob-menu-item" onclick="switchProPage('stress');closeMobileMenu()"><i class="fas fa-shield-halved"></i> Stress Test <span class="pro-lock" data-tier="elite"><i class="fas fa-lock"></i></span></button>
+      <button class="mob-menu-item" onclick="switchProPage('ai');closeMobileMenu()"><i class="fas fa-robot"></i> AI Advisor <span class="pro-lock" data-tier="elite"><i class="fas fa-lock"></i></span></button>
     </div>
 
     <div class="mob-section-label">Analytics &amp; Account</div>
     <div class="mob-grid">
-      <button class="mob-menu-item" onclick="switchProPage('goals');closeMobileMenu()"><i class="fas fa-bullseye"></i> Goal Tracker</button>
-      <button class="mob-menu-item" onclick="switchProPage('score');closeMobileMenu()"><i class="fas fa-bolt"></i> Net Worth Score</button>
-      <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()"><i class="fas fa-globe"></i> Multi-Currency</button>
+      <button class="mob-menu-item" onclick="switchProPage('goals');closeMobileMenu()"><i class="fas fa-bullseye"></i> Goal Tracker <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></button>
+      <button class="mob-menu-item" onclick="switchProPage('score');closeMobileMenu()"><i class="fas fa-bolt"></i> Net Worth Score <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></button>
+      <button class="mob-menu-item" onclick="switchProPage('currency');closeMobileMenu()"><i class="fas fa-globe"></i> Multi-Currency <span class="pro-lock" data-tier="growth"><i class="fas fa-lock"></i></span></button>
       <button class="mob-menu-item" onclick="window.location.href='settings.html'"><i class="fas fa-gear"></i> Settings</button>
     </div>
   </div>

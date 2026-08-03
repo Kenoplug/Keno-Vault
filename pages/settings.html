@@ -126,7 +126,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
   border-radius: 12px; padding: 20px;
   border: 2px solid var(--border); margin-bottom: 12px;
 }
-.plan-card.current { border-color: var(--accent); background: var(--accent-dim); }
+.plan-card.current { border-width: 2px; }
 .plan-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
 .plan-price { font-family: 'DM Serif Display', serif; font-size: 28px; letter-spacing: -0.02em; }
 .plan-features { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
@@ -705,7 +705,7 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                 <div class="plan-name">Free Forever</div>
                 <div class="plan-price">$0<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
                 <div class="plan-features">
-                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Up to 10 entries</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Up to 5 entries</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Basic KPI dashboard</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> 30-day history</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Google + email sign-in</div>
@@ -714,11 +714,11 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                 </div>
               </div>
               <div class="plan-card" id="growthPlanCard">
-                <div class="plan-name" style="color:var(--accent);">Growth ⬡</div>
-                <div class="plan-price" style="color:var(--accent);">$1.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div class="plan-name" style="color:#60a5fa;">Growth ⬡</div>
+                <div class="plan-price" style="color:#60a5fa;">$4.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
                 <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">Everything in Free, plus:</div>
                 <div class="plan-features">
-                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Unlimited entries + history</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> 20 entries + unlimited history</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Multi-Currency FX (160+)</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Net Worth Score</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Asset Allocation Optimizer</div>
@@ -728,11 +728,12 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
               </div>
               <div class="plan-card" id="proPlanCard">
                 <div class="plan-name" style="color:#f97316;">Pro ⬡</div>
-                <div class="plan-price" style="color:#f97316;">$3.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div class="plan-price" style="color:#f97316;">$9.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
                 <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">Everything in Growth, plus:</div>
                 <div class="plan-features">
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> FIRE Retirement Simulator</div>
-                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Tax-Drag + Debt Optimizer</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> 100 entries</div>
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Savings Rate Analyzer + Debt Optimizer</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Depreciation Engine</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Privacy Shield + Auto-Lock</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> AES Encrypted Backups</div>
@@ -741,9 +742,10 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
               </div>
               <div class="plan-card" id="elitePlanCard">
                 <div class="plan-name" style="color:#a855f7;">Elite ⬡</div>
-                <div class="plan-price" style="color:#a855f7;">$7.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
+                <div class="plan-price" style="color:#a855f7;">$19.99<span style="font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text-dim);">/mo</span></div>
                 <div style="font-size:12px;color:var(--text-dim);margin:4px 0 10px;">Everything in Pro, plus:</div>
                 <div class="plan-features">
+                  <div class="plan-feature"><i class="fas fa-circle-check"></i> Unlimited entries</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> AI Portfolio Advisor</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Custom Asset Classes</div>
                   <div class="plan-feature"><i class="fas fa-circle-check"></i> Portfolio Stress Testing</div>
@@ -767,9 +769,9 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
                 <div style="font-weight:600;font-size:13px;margin-bottom:4px;">Step 1 — Choose Your Plan</div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
-                  <button class="btn btn-primary" onclick="upgradeTo('growth')" style="flex:1;min-width:120px;">Growth — $1.99</button>
-                  <button class="btn btn-primary" onclick="upgradeTo('pro')" style="flex:1;min-width:120px;">Pro — $3.99</button>
-                  <button class="btn btn-primary" onclick="upgradeTo('elite')" style="flex:1;min-width:120px;background:#a855f7;border-color:#a855f7;">Elite — $7.99</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('growth')" style="flex:1;min-width:120px;background:#3b82f6;border-color:#3b82f6;">Growth — $4.99</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('pro')" style="flex:1;min-width:120px;">Pro — $9.99</button>
+                  <button class="btn btn-primary" onclick="upgradeTo('elite')" style="flex:1;min-width:120px;background:#a855f7;border-color:#a855f7;">Elite — $19.99</button>
                 </div>
               </div>
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;">
@@ -823,9 +825,9 @@ input:checked + .toggle-slider::before { transform: translateX(20px); background
                 <label>Plan</label>
                 <div class="select-wrap">
                   <select id="adminPlan" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;appearance:none;">
-                    <option value="growth">Growth — $1.99/month</option>
-                    <option value="pro">Pro — $3.99/month</option>
-                    <option value="elite">Elite — $7.99/month</option>
+                    <option value="growth">Growth — $4.99/month</option>
+                    <option value="pro">Pro — $9.99/month</option>
+                    <option value="elite">Elite — $19.99/month</option>
                     <option value="free">Free (downgrade)</option>
                   </select>
                 </div>
@@ -992,7 +994,7 @@ function setProfileUI(user) {
   if (planBadge) {
     if (isElite()) planBadge.innerHTML = '<span class="pro-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);">⬡ Elite Plan</span>';
     else if (isPro()) planBadge.innerHTML = '<span class="pro-badge">⬡ Pro Plan</span>';
-    else if (isGrowth()) planBadge.innerHTML = '<span class="pro-badge">⬡ Growth Plan</span>';
+    else if (isGrowth()) planBadge.innerHTML = '<span class="pro-badge" style="background:rgba(96,165,250,0.15);color:#60a5fa;border-color:rgba(96,165,250,0.3);">⬡ Growth Plan</span>';
     else planBadge.innerHTML = '<span class="status-badge free">Free Plan</span>';
   }
 }
@@ -1004,19 +1006,23 @@ function updateBillingUI() {
   var freePlan  = document.getElementById('freePlanCard');
   var growthPlan = document.getElementById('growthPlanCard');
   var proPlan   = document.getElementById('proPlanCard');
-  [freePlan, growthPlan, proPlan].forEach(function(p) { if (p) p.classList.remove('current'); });
-  if (isPro()) {
+  var elitePlan = document.getElementById('elitePlanCard');
+  [freePlan, growthPlan, proPlan, elitePlan].forEach(function(p) { if (p) p.classList.remove('current'); });
+  if (isElite()) {
+    if (badge)   { badge.textContent = 'Elite ⬡'; badge.className = 'status-badge active'; badge.style.background = 'rgba(168,85,247,0.15)'; badge.style.color = '#a855f7'; badge.style.borderColor = 'rgba(168,85,247,0.3)'; }
+    if (upgSec)  upgSec.style.display  = 'none';
+    if (proSec)  { proSec.style.display = 'block'; proSec.querySelector('.section-header-title').textContent = '⬡ Elite Plan Active'; }
+    if (elitePlan) { elitePlan.classList.add('current'); elitePlan.style.borderColor = '#a855f7'; }
+  } else if (isPro()) {
     if (badge)   { badge.textContent = 'Pro ⬡'; badge.className = 'status-badge active'; }
     if (upgSec)  upgSec.style.display  = 'none';
     if (proSec)  { proSec.style.display = 'block'; proSec.querySelector('.section-header-title').textContent = '⬡ Pro Plan Active'; }
-    if (proPlan) proPlan.classList.add('current');
-  } else if (isElite()) {
-    if (badge)   { badge.textContent = 'Elite ⬡'; badge.className = 'status-badge active'; badge.style.background = 'rgba(168,85,247,0.15)'; badge.style.color = '#a855f7'; badge.style.borderColor = 'rgba(168,85,247,0.3)'; }
+    if (proPlan) { proPlan.classList.add('current'); proPlan.style.borderColor = '#f97316'; }
   } else if (isGrowth()) {
-    if (badge)   { badge.textContent = 'Growth ⬡'; badge.className = 'status-badge active'; }
-    if (upgSec)  upgSec.style.display  = 'block';
-    if (proSec)  proSec.style.display  = 'none';
-    if (growthPlan) growthPlan.classList.add('current');
+    if (badge)   { badge.textContent = 'Growth ⬡'; badge.className = 'status-badge active'; badge.style.background = 'rgba(96,165,250,0.15)'; badge.style.color = '#60a5fa'; badge.style.borderColor = 'rgba(96,165,250,0.3)'; }
+    if (upgSec)  upgSec.style.display  = 'none';
+    if (proSec)  { proSec.style.display = 'block'; proSec.querySelector('.section-header-title').textContent = '⬡ Growth Plan Active'; }
+    if (growthPlan) { growthPlan.classList.add('current'); growthPlan.style.borderColor = '#60a5fa'; }
   } else {
     if (badge)   { badge.textContent = 'Free'; badge.className = 'status-badge free'; }
     if (upgSec)  upgSec.style.display  = 'block';
@@ -1203,7 +1209,7 @@ async function loadProUsers() {
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="background:linear-gradient(135deg,${s.plan==='elite'?'#a855f7,#7c3aed':'#f97316,#ea580c'});color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">${s.plan==='elite'?'ELITE ⬡':s.plan==='pro'?'PRO ⬡':'GROWTH ⬡'}</span>
+          <span style="background:linear-gradient(135deg,${s.plan==='elite'?'#a855f7,#7c3aed':s.plan==='pro'?'#f97316,#ea580c':'#3b82f6,#2563eb'});color:#fff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;">${s.plan==='elite'?'ELITE ⬡':s.plan==='pro'?'PRO ⬡':'GROWTH ⬡'}</span>
           <button onclick="quickRemovePro('${s.email}')"
             style="background:transparent;border:1px solid rgba(248,113,113,0.3);color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;">
             Remove
