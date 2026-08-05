@@ -62,7 +62,11 @@ function setBillingYearly(val) {
   localStorage.setItem('kv-billing-yearly', _billingYearly ? 'true' : 'false');
   if (typeof updateBillingToggleUI === 'function') updateBillingToggleUI();
   if (typeof updatePricingDisplay === 'function') updatePricingDisplay();
-  if (typeof buildUpgradeModal === 'function') buildUpgradeModal();
+  // Don't call buildUpgradeModal here — it destroys the toggle DOM
+  // Instead, rebuild the modal only if it's currently open
+  if (typeof buildUpgradeModal === 'function' && document.getElementById('upgradeModal')?.style.display !== 'none') {
+    buildUpgradeModal();
+  }
 }
 function isBillingYearly() { return _billingYearly; }
 

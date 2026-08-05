@@ -748,8 +748,15 @@ function updateBillingToggleUI() {
   if (t) t.style.background = isBillingYearly() ? '#22c55e' : 'var(--accent)';
   if (m) m.style.color = isBillingYearly() ? 'var(--text-dim)' : 'var(--text)';
   if (y) y.style.color = isBillingYearly() ? 'var(--text)' : 'var(--text-dim)';
-  // Rebuild modal with new prices
-  buildUpgradeModal();
+  // Also update landing page toggle
+  var lk = document.getElementById('pricingToggleKnob');
+  var lt = document.getElementById('pricingToggleTrack');
+  var lm = document.getElementById('toggleMonthly');
+  var ly = document.getElementById('toggleYearly');
+  if (lk) lk.style.left = isBillingYearly() ? '24px' : '2px';
+  if (lt) lt.style.background = isBillingYearly() ? '#22c55e' : 'var(--accent)';
+  if (lm) lm.style.color = isBillingYearly() ? 'var(--text-dim)' : 'var(--text)';
+  if (ly) ly.style.color = isBillingYearly() ? 'var(--text)' : 'var(--text-dim)';
 }
 
 function buildUpgradeModal() {
@@ -766,14 +773,14 @@ function buildUpgradeModal() {
 
   // Billing toggle inside modal
   var toggleHTML = '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:16px;">' +
-    '<span id="upgradeMonthlyLabel" style="font-size:13px;font-weight:600;cursor:pointer;color:' + (isBillingYearly() ? 'var(--text-dim)' : 'var(--text)') + ';" onclick="setBillingYearly(false)">Monthly</span>' +
-    '<div onclick="setBillingYearly(!isBillingYearly())" style="cursor:pointer;width:48px;height:26px;background:' + (isBillingYearly() ? '#22c55e' : 'var(--accent)') + ';border-radius:13px;position:relative;flex-shrink:0;border:2px solid var(--border);" id="upgradeToggleTrack">' +
+    '<span id="upgradeMonthlyLabel" style="font-size:13px;font-weight:600;cursor:pointer;color:' + (isBillingYearly() ? 'var(--text-dim)' : 'var(--text)') + ';">Monthly</span>' +
+    '<div id="upgradeToggleTrack" style="cursor:pointer;width:48px;height:26px;background:' + (isBillingYearly() ? '#22c55e' : 'var(--accent)') + ';border-radius:13px;position:relative;flex-shrink:0;border:2px solid var(--border);">' +
       '<div id="upgradeToggleKnob" style="position:absolute;top:2px;left:' + (isBillingYearly() ? '24px' : '2px') + ';width:18px;height:18px;background:#fff;border-radius:50%;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,0.3);"></div>' +
     '</div>' +
-    '<span id="upgradeYearlyLabel" style="font-size:13px;font-weight:600;cursor:pointer;color:' + (isBillingYearly() ? 'var(--text)' : 'var(--text-dim)') + ';" onclick="setBillingYearly(true)">Yearly <span style="font-size:9px;color:#34d399;background:rgba(34,197,94,0.12);padding:2px 6px;border-radius:8px;">Save up to 18%</span></span>' +
+    '<span id="upgradeYearlyLabel" style="font-size:13px;font-weight:600;cursor:pointer;color:' + (isBillingYearly() ? 'var(--text)' : 'var(--text-dim)') + ';">Yearly <span style="font-size:9px;color:#34d399;background:rgba(34,197,94,0.12);padding:2px 6px;border-radius:8px;">Save up to 18%</span></span>' +
   '</div>';
 
-  container.innerHTML = toggleHTML + tiers.map(function(key) {
+  var cardsHTML = tiers.map(function(key) {
     var c = UPGRADE_CARDS[key];
     var popBadge = c.popular ? '<div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:' + c.color + ';color:#fff;font-size:10px;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;">MOST POPULAR</div>' : '';
     var popMargin = c.popular ? 'margin-top:4px;' : '';
@@ -788,6 +795,16 @@ function buildUpgradeModal() {
       '<button class="btn btn-primary" onclick="upgradeTo(\'' + key + '\')" style="' + btnStyle + '">Pay ' + getUpgradeBtnPrice(key) + ' — Card · Bank · Crypto</button>' +
     '</div>';
   }).join('');
+  container.innerHTML = toggleHTML + cardsHTML;
+  // Wire up toggle click handlers after DOM is in place
+  setTimeout(function() {
+    var track = document.getElementById('upgradeToggleTrack');
+    var mLbl = document.getElementById('upgradeMonthlyLabel');
+    var yLbl = document.getElementById('upgradeYearlyLabel');
+    if (track) track.onclick = function() { setBillingYearly(!isBillingYearly()); };
+    if (mLbl) mLbl.onclick = function() { setBillingYearly(false); };
+    if (yLbl) yLbl.onclick = function() { setBillingYearly(true); };
+  }, 50);
 }
 // Build modal content when opening upgradeModal
 var _origOpenModal = openModal;
